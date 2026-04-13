@@ -1,0 +1,333 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { MapPin, Clock, CreditCard, Truck, ChevronRight, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
+import useCartStore from '../store/cartStore';
+import useAuthStore from '../store/authStore';
+import { createOrder, getPayHereHash } from '../services/api';
+import { toast } from 'react-toastify';
+
+const Checkout = () => {
+  const { items, getSubtotal, clearItems } = useCartStore();
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  const [address, setAddress] = useState({ street: '', city: '', state: '', zipCode: '', country: 'USA' });
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryTime, setDeliveryTime] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [loading, setLoading] = useState(false);
+
+  const subtotal = getSubtotal();
+  const deliveryFee = subtotal > 50 ? 0 : 4.99;
+  const tax = Math.round(subtotal * 0.08 * 100) / 100;
+  const total = subtotal + deliveryFee + tax;
+
+  // Pre-fill address from user profile
+  useEffect(() => {
+    if (user?.addresses?.length > 0) {
+      const def = user.addresses.find((a) => a.isDefault) || user.addresses[0];
+      setAddress({
+        street: def.street || '',
+        city: def.city || '',
+        state: def.state || '',
+        zipCode: def.zipCode || '',
+        country: def.country || 'USA',
+      });
+    }
+  }, [user]);
+
+  // Generate delivery date options (next 7 days)
+  const dateOptions = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    dateOptions.push(d.toISOString().split('T')[0]);
+  }
+
+  const timeSlots = ['8:00 AM - 10:00 AM', '10:00 AM - 12:00 PM', '12:00 PM - 2:00 PM', '2:00 PM - 4:00 PM', '4:00 PM - 6:00 PM', '6:00 PM - 8:00 PM'];
+
+  const handlePlaceOrder = async () => {
+    if (!address.street || !address.city || !address.state || !address.zipCode) {
+      toast.error('Please fill in your delivery address');
+      return;
+    }
+    if (!deliveryDate || !deliveryTime) {
+      toast.error('Please select a delivery date and time');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const orderData = {
+        items: items.map((item) => ({
+          productId: item.productId?._id || item.productId,
+          name: item.productId?.name || item.name,
+          image: item.productId?.images?.[0] || item.image,
+          quantity: item.quantity,
+          price: item.productId?.price || item.price,
+          storeId: item.productId?.storeId,
+        })),
+        deliveryAddress: address,
+        deliverySlot: { date: deliveryDate, timeSlot: deliveryTime },
+        paymentMethod,
+        deliveryFee,
+        tax,
+      };
+
+      const { data: order } = await createOrder(orderData);
+
+      if (paymentMethod === 'payhere') {
+        // Get PayHere hash and redirect
+        const { data: payData } = await getPayHereHash(order._id);
+        initiatePayHere(payData, order);
+      } else {
+        // COD — go to confirmation
+        clearItems();
+        toast.success('Order placed successfully!');
+        navigate(`/order-confirmation/${order._id}`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to place order');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initiatePayHere = (payData, order) => {
+    const payment = {
+      sandbox: payData.sandbox,
+      merchant_id: payData.merchant_id,
+      return_url: window.location.origin + `/order-confirmation/${order._id}`,
+      cancel_url: window.location.origin + '/checkout',
+      notify_url: `${window.location.protocol}//${window.location.hostname}:5000/api/orders/payhere-notify`,
+      order_id: payData.order_id,
+      items: order.items.map((i) => i.name).join(', '),
+      amount: payData.amount,
+      currency: payData.currency,
+      hash: payData.hash,
+      first_name: user.name.split(' ')[0],
+      last_name: user.name.split(' ').slice(1).join(' ') || '',
+      email: user.email,
+      phone: user.phone || '0000000000',
+      address: address.street,
+      city: address.city,
+      country: address.country,
+    };
+
+    if (window.payhere) {
+      window.payhere.onCompleted = function () {
+        clearItems();
+        toast.success('Payment successful!');
+        navigate(`/order-confirmation/${order._id}`);
+      };
+      window.payhere.onDismissed = function () {
+        toast.info('Payment cancelled');
+      };
+      window.payhere.onError = function (error) {
+        toast.error('Payment error: ' + error);
+      };
+      window.payhere.startPayment(payment);
+    } else {
+      toast.error('PayHere SDK not loaded. Please try again.');
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="base-container py-20 text-center">
+        <h2 className="text-2xl font-bold text-dark-navy mb-2 mt-0">No items to checkout</h2>
+        <Link to="/shop" className="text-primary-green font-semibold hover:underline">Go Shopping</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="base-container py-8">
+      <h1 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-6">Checkout</h1>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left — Forms */}
+        <div className="flex-1 space-y-6">
+          {/* Delivery Address */}
+          <motion.div
+            className="bg-white border border-card-border rounded-2xl p-6"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          >
+            <h3 className="font-bold text-dark-navy mt-0 mb-4 flex items-center gap-2">
+              <MapPin size={20} className="text-primary-green" /> Delivery Address
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-dark-navy mb-1">Street</label>
+                <input type="text" value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm" placeholder="123 Main Street" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">City</label>
+                <input type="text" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm" placeholder="New York" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">State</label>
+                <input type="text" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm" placeholder="NY" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">Zip Code</label>
+                <input type="text" value={address.zipCode} onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm" placeholder="10001" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">Country</label>
+                <input type="text" value={address.country} onChange={(e) => setAddress({ ...address, country: e.target.value })}
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm" placeholder="USA" />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Delivery Slot */}
+          <motion.div
+            className="bg-white border border-card-border rounded-2xl p-6"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <h3 className="font-bold text-dark-navy mt-0 mb-4 flex items-center gap-2">
+              <Clock size={20} className="text-primary-green" /> Delivery Slot
+            </h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-dark-navy mb-2">Select Date</label>
+              <div className="flex flex-wrap gap-2">
+                {dateOptions.map((d) => {
+                  const dateObj = new Date(d + 'T00:00:00');
+                  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                  const dayNum = dateObj.getDate();
+                  const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                  return (
+                    <button key={d} type="button" onClick={() => setDeliveryDate(d)}
+                      className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all text-center min-w-[70px] ${
+                        deliveryDate === d ? 'border-primary-green bg-emerald-50 text-primary-green' : 'border-card-border hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-xs text-muted-text">{dayName}</div>
+                      <div className="font-bold">{dayNum}</div>
+                      <div className="text-xs">{month}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-dark-navy mb-2">Select Time</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {timeSlots.map((slot) => (
+                  <button key={slot} type="button" onClick={() => setDeliveryTime(slot)}
+                    className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      deliveryTime === slot ? 'border-primary-green bg-emerald-50 text-primary-green' : 'border-card-border hover:border-gray-300'
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Payment Method */}
+          <motion.div
+            className="bg-white border border-card-border rounded-2xl p-6"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <h3 className="font-bold text-dark-navy mt-0 mb-4 flex items-center gap-2">
+              <CreditCard size={20} className="text-primary-green" /> Payment Method
+            </h3>
+            <div className="space-y-3">
+              {[
+                { id: 'cod', label: 'Cash on Delivery', icon: '💵', desc: 'Pay when your order arrives' },
+                { id: 'payhere', label: 'PayHere (Card/Bank)', icon: '💳', desc: 'Secure online payment via PayHere' },
+              ].map((method) => (
+                <label key={method.id}
+                  className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                    paymentMethod === method.id ? 'border-primary-green bg-emerald-50' : 'border-card-border hover:border-gray-300'
+                  }`}
+                >
+                  <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id}
+                    onChange={(e) => setPaymentMethod(e.target.value)} className="accent-primary-green" />
+                  <span className="text-2xl">{method.icon}</span>
+                  <div>
+                    <p className="font-semibold text-dark-navy text-sm m-0">{method.label}</p>
+                    <p className="text-xs text-muted-text m-0">{method.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Right — Order Summary */}
+        <div className="lg:w-96">
+          <motion.div
+            className="bg-white border border-card-border rounded-2xl p-6 sticky top-24"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
+          >
+            <h3 className="font-bold text-dark-navy text-lg mt-0 mb-4">Order Summary</h3>
+
+            {/* Items preview */}
+            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+              {items.map((item) => {
+                const product = item.productId || {};
+                return (
+                  <div key={product._id || item.productId} className="flex items-center gap-3">
+                    <img src={product.images?.[0] || item.image || ''} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-dark-navy m-0 truncate">{product.name || item.name}</p>
+                      <p className="text-xs text-muted-text m-0">Qty: {item.quantity}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-dark-navy">${((product.price || item.price) * item.quantity).toFixed(2)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-card-border pt-4 space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-text">Subtotal</span>
+                <span className="font-medium">${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-text">Delivery</span>
+                <span className="font-medium">{deliveryFee === 0 ? <span className="text-primary-green">FREE</span> : `$${deliveryFee.toFixed(2)}`}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-text">Tax</span>
+                <span className="font-medium">${tax.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-card-border pt-4 mb-6">
+              <div className="flex justify-between">
+                <span className="font-bold text-dark-navy text-lg">Total</span>
+                <span className="font-bold text-dark-navy text-lg">${total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handlePlaceOrder}
+              disabled={loading}
+              className="w-full bg-primary-green text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? 'Processing...' : paymentMethod === 'payhere' ? 'Pay Now' : 'Place Order'}
+              <ChevronRight size={18} />
+            </button>
+
+            <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-text">
+              <ShieldCheck size={14} className="text-primary-green" />
+              <span>Secure & encrypted checkout</span>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;
