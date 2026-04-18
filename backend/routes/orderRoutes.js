@@ -17,9 +17,9 @@ router.post('/payhere-notify', payHereNotify);
 // Protected routes
 router.route('/').post(protect, createOrder);
 router.route('/my').get(protect, getMyOrders);
-router.route('/store').get(protect, authorize('storeOwner'), getStoreOrders);
+router.route('/store').get(protect, authorize('manager'), getStoreOrders);
 router.route('/:id').get(protect, getOrderById);
-router.route('/:id/status').put(protect, authorize('storeOwner', 'admin'), updateOrderStatus);
+router.route('/:id/status').put(protect, authorize('manager', 'admin'), updateOrderStatus);
 router.route('/:id/payhere-hash').post(protect, generatePayHereHash);
 
 module.exports = router;

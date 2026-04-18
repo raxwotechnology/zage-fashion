@@ -21,7 +21,7 @@ const userSchema = mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['customer', 'storeOwner', 'admin', 'cashier'],
+      enum: ['customer', 'manager', 'admin', 'cashier', 'deliveryGuy', 'stockEmployee'],
       default: 'customer',
     },
     assignedStore: {
@@ -41,6 +41,37 @@ const userSchema = mongoose.Schema(
         isDefault: { type: Boolean, default: false },
       },
     ],
+    // Loyalty Program
+    loyaltyPoints: {
+      type: Number,
+      default: 0,
+    },
+    vouchers: [
+      {
+        code: String,
+        type: { type: String, enum: ['percentage', 'fixed'] },
+        value: Number,
+        minOrderAmount: Number,
+        expiresAt: Date,
+        isUsed: { type: Boolean, default: false },
+      },
+    ],
+    // Employee Info (for cashier, deliveryGuy, and other staff)
+    employeeInfo: {
+      salary: { type: Number, default: 0 },
+      department: { type: String },
+      joinDate: { type: Date },
+      bankAccount: { type: String },
+      bankName: { type: String },
+      epfNo: { type: String },
+      etfNo: { type: String },
+    },
+    // Preferred currency
+    preferredCurrency: {
+      type: String,
+      enum: ['LKR', 'USD'],
+      default: 'LKR',
+    },
   },
   {
     timestamps: true,

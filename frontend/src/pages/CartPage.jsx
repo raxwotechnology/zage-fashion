@@ -4,11 +4,13 @@ import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
+import useCurrencyStore from '../store/currencyStore';
 import { toast } from 'react-toastify';
 
 const CartPage = () => {
   const { items, loading, fetchCart, updateQuantity, removeItem } = useCartStore();
   const { user } = useAuthStore();
+  const { convertPrice, formatPrice } = useCurrencyStore();
   const subtotal = useCartStore((s) => s.getSubtotal());
   const deliveryFee = subtotal > 50 ? 0 : 4.99;
   const tax = Math.round(subtotal * 0.08 * 100) / 100;
@@ -100,9 +102,9 @@ const CartPage = () => {
                       </Link>
                       {unit && <p className="text-xs text-muted-text m-0 mt-1">per {unit}</p>}
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="font-bold text-dark-navy">${price?.toFixed(2)}</span>
+                        <span className="font-bold text-dark-navy">{formatPrice(convertPrice(price))}</span>
                         {mrp > price && (
-                          <span className="text-xs text-muted-text line-through">${mrp?.toFixed(2)}</span>
+                          <span className="text-xs text-muted-text line-through">{formatPrice(convertPrice(mrp))}</span>
                         )}
                       </div>
                     </div>
@@ -130,7 +132,7 @@ const CartPage = () => {
 
                     {/* Line Total */}
                     <div className="hidden md:block text-right min-w-[80px]">
-                      <span className="font-bold text-dark-navy">${(price * item.quantity).toFixed(2)}</span>
+                      <span className="font-bold text-dark-navy">{formatPrice(convertPrice(price * item.quantity))}</span>
                     </div>
 
                     {/* Remove */}
@@ -160,7 +162,7 @@ const CartPage = () => {
             <div className="space-y-3 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-text">Subtotal</span>
-                <span className="font-medium text-dark-navy">${subtotal.toFixed(2)}</span>
+                <span className="font-medium text-dark-navy">{formatPrice(convertPrice(subtotal))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-text">Delivery Fee</span>
@@ -168,17 +170,17 @@ const CartPage = () => {
                   {deliveryFee === 0 ? (
                     <span className="text-primary-green">FREE</span>
                   ) : (
-                    `$${deliveryFee.toFixed(2)}`
+                    formatPrice(convertPrice(deliveryFee))
                   )}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-text">Tax (8%)</span>
-                <span className="font-medium text-dark-navy">${tax.toFixed(2)}</span>
+                <span className="font-medium text-dark-navy">{formatPrice(convertPrice(tax))}</span>
               </div>
               {subtotal < 50 && (
                 <p className="text-xs text-accent-orange bg-orange-50 rounded-lg px-3 py-2 m-0">
-                  Add ${(50 - subtotal).toFixed(2)} more for free delivery!
+                  Add {formatPrice(convertPrice(50 - subtotal))} more for free delivery!
                 </p>
               )}
             </div>
@@ -186,7 +188,7 @@ const CartPage = () => {
             <div className="border-t border-card-border pt-4 mb-6">
               <div className="flex justify-between">
                 <span className="font-bold text-dark-navy text-lg">Total</span>
-                <span className="font-bold text-dark-navy text-lg">${total.toFixed(2)}</span>
+                <span className="font-bold text-dark-navy text-lg">{formatPrice(convertPrice(total))}</span>
               </div>
             </div>
 

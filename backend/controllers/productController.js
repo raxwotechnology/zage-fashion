@@ -252,7 +252,7 @@ const deleteProduct = async (req, res, next) => {
 const getMyProducts = async (req, res, next) => {
   try {
     const Store = require('../models/Store');
-    const store = await Store.findOne({ ownerId: req.user._id });
+    const store = await Store.findOne({ managerId: req.user._id });
     if (!store) {
       res.status(404);
       return next(new Error('No store found for this user'));

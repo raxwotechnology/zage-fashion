@@ -8,7 +8,6 @@ const getProductReviews = async (req, res, next) => {
   try {
     const reviews = await Review.find({
       productId: req.params.productId,
-      status: 'approved',
     })
       .populate('userId', 'name avatar')
       .sort({ createdAt: -1 });
@@ -115,7 +114,7 @@ const deleteReview = async (req, res, next) => {
 
 // Helper: recalculate product rating
 async function updateProductRating(productId) {
-  const reviews = await Review.find({ productId, status: 'approved' });
+  const reviews = await Review.find({ productId });
   const product = await Product.findById(productId);
   if (product) {
     if (reviews.length > 0) {

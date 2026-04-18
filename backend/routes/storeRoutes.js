@@ -9,14 +9,14 @@ const {
 } = require('../controllers/storeController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.get('/my', protect, authorize('storeOwner'), getMyStore);
+router.get('/my', protect, authorize('manager'), getMyStore);
 
 router.route('/')
   .get(getStores)
-  .post(protect, authorize('storeOwner'), createStore);
+  .post(protect, authorize('manager'), createStore);
 
 router.route('/:id')
   .get(getStoreById)
-  .put(protect, authorize('storeOwner', 'admin'), updateStore);
+  .put(protect, authorize('manager', 'admin'), updateStore);
 
 module.exports = router;

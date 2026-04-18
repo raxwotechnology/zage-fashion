@@ -9,8 +9,8 @@ const {
 } = require('../controllers/posController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// All POS routes require cashier role
-router.use(protect, authorize('cashier'));
+// All POS routes require cashier or manager role
+router.use(protect, authorize('cashier', 'manager'));
 
 router.get('/products', getPosProducts);
 router.get('/products/barcode/:code', getProductByBarcode);

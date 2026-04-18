@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, ToggleLeft, ToggleRight, ExternalLink, Monitor } from 'lucide-react';
+import { LayoutDashboard, Users, Store, Tag, ShoppingBag, ToggleLeft, ToggleRight, ExternalLink, Monitor, Ticket, BarChart3 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminStores, toggleStoreStatus } from '../../services/api';
 import { toast } from 'react-toastify';
@@ -11,6 +11,9 @@ const navItems = [
   { path: '/admin/stores', label: 'Stores', icon: Store },
   { path: '/admin/categories', label: 'Categories', icon: Tag },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
+  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
   { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
 ];
 
@@ -90,8 +93,8 @@ const AdminStores = () => {
                 </div>
 
                 <div className="text-xs text-muted-text space-y-1 mb-4">
-                  <p><span className="font-medium text-dark-navy">Owner:</span> {store.ownerId?.name || 'N/A'}</p>
-                  <p><span className="font-medium text-dark-navy">Email:</span> {store.ownerId?.email || 'N/A'}</p>
+                  <p><span className="font-medium text-dark-navy">Manager:</span> {store.managerId?.name || store.ownerId?.name || 'N/A'}</p>
+                  <p><span className="font-medium text-dark-navy">Email:</span> {store.managerId?.email || store.ownerId?.email || 'N/A'}</p>
                   <p><span className="font-medium text-dark-navy">Phone:</span> {store.phone || '—'}</p>
                 </div>
 

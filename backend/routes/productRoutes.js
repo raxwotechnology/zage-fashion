@@ -17,16 +17,16 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.get('/search', searchProducts);
 router.get('/featured', getFeaturedProducts);
 router.get('/deals', getDeals);
-router.get('/my-store', protect, authorize('storeOwner'), getMyProducts);
+router.get('/my-store', protect, authorize('manager'), getMyProducts);
 
 router.route('/')
   .get(getProducts)
-  .post(protect, authorize('storeOwner', 'admin'), createProduct);
+  .post(protect, authorize('manager', 'admin'), createProduct);
 
 router.route('/:id')
   .get(getProductById)
-  .put(protect, authorize('storeOwner', 'admin'), updateProduct)
-  .delete(protect, authorize('storeOwner', 'admin'), deleteProduct);
+  .put(protect, authorize('manager', 'admin'), updateProduct)
+  .delete(protect, authorize('manager', 'admin'), deleteProduct);
 
 module.exports = router;
 

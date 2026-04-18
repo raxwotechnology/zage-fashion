@@ -6,7 +6,7 @@ const Store = require('../models/Store');
 const getStores = async (req, res, next) => {
   try {
     const stores = await Store.find({ isActive: true })
-      .populate('ownerId', 'name email');
+      .populate('managerId', 'name email');
     res.json(stores);
   } catch (error) {
     next(error);
@@ -19,7 +19,7 @@ const getStores = async (req, res, next) => {
 const getStoreById = async (req, res, next) => {
   try {
     const store = await Store.findById(req.params.id)
-      .populate('ownerId', 'name email');
+      .populate('managerId', 'name email');
     if (store) {
       res.json(store);
     } else {
@@ -31,12 +31,12 @@ const getStoreById = async (req, res, next) => {
   }
 };
 
-// @desc    Get my store (store owner)
+// @desc    Get my store (manager)
 // @route   GET /api/stores/my
-// @access  Private/StoreOwner
+// @access  Private/Manager
 const getMyStore = async (req, res, next) => {
   try {
-    const store = await Store.findOne({ ownerId: req.user._id });
+    const store = await Store.findOne({ managerId: req.user._id });
     if (store) {
       res.json(store);
     } else {
@@ -50,20 +50,20 @@ const getMyStore = async (req, res, next) => {
 
 // @desc    Create a store
 // @route   POST /api/stores
-// @access  Private/StoreOwner
+// @access  Private/Manager
 const createStore = async (req, res, next) => {
   try {
     const { name, description, address, city, phone, email, bannerImage, logo, operatingHours } = req.body;
     const slug = name.toLowerCase().replace(/\s+/g, '-');
 
-    const existingStore = await Store.findOne({ ownerId: req.user._id });
+    const existingStore = await Store.findOne({ managerId: req.user._id });
     if (existingStore) {
       res.status(400);
       return next(new Error('You already have a store registered'));
     }
 
     const store = await Store.create({
-      ownerId: req.user._id,
+      managerId: req.user._id,
       name,
       slug,
       description,
@@ -84,7 +84,7 @@ const createStore = async (req, res, next) => {
 
 // @desc    Update store
 // @route   PUT /api/stores/:id
-// @access  Private/StoreOwner
+// @access  Private/Manager
 const updateStore = async (req, res, next) => {
   try {
     const store = await Store.findById(req.params.id);
@@ -93,7 +93,7 @@ const updateStore = async (req, res, next) => {
       return next(new Error('Store not found'));
     }
 
-    if (store.ownerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (store.managerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       res.status(403);
       return next(new Error('Not authorized to update this store'));
     }

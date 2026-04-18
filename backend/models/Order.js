@@ -48,9 +48,15 @@ const orderSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Currency used for this order
+    currency: {
+      type: String,
+      enum: ['LKR', 'USD'],
+      default: 'LKR',
+    },
     paymentMethod: {
       type: String,
-      enum: ['card', 'upi', 'cod', 'wallet', 'payhere', 'cash'],
+      enum: ['card', 'upi', 'cod', 'wallet', 'payhere', 'cash', 'mobile_money'],
       default: 'cod',
     },
     paymentStatus: {
@@ -80,11 +86,35 @@ const orderSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    // Delivery Guy assignment
+    deliveryGuyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
     tenderedAmount: {
       type: Number,
     },
     changeGiven: {
       type: Number,
+    },
+    // Loyalty & Promo
+    loyaltyPointsEarned: {
+      type: Number,
+      default: 0,
+    },
+    loyaltyPointsRedeemed: {
+      type: Number,
+      default: 0,
+    },
+    promoCode: {
+      type: String,
+    },
+    voucherCode: {
+      type: String,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
     },
   },
   {

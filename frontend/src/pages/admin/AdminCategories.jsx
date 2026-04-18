@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Plus, Edit2, Trash2, X, Monitor } from 'lucide-react';
+import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Plus, Edit2, Trash2, X, Monitor, Ticket, BarChart3 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../services/api';
 import { toast } from 'react-toastify';
@@ -10,6 +10,9 @@ const navItems = [
   { path: '/admin/stores', label: 'Stores', icon: Store },
   { path: '/admin/categories', label: 'Categories', icon: Tag },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
+  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
   { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
 ];
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, TrendingUp, DollarSign, Package, Clock, CheckCircle, Monitor } from 'lucide-react';
+import { LayoutDashboard, Users, Store, Tag, ShoppingBag, TrendingUp, DollarSign, Package, Clock, CheckCircle, Monitor, Ticket, BarChart3 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminStats } from '../../services/api';
+import useCurrencyStore from '../../store/currencyStore';
 import { Link } from 'react-router-dom';
 
 const navItems = [
@@ -10,6 +11,9 @@ const navItems = [
   { path: '/admin/stores', label: 'Stores', icon: Store },
   { path: '/admin/categories', label: 'Categories', icon: Tag },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
+  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
   { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
 ];
 
@@ -46,7 +50,7 @@ const AdminOverview = () => {
     { label: 'Total Stores', value: stats?.stores || 0, icon: Store, gradient: 'from-blue-400 to-indigo-500', shadow: 'shadow-blue-200' },
     { label: 'Total Products', value: stats?.products || 0, icon: Package, gradient: 'from-emerald-400 to-teal-500', shadow: 'shadow-emerald-200' },
     { label: 'Total Orders', value: stats?.totalOrders || 0, icon: ShoppingBag, gradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-200' },
-    { label: 'Revenue', value: `$${(stats?.totalRevenue || 0).toFixed(2)}`, icon: DollarSign, gradient: 'from-rose-400 to-pink-500', shadow: 'shadow-rose-200' },
+    { label: 'Revenue', value: `Rs. ${(stats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, gradient: 'from-rose-400 to-pink-500', shadow: 'shadow-rose-200' },
     { label: 'Pending Orders', value: stats?.pendingOrders || 0, icon: Clock, gradient: 'from-cyan-400 to-sky-500', shadow: 'shadow-cyan-200' },
   ];
 

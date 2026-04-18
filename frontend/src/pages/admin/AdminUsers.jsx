@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Trash2, Shield, Search, ChevronDown, Monitor } from 'lucide-react';
+import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Trash2, Shield, Search, ChevronDown, Monitor, Ticket, BarChart3 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminUsers, updateUserRole, deleteUser } from '../../services/api';
 import { toast } from 'react-toastify';
@@ -10,13 +10,18 @@ const navItems = [
   { path: '/admin/stores', label: 'Stores', icon: Store },
   { path: '/admin/categories', label: 'Categories', icon: Tag },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
+  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
   { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
 ];
 
 const roleColors = {
   customer: 'bg-sky-100 text-sky-700',
-  storeOwner: 'bg-amber-100 text-amber-700',
+  manager: 'bg-amber-100 text-amber-700',
   admin: 'bg-violet-100 text-violet-700',
+  cashier: 'bg-teal-100 text-teal-700',
+  deliveryGuy: 'bg-blue-100 text-blue-700',
 };
 
 const AdminUsers = () => {
@@ -125,8 +130,10 @@ const AdminUsers = () => {
                         className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 appearance-none cursor-pointer ${roleColors[user.role]} focus:outline-none focus:ring-2 focus:ring-primary-green`}
                       >
                         <option value="customer">Customer</option>
-                        <option value="storeOwner">Store Owner</option>
+                        <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
+                        <option value="cashier">Cashier</option>
+                        <option value="deliveryGuy">Delivery Guy</option>
                       </select>
                     </td>
                     <td className="px-6 py-3.5 text-muted-text">{new Date(user.createdAt).toLocaleDateString()}</td>

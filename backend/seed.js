@@ -8,6 +8,7 @@ const User = require('./models/User');
 const Store = require('./models/Store');
 const Category = require('./models/Category');
 const Product = require('./models/Product');
+const Voucher = require('./models/Voucher');
 
 const connectDB = require('./config/db');
 
@@ -20,6 +21,7 @@ const seedData = async () => {
     await Store.deleteMany({});
     await Category.deleteMany({});
     await Product.deleteMany({});
+    await Voucher.deleteMany({});
 
     console.log('Data cleared...');
 
@@ -28,39 +30,40 @@ const seedData = async () => {
       name: 'Admin User',
       email: 'admin@freshcart.com',
       password: 'admin123',
-      phone: '1234567890',
+      phone: '+94771234567',
       role: 'admin',
     });
 
-    const storeOwner1 = await User.create({
+    const manager1 = await User.create({
       name: 'John Green',
       email: 'john@freshfarms.com',
-      password: 'owner123',
-      phone: '9876543210',
-      role: 'storeOwner',
+      password: 'manager123',
+      phone: '+94779876543',
+      role: 'manager',
     });
 
-    const storeOwner2 = await User.create({
+    const manager2 = await User.create({
       name: 'Sarah Miller',
       email: 'sarah@organicmart.com',
-      password: 'owner123',
-      phone: '9876543211',
-      role: 'storeOwner',
+      password: 'manager123',
+      phone: '+94779876544',
+      role: 'manager',
     });
 
     const customer = await User.create({
       name: 'Jane Doe',
       email: 'jane@example.com',
       password: 'customer123',
-      phone: '5555555555',
+      phone: '+94775555555',
       role: 'customer',
+      loyaltyPoints: 150,
       addresses: [
         {
-          street: '123 Main St',
-          city: 'New York',
-          state: 'NY',
-          zipCode: '10001',
-          country: 'USA',
+          street: '123 Galle Road',
+          city: 'Colombo',
+          state: 'Western',
+          zipCode: '00100',
+          country: 'Sri Lanka',
           isDefault: true,
         },
       ],
@@ -70,13 +73,13 @@ const seedData = async () => {
 
     // Create Stores
     const store1 = await Store.create({
-      ownerId: storeOwner1._id,
+      managerId: manager1._id,
       name: 'Fresh Farms',
       slug: 'fresh-farms',
       description: 'Your local farm-to-table grocery store bringing the freshest produce, dairy, and organic products directly from local farms.',
-      address: '456 Market Street',
-      city: 'New York',
-      phone: '212-555-0101',
+      address: '456 Galle Road, Colombo 03',
+      city: 'Colombo',
+      phone: '+94112555101',
       email: 'hello@freshfarms.com',
       bannerImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200',
       logo: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=200',
@@ -85,13 +88,13 @@ const seedData = async () => {
     });
 
     const store2 = await Store.create({
-      ownerId: storeOwner2._id,
+      managerId: manager2._id,
       name: 'Organic Mart',
       slug: 'organic-mart',
       description: 'Premium organic and health-focused grocery store. We source only certified organic products for health-conscious shoppers.',
-      address: '789 Health Blvd',
-      city: 'Brooklyn',
-      phone: '718-555-0202',
+      address: '789 Duplication Road, Colombo 04',
+      city: 'Colombo',
+      phone: '+94112555202',
       email: 'info@organicmart.com',
       bannerImage: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200',
       logo: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=200',
@@ -106,21 +109,78 @@ const seedData = async () => {
       name: 'Mike Cashier',
       email: 'cashier@freshfarms.com',
       password: 'cashier123',
-      phone: '5551234567',
+      phone: '+94771234568',
       role: 'cashier',
       assignedStore: store1._id,
+      employeeInfo: {
+        salary: 45000,
+        department: 'Sales',
+        joinDate: new Date('2025-01-15'),
+        bankAccount: '1234567890',
+        bankName: 'Commercial Bank',
+        epfNo: 'EPF-001',
+        etfNo: 'ETF-001',
+      },
     });
 
     const cashier2 = await User.create({
       name: 'Lisa Cashier',
       email: 'cashier@organicmart.com',
       password: 'cashier123',
-      phone: '5559876543',
+      phone: '+94779876545',
       role: 'cashier',
       assignedStore: store2._id,
+      employeeInfo: {
+        salary: 45000,
+        department: 'Sales',
+        joinDate: new Date('2025-03-01'),
+        bankAccount: '0987654321',
+        bankName: 'Sampath Bank',
+        epfNo: 'EPF-002',
+        etfNo: 'ETF-002',
+      },
     });
 
     console.log('Cashiers created...');
+
+    // Create Delivery Guy Users
+    const deliveryGuy1 = await User.create({
+      name: 'Kamal Perera',
+      email: 'kamal@freshcart.com',
+      password: 'delivery123',
+      phone: '+94771112233',
+      role: 'deliveryGuy',
+      assignedStore: store1._id,
+      employeeInfo: {
+        salary: 35000,
+        department: 'Delivery',
+        joinDate: new Date('2025-02-01'),
+        bankAccount: '5555555555',
+        bankName: 'BOC',
+        epfNo: 'EPF-003',
+        etfNo: 'ETF-003',
+      },
+    });
+
+    const deliveryGuy2 = await User.create({
+      name: 'Nimal Silva',
+      email: 'nimal@freshcart.com',
+      password: 'delivery123',
+      phone: '+94774445566',
+      role: 'deliveryGuy',
+      assignedStore: store2._id,
+      employeeInfo: {
+        salary: 35000,
+        department: 'Delivery',
+        joinDate: new Date('2025-04-01'),
+        bankAccount: '6666666666',
+        bankName: 'HNB',
+        epfNo: 'EPF-004',
+        etfNo: 'ETF-004',
+      },
+    });
+
+    console.log('Delivery Guys created...');
 
     // Create Categories
     const categories = await Category.insertMany([
@@ -136,13 +196,13 @@ const seedData = async () => {
 
     console.log('Categories created...');
 
-    // Create Products (with barcodes and SKUs for POS)
+    // Create Products (with barcodes, SKUs, and multi-currency pricing)
     const products = [
       // Fresh Fruits
       {
         storeId: store1._id, name: 'Organic Red Apples', slug: 'organic-red-apples',
         categoryId: categories[0]._id, description: 'Crisp and juicy organic Gala apples. Sourced directly from upstate farms, these apples are perfect for snacking, baking, or adding to salads.',
-        price: 4.99, mrp: 6.99, discount: 29, unit: 'kg',
+        price: 1600, priceLKR: 1600, priceUSD: 4.99, mrp: 2240, discount: 29, unit: 'kg',
         stock: 150, images: [
           'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600',
           'https://images.unsplash.com/photo-1579613832125-5d34a13ffe2a?w=600',
@@ -153,7 +213,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Fresh Bananas', slug: 'fresh-bananas',
         categoryId: categories[0]._id, description: 'Premium yellow bananas, perfectly ripened. Great source of potassium and natural energy.',
-        price: 1.99, mrp: 2.49, discount: 20, unit: 'bunch',
+        price: 640, priceLKR: 640, priceUSD: 1.99, mrp: 800, discount: 20, unit: 'bunch',
         stock: 200, images: ['https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600'],
         averageRating: 4.7, totalReviews: 45, isFeatured: true, isOnSale: false, status: 'active',
         barcode: '4901234567002', sku: 'FF-FRT-002',
@@ -161,7 +221,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Organic Strawberries', slug: 'organic-strawberries',
         categoryId: categories[0]._id, description: 'Sweet, juicy organic strawberries. Hand-picked at peak ripeness for maximum flavor.',
-        price: 5.99, mrp: 7.99, discount: 25, unit: 'pack',
+        price: 1920, priceLKR: 1920, priceUSD: 5.99, mrp: 2560, discount: 25, unit: 'pack',
         stock: 80, images: ['https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600'],
         averageRating: 4.8, totalReviews: 34, isFeatured: true, isOnSale: true, status: 'active',
         barcode: '4901234567003', sku: 'OM-FRT-001',
@@ -169,7 +229,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Valencia Oranges', slug: 'valencia-oranges',
         categoryId: categories[0]._id, description: 'Sweet and seedless Valencia oranges perfect for juicing or eating fresh. Rich in Vitamin C.',
-        price: 3.49, mrp: 4.99, discount: 30, unit: 'kg',
+        price: 1120, priceLKR: 1120, priceUSD: 3.49, mrp: 1600, discount: 30, unit: 'kg',
         stock: 120, images: ['https://images.unsplash.com/photo-1547514701-42782101795e?w=600'],
         averageRating: 4.3, totalReviews: 19, isFeatured: false, isOnSale: true, status: 'active',
         barcode: '4901234567004', sku: 'OM-FRT-002',
@@ -179,7 +239,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Fresh Broccoli', slug: 'fresh-broccoli',
         categoryId: categories[1]._id, description: 'Farm-fresh broccoli crowns. Packed with vitamins and perfect for stir-fries, steaming, or roasting.',
-        price: 2.99, mrp: 3.99, discount: 25, unit: 'piece',
+        price: 960, priceLKR: 960, priceUSD: 2.99, mrp: 1280, discount: 25, unit: 'piece',
         stock: 90, images: ['https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=600'],
         averageRating: 4.4, totalReviews: 12, isFeatured: false, isOnSale: true, status: 'active',
         barcode: '4901234567005', sku: 'FF-VEG-001',
@@ -187,7 +247,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Baby Spinach', slug: 'baby-spinach',
         categoryId: categories[1]._id, description: 'Tender baby spinach leaves. Pre-washed and ready to eat. Great for salads and smoothies.',
-        price: 3.49, mrp: 4.49, discount: 22, unit: 'pack',
+        price: 1120, priceLKR: 1120, priceUSD: 3.49, mrp: 1440, discount: 22, unit: 'pack',
         stock: 65, images: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600'],
         averageRating: 4.6, totalReviews: 28, isFeatured: true, isOnSale: false, status: 'active',
         barcode: '4901234567006', sku: 'FF-VEG-002',
@@ -195,7 +255,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Organic Carrots', slug: 'organic-carrots',
         categoryId: categories[1]._id, description: 'Sweet and crunchy organic carrots. Perfect for snacking, cooking, or juicing.',
-        price: 2.49, mrp: 3.49, discount: 29, unit: 'kg',
+        price: 800, priceLKR: 800, priceUSD: 2.49, mrp: 1120, discount: 29, unit: 'kg',
         stock: 110, images: ['https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=600'],
         averageRating: 4.5, totalReviews: 17, isFeatured: false, isOnSale: true, status: 'active',
         barcode: '4901234567007', sku: 'OM-VEG-001',
@@ -203,7 +263,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Cherry Tomatoes', slug: 'cherry-tomatoes',
         categoryId: categories[1]._id, description: 'Vine-ripened cherry tomatoes bursting with flavor. Ideal for salads, pasta, and snacking.',
-        price: 3.99, mrp: 4.99, discount: 20, unit: 'pack',
+        price: 1280, priceLKR: 1280, priceUSD: 3.99, mrp: 1600, discount: 20, unit: 'pack',
         stock: 75, images: ['https://images.unsplash.com/photo-1546470427-0d4db154ceb8?w=600'],
         averageRating: 4.2, totalReviews: 8, isFeatured: false, isOnSale: false, status: 'active',
         barcode: '4901234567008', sku: 'OM-VEG-002',
@@ -213,7 +273,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Farm Fresh Eggs', slug: 'farm-fresh-eggs',
         categoryId: categories[2]._id, description: 'Free-range farm-fresh eggs from happy hens. Rich yolks and superior taste.',
-        price: 5.49, mrp: 6.99, discount: 21, unit: 'dozen',
+        price: 1760, priceLKR: 1760, priceUSD: 5.49, mrp: 2240, discount: 21, unit: 'dozen',
         stock: 200, images: ['https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=600'],
         averageRating: 4.9, totalReviews: 56, isFeatured: true, isOnSale: true, status: 'active',
         barcode: '4901234567009', sku: 'FF-DRY-001',
@@ -221,7 +281,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Whole Milk', slug: 'whole-milk',
         categoryId: categories[2]._id, description: 'Fresh whole milk from local dairy farms. Creamy, nutritious, and perfect for your morning cereal or coffee.',
-        price: 3.99, mrp: 4.49, discount: 11, unit: 'gallon',
+        price: 1280, priceLKR: 1280, priceUSD: 3.99, mrp: 1440, discount: 11, unit: 'litre',
         stock: 100, images: ['https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600'],
         averageRating: 4.7, totalReviews: 31, isFeatured: false, isOnSale: false, status: 'active',
         barcode: '4901234567010', sku: 'FF-DRY-002',
@@ -229,7 +289,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Greek Yogurt', slug: 'greek-yogurt',
         categoryId: categories[2]._id, description: 'Thick and creamy Greek yogurt. High in protein and probiotics. Perfect for breakfast bowls.',
-        price: 4.99, mrp: 5.99, discount: 17, unit: 'pack',
+        price: 1600, priceLKR: 1600, priceUSD: 4.99, mrp: 1920, discount: 17, unit: 'pack',
         stock: 85, images: ['https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600'],
         averageRating: 4.6, totalReviews: 22, isFeatured: true, isOnSale: true, status: 'active',
         barcode: '4901234567011', sku: 'OM-DRY-001',
@@ -239,7 +299,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Sourdough Bread', slug: 'sourdough-bread',
         categoryId: categories[3]._id, description: 'Artisan sourdough bread baked fresh daily. Crispy crust with a soft, tangy interior.',
-        price: 5.99, mrp: 7.49, discount: 20, unit: 'loaf',
+        price: 1920, priceLKR: 1920, priceUSD: 5.99, mrp: 2400, discount: 20, unit: 'loaf',
         stock: 40, images: ['https://images.unsplash.com/photo-1585478259715-876acc5be8eb?w=600'],
         averageRating: 4.8, totalReviews: 41, isFeatured: true, isOnSale: false, status: 'active',
         barcode: '4901234567012', sku: 'FF-BKR-001',
@@ -247,7 +307,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Chocolate Croissants', slug: 'chocolate-croissants',
         categoryId: categories[3]._id, description: 'Flaky, buttery croissants filled with rich Belgian chocolate. Freshly baked every morning.',
-        price: 3.99, mrp: 5.49, discount: 27, unit: 'pack of 4',
+        price: 1280, priceLKR: 1280, priceUSD: 3.99, mrp: 1760, discount: 27, unit: 'pack of 4',
         stock: 30, images: ['https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=600'],
         averageRating: 4.7, totalReviews: 18, isFeatured: false, isOnSale: true, status: 'active',
         barcode: '4901234567013', sku: 'OM-BKR-001',
@@ -257,7 +317,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Atlantic Salmon Fillet', slug: 'atlantic-salmon-fillet',
         categoryId: categories[4]._id, description: 'Premium wild-caught Atlantic salmon fillets. Rich in omega-3 fatty acids.',
-        price: 12.99, mrp: 15.99, discount: 19, unit: 'kg',
+        price: 4160, priceLKR: 4160, priceUSD: 12.99, mrp: 5120, discount: 19, unit: 'kg',
         stock: 45, images: ['https://images.unsplash.com/photo-1574781330855-d0db8cc6a79c?w=600'],
         averageRating: 4.6, totalReviews: 15, isFeatured: true, isOnSale: true, status: 'active',
         barcode: '4901234567014', sku: 'FF-MSF-001',
@@ -265,7 +325,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Chicken Breast', slug: 'chicken-breast',
         categoryId: categories[4]._id, description: 'Boneless skinless chicken breast. Hormone-free and raised without antibiotics.',
-        price: 8.99, mrp: 10.99, discount: 18, unit: 'kg',
+        price: 2880, priceLKR: 2880, priceUSD: 8.99, mrp: 3520, discount: 18, unit: 'kg',
         stock: 70, images: ['https://images.unsplash.com/photo-1604503468506-a8da13d82571?w=600'],
         averageRating: 4.4, totalReviews: 27, isFeatured: false, isOnSale: false, status: 'active',
         barcode: '4901234567015', sku: 'FF-MSF-002',
@@ -275,7 +335,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Cold Pressed Orange Juice', slug: 'cold-pressed-oj',
         categoryId: categories[5]._id, description: 'Freshly cold-pressed orange juice with no added sugars or preservatives. Pure citrus goodness.',
-        price: 6.99, mrp: 8.49, discount: 18, unit: 'bottle',
+        price: 2240, priceLKR: 2240, priceUSD: 6.99, mrp: 2720, discount: 18, unit: 'bottle',
         stock: 60, images: ['https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=600'],
         averageRating: 4.5, totalReviews: 20, isFeatured: false, isOnSale: true, status: 'active',
         barcode: '4901234567016', sku: 'OM-BEV-001',
@@ -283,7 +343,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Organic Green Tea', slug: 'organic-green-tea',
         categoryId: categories[5]._id, description: 'Premium organic green tea bags. Light, refreshing, and packed with antioxidants.',
-        price: 4.99, mrp: 5.99, discount: 17, unit: 'box of 20',
+        price: 1600, priceLKR: 1600, priceUSD: 4.99, mrp: 1920, discount: 17, unit: 'box of 20',
         stock: 90, images: ['https://images.unsplash.com/photo-1556881286-fc6915169721?w=600'],
         averageRating: 4.3, totalReviews: 14, isFeatured: true, isOnSale: false, status: 'active',
         barcode: '4901234567017', sku: 'OM-BEV-002',
@@ -292,7 +352,7 @@ const seedData = async () => {
       {
         storeId: store1._id, name: 'Mixed Nuts Premium', slug: 'mixed-nuts-premium',
         categoryId: categories[6]._id, description: 'A premium blend of almonds, cashews, walnuts, and pecans. Lightly salted and roasted to perfection.',
-        price: 9.99, mrp: 12.99, discount: 23, unit: 'pack',
+        price: 3200, priceLKR: 3200, priceUSD: 9.99, mrp: 4160, discount: 23, unit: 'pack',
         stock: 55, images: ['https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=600'],
         averageRating: 4.7, totalReviews: 33, isFeatured: true, isOnSale: true, status: 'active',
         barcode: '4901234567018', sku: 'FF-SNK-001',
@@ -301,7 +361,7 @@ const seedData = async () => {
       {
         storeId: store2._id, name: 'Extra Virgin Olive Oil', slug: 'extra-virgin-olive-oil',
         categoryId: categories[7]._id, description: 'Cold-pressed extra virgin olive oil from Mediterranean olives. Perfect for cooking, dressing, and dipping.',
-        price: 11.99, mrp: 14.99, discount: 20, unit: 'bottle',
+        price: 3840, priceLKR: 3840, priceUSD: 11.99, mrp: 4800, discount: 20, unit: 'bottle',
         stock: 40, images: ['https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600'],
         averageRating: 4.8, totalReviews: 25, isFeatured: true, isOnSale: true, status: 'active',
         barcode: '4901234567019', sku: 'OM-PNT-001',
@@ -310,17 +370,52 @@ const seedData = async () => {
 
     await Product.insertMany(products);
 
-    console.log('Products created...');
+    // Create sample vouchers
+    await Voucher.insertMany([
+      {
+        code: 'WELCOME10',
+        type: 'percentage',
+        value: 10,
+        minOrderAmount: 500,
+        maxDiscountAmount: 200,
+        maxUses: 1000,
+        usedCount: 0,
+        expiresAt: new Date('2027-12-31'),
+        isActive: true,
+        createdBy: adminUser._id,
+        source: 'promotion',
+        description: 'Welcome discount - 10% off your first order!',
+      },
+      {
+        code: 'FRESH500',
+        type: 'fixed',
+        value: 500,
+        minOrderAmount: 3000,
+        maxUses: 500,
+        usedCount: 0,
+        expiresAt: new Date('2027-06-30'),
+        isActive: true,
+        createdBy: adminUser._id,
+        source: 'admin',
+        description: 'Rs.500 off on orders above Rs.3000',
+      },
+    ]);
+
+    console.log('Products & Vouchers created...');
     console.log('');
     console.log('=== SEED DATA COMPLETE ===');
     console.log('');
     console.log('Test Accounts:');
-    console.log('  Admin:    admin@freshcart.com / admin123');
-    console.log('  Owner1:   john@freshfarms.com / owner123');
-    console.log('  Owner2:   sarah@organicmart.com / owner123');
-    console.log('  Customer: jane@example.com / customer123');
-    console.log('  Cashier1: cashier@freshfarms.com / cashier123  (Fresh Farms)');
-    console.log('  Cashier2: cashier@organicmart.com / cashier123  (Organic Mart)');
+    console.log('  Admin:       admin@freshcart.com / admin123');
+    console.log('  Manager1:    john@freshfarms.com / manager123     (Fresh Farms)');
+    console.log('  Manager2:    sarah@organicmart.com / manager123   (Organic Mart)');
+    console.log('  Customer:    jane@example.com / customer123');
+    console.log('  Cashier1:    cashier@freshfarms.com / cashier123  (Fresh Farms)');
+    console.log('  Cashier2:    cashier@organicmart.com / cashier123 (Organic Mart)');
+    console.log('  Delivery1:   kamal@freshcart.com / delivery123    (Fresh Farms)');
+    console.log('  Delivery2:   nimal@freshcart.com / delivery123    (Organic Mart)');
+    console.log('');
+    console.log('Voucher Codes: WELCOME10, FRESH500');
     console.log('');
 
     process.exit(0);

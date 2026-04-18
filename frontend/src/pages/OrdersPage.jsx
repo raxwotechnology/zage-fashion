@@ -4,11 +4,13 @@ import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getMyOrders } from '../services/api';
 import useAuthStore from '../store/authStore';
+import useCurrencyStore from '../store/currencyStore';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuthStore();
+  const { convertPrice, formatPrice } = useCurrencyStore();
 
   useEffect(() => {
     if (user) {
@@ -116,7 +118,7 @@ const OrdersPage = () => {
                   <span className={`text-xs font-bold px-3 py-1 rounded-full capitalize ${statusColor(order.orderStatus)}`}>
                     {order.orderStatus.replace('_', ' ')}
                   </span>
-                  <span className="font-bold text-dark-navy">${order.totalAmount.toFixed(2)}</span>
+                  <span className="font-bold text-dark-navy">{formatPrice(convertPrice(order.totalAmount))}</span>
                   <ChevronRight size={18} className="text-muted-text group-hover:text-primary-green transition-colors" />
                 </div>
               </div>

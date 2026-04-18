@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, Filter, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Filter, ChevronDown, Users, Calendar, CreditCard, Clock } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getStoreOrders, updateOrderStatus } from '../../services/api';
+import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
 
 const navItems = [
-  { path: '/store-owner', label: 'Overview', icon: LayoutDashboard },
-  { path: '/store-owner/products', label: 'Products', icon: Package },
-  { path: '/store-owner/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
+  { path: '/manager/products', label: 'Products', icon: Package },
+  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/manager/employees', label: 'Employees', icon: Users },
+  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
+  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
+  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
+  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
 ];
 
 const statusColors = {
@@ -55,7 +61,7 @@ const StoreOrders = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Store Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -138,7 +144,7 @@ const StoreOrders = () => {
                             <img src={item.image || 'https://via.placeholder.com/35'} alt="" className="w-9 h-9 rounded-lg object-cover" />
                             <span>{item.name} × {item.quantity}</span>
                           </div>
-                          <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                          <span className="font-medium">{useCurrencyStore.getState().formatPrice(useCurrencyStore.getState().convertPrice(item.price * item.quantity))}</span>
                         </div>
                       ))}
                     </div>

@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const storeSchema = mongoose.Schema(
   {
-    ownerId: {
+    // Renamed from ownerId to managerId
+    managerId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User',
@@ -57,8 +58,15 @@ const storeSchema = mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+// Backward compatibility: virtual alias ownerId -> managerId
+storeSchema.virtual('ownerId').get(function () {
+  return this.managerId;
+});
 
 // Index for geolocational search if needed later
 storeSchema.index({ location: '2dsphere' });

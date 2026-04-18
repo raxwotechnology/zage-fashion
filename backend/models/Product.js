@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const variantSchema = mongoose.Schema({
   name: { type: String, required: true }, // e.g., '500g', '1L'
   price: { type: Number, required: true },
+  priceLKR: { type: Number },
+  priceUSD: { type: Number },
   mrp: { type: Number, required: true },
   stock: { type: Number, required: true, default: 0 },
 });
@@ -35,9 +37,17 @@ const productSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    // Default price (kept for backward compat, same as priceLKR)
     price: {
       type: Number,
       required: true,
+    },
+    // Multi-currency prices
+    priceLKR: {
+      type: Number,
+    },
+    priceUSD: {
+      type: Number,
     },
     mrp: {
       type: Number,
@@ -95,6 +105,14 @@ const productSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Auto-set priceLKR from price if not provided
+productSchema.pre('save', function (next) {
+  if (!this.priceLKR && this.price) {
+    this.priceLKR = this.price;
+  }
+  next();
+});
 
 productSchema.index({ name: 'text', description: 'text' });
 

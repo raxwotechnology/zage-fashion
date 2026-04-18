@@ -14,27 +14,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // Routes
-const authRoutes = require('./routes/authRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-const productRoutes = require('./routes/productRoutes');
-const storeRoutes = require('./routes/storeRoutes');
-const cartRoutes = require('./routes/cartRoutes');
-const wishlistRoutes = require('./routes/wishlistRoutes');
-const reviewRoutes = require('./routes/reviewRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const posRoutes = require('./routes/posRoutes');
-
-app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/stores', storeRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/wishlist', wishlistRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/pos', posRoutes);
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/stores', require('./routes/storeRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/pos', require('./routes/posRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/currency', require('./routes/currencyRoutes'));
+app.use('/api/loyalty', require('./routes/loyaltyRoutes'));
+app.use('/api/delivery', require('./routes/deliveryRoutes'));
+app.use('/api/hr', require('./routes/hrRoutes'));
+app.use('/api/payroll', require('./routes/payrollRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

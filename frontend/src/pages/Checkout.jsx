@@ -4,12 +4,14 @@ import { MapPin, Clock, CreditCard, Truck, ChevronRight, ShieldCheck } from 'luc
 import { motion } from 'framer-motion';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
+import useCurrencyStore from '../store/currencyStore';
 import { createOrder, getPayHereHash } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Checkout = () => {
   const { items, getSubtotal, clearItems } = useCartStore();
   const { user } = useAuthStore();
+  const { convertPrice, formatPrice } = useCurrencyStore();
   const navigate = useNavigate();
 
   const [address, setAddress] = useState({ street: '', city: '', state: '', zipCode: '', country: 'USA' });
@@ -282,7 +284,7 @@ const Checkout = () => {
                       <p className="text-sm font-medium text-dark-navy m-0 truncate">{product.name || item.name}</p>
                       <p className="text-xs text-muted-text m-0">Qty: {item.quantity}</p>
                     </div>
-                    <span className="text-sm font-semibold text-dark-navy">${((product.price || item.price) * item.quantity).toFixed(2)}</span>
+                    <span className="text-sm font-semibold text-dark-navy">{formatPrice(convertPrice((product.price || item.price) * item.quantity))}</span>
                   </div>
                 );
               })}
@@ -291,22 +293,22 @@ const Checkout = () => {
             <div className="border-t border-card-border pt-4 space-y-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-text">Subtotal</span>
-                <span className="font-medium">${subtotal.toFixed(2)}</span>
+                <span className="font-medium">{formatPrice(convertPrice(subtotal))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-text">Delivery</span>
-                <span className="font-medium">{deliveryFee === 0 ? <span className="text-primary-green">FREE</span> : `$${deliveryFee.toFixed(2)}`}</span>
+                <span className="font-medium">{deliveryFee === 0 ? <span className="text-primary-green">FREE</span> : formatPrice(convertPrice(deliveryFee))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-text">Tax</span>
-                <span className="font-medium">${tax.toFixed(2)}</span>
+                <span className="font-medium">{formatPrice(convertPrice(tax))}</span>
               </div>
             </div>
 
             <div className="border-t border-card-border pt-4 mb-6">
               <div className="flex justify-between">
                 <span className="font-bold text-dark-navy text-lg">Total</span>
-                <span className="font-bold text-dark-navy text-lg">${total.toFixed(2)}</span>
+                <span className="font-bold text-dark-navy text-lg">{formatPrice(convertPrice(total))}</span>
               </div>
             </div>
 

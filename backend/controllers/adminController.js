@@ -39,7 +39,7 @@ const deleteUser = async (req, res, next) => {
 // @route   GET /api/admin/stores
 const getAllStores = async (req, res, next) => {
   try {
-    const stores = await Store.find({}).populate('ownerId', 'name email').sort({ createdAt: -1 });
+    const stores = await Store.find({}).populate('managerId', 'name email').sort({ createdAt: -1 });
     res.json(stores);
   } catch (error) { next(error); }
 };

@@ -21,7 +21,8 @@ const Login = () => {
       const { data } = await loginUser({ email, password });
       login(data);
       toast.success(`Welcome back, ${data.name}!`);
-      navigate('/');
+      const redirectMap = { admin: '/admin', manager: '/manager', cashier: '/employee', deliveryGuy: '/employee', stockEmployee: '/employee' };
+      navigate(redirectMap[data.role] || '/');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid email or password');
     } finally {

@@ -8,6 +8,7 @@ import ReviewSection from '../components/ReviewSection';
 import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
 import useAuthStore from '../store/authStore';
+import useCurrencyStore from '../store/currencyStore';
 import { toast } from 'react-toastify';
 
 const ProductDetail = () => {
@@ -22,6 +23,7 @@ const ProductDetail = () => {
   const { addItem } = useCartStore();
   const { addProduct, removeProduct, isInWishlist } = useWishlistStore();
   const { user } = useAuthStore();
+  const { getProductPrice, convertPrice, formatPrice } = useCurrencyStore();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -153,10 +155,10 @@ const ProductDetail = () => {
           {/* Price */}
           <div className="bg-emerald-50 rounded-xl p-4 mb-6">
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-dark-navy">${product.price.toFixed(2)}</span>
+              <span className="text-3xl font-bold text-dark-navy">{getProductPrice(product)}</span>
               {product.mrp > product.price && (
                 <>
-                  <span className="text-lg text-muted-text line-through">${product.mrp.toFixed(2)}</span>
+                  <span className="text-lg text-muted-text line-through">{formatPrice(convertPrice(product.mrp))}</span>
                   <span className="bg-red-100 text-red-600 text-sm font-bold px-2.5 py-0.5 rounded-full">Save {product.discount}%</span>
                 </>
               )}

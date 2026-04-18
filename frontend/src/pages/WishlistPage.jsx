@@ -5,12 +5,14 @@ import { motion } from 'framer-motion';
 import useWishlistStore from '../store/wishlistStore';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
+import useCurrencyStore from '../store/currencyStore';
 import { toast } from 'react-toastify';
 
 const WishlistPage = () => {
   const { products, loading, fetchWishlist, removeProduct } = useWishlistStore();
   const { addItem } = useCartStore();
   const { user } = useAuthStore();
+  const { getProductPrice, convertPrice, formatPrice } = useCurrencyStore();
 
   useEffect(() => {
     if (user) fetchWishlist();
@@ -95,9 +97,9 @@ const WishlistPage = () => {
                 </h3>
               </Link>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg font-bold text-dark-navy">${product.price?.toFixed(2)}</span>
+                <span className="text-lg font-bold text-dark-navy">{getProductPrice(product)}</span>
                 {product.mrp > product.price && (
-                  <span className="text-xs text-muted-text line-through">${product.mrp?.toFixed(2)}</span>
+                  <span className="text-xs text-muted-text line-through">{formatPrice(convertPrice(product.mrp))}</span>
                 )}
               </div>
               <div className="flex gap-2">

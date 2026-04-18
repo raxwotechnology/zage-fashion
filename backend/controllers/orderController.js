@@ -1,7 +1,9 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const crypto = require('crypto');
+const { sendEmail, paymentReceiptEmail, orderConfirmationEmail } = require('../utils/emailService');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -65,6 +67,17 @@ const createOrder = async (req, res, next) => {
       { items: [] }
     );
 
+    // Send order confirmation & receipt email
+    try {
+      const customer = await User.findById(req.user._id);
+      if (customer?.email) {
+        const receipt = paymentReceiptEmail(order, customer.name);
+        await sendEmail(customer.email, receipt.subject, receipt.html);
+      }
+    } catch (emailErr) {
+      console.error('[Email] Receipt send failed:', emailErr.message);
+    }
+
     res.status(201).json(order);
   } catch (error) {
     next(error);
@@ -104,7 +117,7 @@ const getOrderById = async (req, res, next) => {
     if (
       order.userId._id.toString() !== req.user._id.toString() &&
       req.user.role !== 'admin' &&
-      req.user.role !== 'storeOwner'
+      req.user.role !== 'manager'
     ) {
       res.status(403);
       return next(new Error('Not authorized'));
@@ -230,6 +243,17 @@ const payHereNotify = async (req, res, next) => {
     if (status_code === '2') {
       order.paymentStatus = 'completed';
       order.orderStatus = 'confirmed';
+
+      // Send payment receipt email
+      try {
+        const customer = await User.findById(order.userId);
+        if (customer?.email) {
+          const receipt = paymentReceiptEmail(order, customer.name);
+          await sendEmail(customer.email, receipt.subject, receipt.html);
+        }
+      } catch (emailErr) {
+        console.error('[Email] PayHere receipt failed:', emailErr.message);
+      }
     } else if (status_code === '0') {
       order.paymentStatus = 'pending';
     } else {
@@ -250,7 +274,7 @@ const payHereNotify = async (req, res, next) => {
 const getStoreOrders = async (req, res, next) => {
   try {
     const Store = require('../models/Store');
-    const store = await Store.findOne({ ownerId: req.user._id });
+    const store = await Store.findOne({ managerId: req.user._id });
     if (!store) {
       res.status(404);
       return next(new Error('No store found for this user'));

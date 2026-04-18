@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, Package, MapPin, Clock, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getOrderById } from '../services/api';
+import useCurrencyStore from '../store/currencyStore';
 
 const OrderConfirmation = () => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { convertPrice, formatPrice } = useCurrencyStore();
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -102,7 +104,7 @@ const OrderConfirmation = () => {
                 <p className="text-sm font-medium text-dark-navy m-0">{item.name}</p>
                 <p className="text-xs text-muted-text m-0">Qty: {item.quantity}</p>
               </div>
-              <span className="text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+              <span className="text-sm font-semibold">{formatPrice(convertPrice(item.price * item.quantity))}</span>
             </div>
           ))}
         </div>
@@ -135,15 +137,15 @@ const OrderConfirmation = () => {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-text">Delivery Fee</span>
-            <span className="font-medium">${order.deliveryFee?.toFixed(2) || '0.00'}</span>
+            <span className="font-medium">{formatPrice(convertPrice(order.deliveryFee || 0))}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-text">Tax</span>
-            <span className="font-medium">${order.tax?.toFixed(2) || '0.00'}</span>
+            <span className="font-medium">{formatPrice(convertPrice(order.tax || 0))}</span>
           </div>
           <div className="flex justify-between pt-2 border-t border-card-border">
             <span className="font-bold text-dark-navy text-lg">Total</span>
-            <span className="font-bold text-dark-navy text-lg">${order.totalAmount.toFixed(2)}</span>
+            <span className="font-bold text-dark-navy text-lg">{formatPrice(convertPrice(order.totalAmount))}</span>
           </div>
         </div>
       </motion.div>

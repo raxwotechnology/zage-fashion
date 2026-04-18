@@ -46,7 +46,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
             </div>
             <div>
               <h3 className="font-semibold text-dark-navy text-sm">{user?.name}</h3>
-              <p className="text-xs text-muted-text capitalize">{user?.role === 'storeOwner' ? 'Store Owner' : user?.role}</p>
+              <p className="text-xs text-muted-text capitalize">{user?.role === 'manager' ? 'Manager' : user?.role === 'deliveryGuy' ? 'Delivery' : user?.role}</p>
             </div>
           </div>
         </div>

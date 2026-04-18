@@ -87,4 +87,53 @@ export const posCheckout = (data) => API.post('/pos/checkout', data);
 export const getPosOrders = () => API.get('/pos/orders');
 export const getPosOrderById = (id) => API.get(`/pos/orders/${id}`);
 
+// Notifications
+export const getNotifications = (params) => API.get('/notifications', { params });
+export const getUnreadCount = () => API.get('/notifications/unread-count');
+export const markNotificationRead = (id) => API.put(`/notifications/${id}/read`);
+export const markAllNotificationsRead = () => API.put('/notifications/read-all');
+
+// Currency
+export const getExchangeRate = () => API.get('/currency/rate');
+
+// Loyalty (Phase 3)
+export const getMyLoyaltyPoints = () => API.get('/loyalty/points');
+export const getLoyaltyHistory = () => API.get('/loyalty/history');
+export const redeemPoints = (data) => API.post('/loyalty/redeem', data);
+export const issueBonusPoints = (data) => API.post('/loyalty/bonus', data);
+export const applyVoucher = (data) => API.post('/loyalty/voucher/apply', data);
+export const applyPromoCode = (data) => API.post('/loyalty/promo/apply', data);
+export const getAvailableVouchers = () => API.get('/loyalty/vouchers');
+
+// Delivery (Phase 4)
+export const getDeliveryOrders = () => API.get('/delivery/orders');
+export const updateDeliveryStatus = (id, data) => API.put(`/delivery/orders/${id}/status`, data);
+export const getDeliveryHistory = () => API.get('/delivery/history');
+export const getDeliveryEarnings = () => API.get('/delivery/earnings');
+export const assignDeliveryGuy = (orderId, data) => API.post(`/delivery/assign/${orderId}`, data);
+
+// HR (Phase 5)
+export const checkIn = () => API.post('/hr/attendance/check-in');
+export const checkOut = () => API.post('/hr/attendance/check-out');
+export const getMyAttendance = (params) => API.get('/hr/attendance', { params });
+export const getAttendanceReport = (params) => API.get('/hr/attendance/report', { params });
+export const requestLeave = (data) => API.post('/hr/leaves', data);
+export const getMyLeaves = () => API.get('/hr/leaves');
+export const approveLeave = (id) => API.put(`/hr/leaves/${id}/approve`);
+export const rejectLeave = (id, data) => API.put(`/hr/leaves/${id}/reject`, data);
+export const getEmployees = () => API.get('/hr/employees');
+export const addEmployee = (data) => API.post('/hr/employees', data);
+export const updateEmployee = (id, data) => API.put(`/hr/employees/${id}`, data);
+
+// Payroll (Phase 5)
+export const calculateSalary = (data) => API.post('/payroll/calculate', data);
+export const processSalaryPayment = (data) => API.post('/payroll/pay', data);
+export const getSalaryHistory = (employeeId) => API.get(`/payroll/history/${employeeId}`);
+export const getPayrollReport = (params) => API.get('/payroll/report', { params });
+
+// Settings
+export const getSettings = () => API.get('/settings');
+export const updateSettings = (data) => API.put('/settings', data);
+export const uploadLogo = (formData) => API.post('/settings/logo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+
 export default API;

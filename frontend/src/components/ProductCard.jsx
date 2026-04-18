@@ -3,12 +3,14 @@ import { Star, ShoppingCart, Heart } from 'lucide-react';
 import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
 import useAuthStore from '../store/authStore';
+import useCurrencyStore from '../store/currencyStore';
 import { toast } from 'react-toastify';
 
 const ProductCard = ({ product }) => {
   const { addItem } = useCartStore();
   const { addProduct, removeProduct, isInWishlist } = useWishlistStore();
   const { user } = useAuthStore();
+  const { getProductPrice, getProductPriceRaw, formatPrice, exchangeRate, currency } = useCurrencyStore();
 
   const imageUrl = product.images?.[0] || 'https://via.placeholder.com/400x400?text=No+Image';
   const storeName = product.storeId?.name || 'Unknown Store';
@@ -74,9 +76,11 @@ const ProductCard = ({ product }) => {
           </div>
           <div className="flex items-center justify-between mt-auto">
             <div>
-              <span className="text-lg font-bold text-dark-navy">${product.price.toFixed(2)}</span>
+              <span className="text-lg font-bold text-dark-navy">{getProductPrice(product)}</span>
               {product.mrp > product.price && (
-                <span className="text-xs text-muted-text line-through ml-1.5">${product.mrp.toFixed(2)}</span>
+                <span className="text-xs text-muted-text line-through ml-1.5">
+                  {currency === 'USD' ? `$${(product.mrp / exchangeRate).toFixed(2)}` : `Rs. ${product.mrp.toFixed(2)}`}
+                </span>
               )}
               <span className="text-xs text-muted-text ml-1">/ {product.unit}</span>
             </div>

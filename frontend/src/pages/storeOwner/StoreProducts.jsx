@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, Plus, Edit2, Trash2, X, Search, Eye, EyeOff } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Plus, Edit2, Trash2, X, Search, Eye, EyeOff, Users, Calendar, CreditCard, Clock } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getMyStoreProducts, createProduct, updateProduct, deleteProduct, getCategories } from '../../services/api';
+import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
 
 const navItems = [
-  { path: '/store-owner', label: 'Overview', icon: LayoutDashboard },
-  { path: '/store-owner/products', label: 'Products', icon: Package },
-  { path: '/store-owner/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
+  { path: '/manager/products', label: 'Products', icon: Package },
+  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
+  { path: '/manager/employees', label: 'Employees', icon: Users },
+  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
+  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
+  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
+  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
 ];
 
 const emptyForm = {
@@ -113,7 +119,7 @@ const StoreProducts = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Store Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -136,6 +142,27 @@ const StoreProducts = () => {
             <Plus size={18} /> Add Product
           </button>
         </div>
+
+        {/* Low Stock Alerts */}
+        {products.filter(p => p.stock <= 10).length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+            <h3 className="font-semibold text-amber-800 text-sm mb-2 flex items-center gap-2">
+              ⚠️ Low Stock Alerts ({products.filter(p => p.stock <= 10).length} items)
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {products.filter(p => p.stock <= 10).map(p => (
+                <button key={p._id} onClick={() => openEdit(p)}
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                    p.stock === 0 ? 'bg-red-100 border-red-200 text-red-700 hover:bg-red-200' :
+                    p.stock <= 5 ? 'bg-orange-100 border-orange-200 text-orange-700 hover:bg-orange-200' :
+                    'bg-amber-100 border-amber-200 text-amber-700 hover:bg-amber-200'
+                  }`}>
+                  {p.stock === 0 ? '🔴' : p.stock <= 5 ? '🟠' : '🟡'} {p.name} — {p.stock} left
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative mb-6">
@@ -181,7 +208,7 @@ const StoreProducts = () => {
                     </td>
                     <td className="px-6 py-3.5 text-muted-text">{product.categoryId?.name || '—'}</td>
                     <td className="px-6 py-3.5">
-                      <span className="font-semibold">${product.price?.toFixed(2)}</span>
+                      <span className="font-semibold">{useCurrencyStore.getState().getProductPrice(product)}</span>
                       {product.mrp > product.price && (
                         <span className="text-xs text-muted-text line-through ml-1">${product.mrp?.toFixed(2)}</span>
                       )}

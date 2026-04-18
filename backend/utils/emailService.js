@@ -1,0 +1,268 @@
+const nodemailer = require('nodemailer');
+
+// Create reusable transporter using Gmail SMTP
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_FROM,
+      pass: process.env.EMAIL_APP_PASSWORD,
+    },
+  });
+};
+
+/**
+ * Send email using Gmail SMTP
+ * @param {string} to - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} html - HTML body
+ * @returns {Promise<object>} Send result
+ */
+const sendEmail = async (to, subject, html) => {
+  try {
+    if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
+      console.log('[Email] Skipping — no email credentials configured');
+      return null;
+    }
+
+    const transporter = createTransporter();
+
+    const info = await transporter.sendMail({
+      from: `"FreshCart" <${process.env.EMAIL_FROM}>`,
+      to,
+      subject,
+      html,
+    });
+
+    console.log(`[Email] Sent to ${to}: ${info.messageId}`);
+    return info;
+  } catch (error) {
+    console.error(`[Email] Failed to send to ${to}:`, error.message);
+    return null;
+  }
+};
+
+// ========== EMAIL TEMPLATES ==========
+
+const orderConfirmationEmail = (order, customerName) => {
+  const itemsHtml = order.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">Rs. ${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>`
+    )
+    .join('');
+
+  return {
+    subject: `FreshCart — Order Confirmed #${order._id.toString().slice(-8).toUpperCase()}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8faf8;">
+        <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🛒 FreshCart</h1>
+          <p style="color: #d1fae5; margin: 5px 0 0;">Order Confirmation</p>
+        </div>
+        <div style="padding: 30px; background: white;">
+          <h2 style="color: #1e293b; margin-top: 0;">Hi ${customerName}! 🎉</h2>
+          <p style="color: #64748b;">Your order has been confirmed successfully. Here are the details:</p>
+          <div style="background: #f0fdf4; border-radius: 12px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #64748b;">Order ID</p>
+            <p style="margin: 5px 0 0; font-size: 18px; font-weight: bold; color: #059669;">#${order._id.toString().slice(-8).toUpperCase()}</p>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+              <tr style="background: #f0fdf4;">
+                <th style="padding: 10px 8px; text-align: left; color: #059669; font-size: 13px;">Item</th>
+                <th style="padding: 10px 8px; text-align: center; color: #059669; font-size: 13px;">Qty</th>
+                <th style="padding: 10px 8px; text-align: right; color: #059669; font-size: 13px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div style="border-top: 2px solid #059669; padding-top: 15px; text-align: right;">
+            <p style="font-size: 20px; font-weight: bold; color: #1e293b; margin: 0;">Total: Rs. ${order.totalAmount.toFixed(2)}</p>
+          </div>
+          <p style="color: #64748b; font-size: 13px; margin-top: 20px;">Payment Method: <strong>${order.paymentMethod.toUpperCase()}</strong></p>
+        </div>
+        <div style="background: #f1f5f9; padding: 20px; text-align: center;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} FreshCart. Fresh groceries, delivered with care.</p>
+        </div>
+      </div>
+    `,
+  };
+};
+
+const deliveryAssignmentEmail = (order, deliveryGuyName) => ({
+  subject: `FreshCart — New Delivery Assignment #${order._id.toString().slice(-8).toUpperCase()}`,
+  html: `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #2563eb, #3b82f6); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0;">🚚 Delivery Assignment</h1>
+      </div>
+      <div style="padding: 30px; background: white;">
+        <h2 style="color: #1e293b; margin-top: 0;">Hi ${deliveryGuyName}!</h2>
+        <p style="color: #64748b;">You have a new delivery order assigned to you.</p>
+        <div style="background: #eff6ff; border-radius: 12px; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; font-weight: bold; color: #2563eb;">Order #${order._id.toString().slice(-8).toUpperCase()}</p>
+          <p style="margin: 5px 0 0; color: #64748b;">Items: ${order.items.length} | Total: Rs. ${order.totalAmount.toFixed(2)}</p>
+        </div>
+        <p style="color: #64748b;">Please check your dashboard for full delivery details.</p>
+      </div>
+    </div>
+  `,
+});
+
+const salaryPaidEmail = (employeeName, payroll) => ({
+  subject: `FreshCart — Salary Credited for ${payroll.month}/${payroll.year}`,
+  html: `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0;">💰 Salary Credited</h1>
+      </div>
+      <div style="padding: 30px; background: white;">
+        <h2 style="color: #1e293b; margin-top: 0;">Hi ${employeeName}!</h2>
+        <p style="color: #64748b;">Your salary for ${payroll.month}/${payroll.year} has been processed.</p>
+        <div style="background: #f0fdf4; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <table style="width: 100%; font-size: 14px;">
+            <tr><td style="padding: 5px 0; color: #64748b;">Basic Salary</td><td style="text-align: right; font-weight: bold;">Rs. ${payroll.basicSalary.toFixed(2)}</td></tr>
+            <tr><td style="padding: 5px 0; color: #64748b;">EPF Deduction (8%)</td><td style="text-align: right; color: #ef4444;">- Rs. ${payroll.epfEmployee.toFixed(2)}</td></tr>
+            <tr style="border-top: 2px solid #059669;"><td style="padding: 10px 0 0; font-weight: bold; font-size: 16px;">Net Salary</td><td style="text-align: right; font-weight: bold; font-size: 16px; color: #059669;">Rs. ${payroll.netSalary.toFixed(2)}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  `,
+});
+
+const welcomeEmail = (name) => ({
+  subject: 'Welcome to FreshCart! 🛒',
+  html: `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 40px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 32px;">🛒 FreshCart</h1>
+        <p style="color: #d1fae5; margin: 10px 0 0; font-size: 16px;">Fresh groceries, delivered with care</p>
+      </div>
+      <div style="padding: 30px; background: white;">
+        <h2 style="color: #1e293b; margin-top: 0;">Welcome, ${name}! 🎉</h2>
+        <p style="color: #64748b; line-height: 1.6;">Thank you for joining FreshCart! Start shopping from our wide selection of fresh produce, dairy, bakery items, and more.</p>
+        <div style="background: #f0fdf4; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0; font-size: 14px; color: #64748b;">Use code</p>
+          <p style="margin: 5px 0; font-size: 24px; font-weight: bold; color: #059669;">WELCOME10</p>
+          <p style="margin: 0; font-size: 14px; color: #64748b;">to get 10% off your first order!</p>
+        </div>
+      </div>
+    </div>
+  `,
+});
+
+const paymentReceiptEmail = (order, customerName) => {
+  const itemsHtml = order.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; color: #334155;">${item.name}</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; text-align: center; color: #64748b;">${item.quantity}</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; text-align: right; color: #64748b;">Rs. ${item.price?.toFixed(2)}</td>
+          <td style="padding: 10px 8px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600; color: #334155;">Rs. ${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>`
+    )
+    .join('');
+
+  const orderId = order._id.toString().slice(-8).toUpperCase();
+  const paidDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  return {
+    subject: `FreshCart — Payment Receipt #${orderId}`,
+    html: `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #059669, #0d9488); padding: 35px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px; letter-spacing: -0.5px;">🛒 FreshCart</h1>
+          <p style="color: #d1fae5; margin: 8px 0 0; font-size: 14px;">Payment Receipt</p>
+        </div>
+
+        <!-- Success Banner -->
+        <div style="background: #f0fdf4; padding: 20px; text-align: center; border-bottom: 1px solid #dcfce7;">
+          <p style="margin: 0; font-size: 24px;">✅</p>
+          <h2 style="color: #059669; margin: 8px 0 0; font-size: 18px;">Payment Successful!</h2>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 30px;">
+          <p style="color: #334155; font-size: 15px; margin: 0 0 5px;">Hi <strong>${customerName}</strong>,</p>
+          <p style="color: #64748b; font-size: 14px; margin: 0 0 20px;">Thank you for your purchase! Here is your payment receipt.</p>
+
+          <!-- Order Info -->
+          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <div style="background: #f8fafc; border-radius: 10px; padding: 12px 15px; flex: 1;">
+              <p style="margin: 0; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Order ID</p>
+              <p style="margin: 4px 0 0; font-weight: 700; color: #059669; font-size: 15px;">#${orderId}</p>
+            </div>
+            <div style="background: #f8fafc; border-radius: 10px; padding: 12px 15px; flex: 1;">
+              <p style="margin: 0; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Date</p>
+              <p style="margin: 4px 0 0; font-weight: 600; color: #334155; font-size: 13px;">${paidDate}</p>
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <table style="width: 100%; border-collapse: collapse; margin: 0 0 20px;">
+            <thead>
+              <tr style="background: #f0fdf4;">
+                <th style="padding: 10px 8px; text-align: left; color: #059669; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Item</th>
+                <th style="padding: 10px 8px; text-align: center; color: #059669; font-size: 12px; text-transform: uppercase;">Qty</th>
+                <th style="padding: 10px 8px; text-align: right; color: #059669; font-size: 12px; text-transform: uppercase;">Price</th>
+                <th style="padding: 10px 8px; text-align: right; color: #059669; font-size: 12px; text-transform: uppercase;">Total</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+
+          <!-- Totals -->
+          <div style="background: #f8fafc; border-radius: 10px; padding: 15px;">
+            ${order.subtotal ? `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-size: 14px;">Subtotal</span><span style="color: #334155; font-size: 14px;">Rs. ${order.subtotal.toFixed(2)}</span></div>` : ''}
+            ${order.deliveryFee ? `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-size: 14px;">Delivery Fee</span><span style="color: #334155; font-size: 14px;">Rs. ${order.deliveryFee.toFixed(2)}</span></div>` : ''}
+            ${order.discount ? `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #64748b; font-size: 14px;">Discount</span><span style="color: #059669; font-size: 14px;">- Rs. ${order.discount.toFixed(2)}</span></div>` : ''}
+            <div style="border-top: 2px solid #059669; padding-top: 10px; margin-top: 5px; display: flex; justify-content: space-between;">
+              <span style="font-weight: 700; font-size: 16px; color: #1e293b;">Total Paid</span>
+              <span style="font-weight: 700; font-size: 18px; color: #059669;">Rs. ${order.totalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div style="margin-top: 15px; padding: 12px 15px; background: #eff6ff; border-radius: 10px;">
+            <p style="margin: 0; font-size: 13px; color: #3b82f6;">
+              💳 Payment Method: <strong>${(order.paymentMethod || 'card').toUpperCase()}</strong>
+              ${order.isPaid ? ' — ✅ Confirmed' : ''}
+            </p>
+          </div>
+
+          <!-- Delivery Address -->
+          ${order.shippingAddress ? `
+          <div style="margin-top: 15px; padding: 12px 15px; background: #fefce8; border-radius: 10px;">
+            <p style="margin: 0; font-size: 13px; color: #ca8a04;">
+              📍 Delivery to: <strong>${order.shippingAddress.address || ''}, ${order.shippingAddress.city || ''}</strong>
+            </p>
+          </div>
+          ` : ''}
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f1f5f9; padding: 20px; text-align: center;">
+          <p style="color: #64748b; font-size: 13px; margin: 0 0 5px;">Thank you for shopping with FreshCart! 🥬</p>
+          <p style="color: #94a3b8; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} FreshCart. Fresh groceries, delivered with care.</p>
+        </div>
+      </div>
+    `,
+  };
+};
+
+module.exports = {
+  sendEmail,
+  orderConfirmationEmail,
+  deliveryAssignmentEmail,
+  salaryPaidEmail,
+  welcomeEmail,
+  paymentReceiptEmail,
+};
