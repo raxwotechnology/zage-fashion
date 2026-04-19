@@ -77,6 +77,9 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
+    // Clear cart state so next user doesn't see old cart
+    useCartStore.getState().clearItems();
+    setMobileMenuOpen(false);
     navigate('/');
   };
 

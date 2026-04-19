@@ -1,28 +1,48 @@
 import axios from 'axios';
 
+// Use environment variable for API base URL
+// In production (Netlify): set VITE_API_URL in Netlify dashboard
+// In development: falls back to empty string (uses Vite proxy)
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 const API = axios.create({
-  baseURL: 'https://fresh-cart-n6l6.onrender.com/api',
+  baseURL: API_BASE_URL ? `${API_BASE_URL}/api` : '/api',
+  timeout: 30000, // 30s timeout (Render free tier cold starts can be slow)
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
+// Request interceptor: attach JWT token
 API.interceptors.request.use((config) => {
-  const userInfo = localStorage.getItem('userInfo');
-  if (userInfo) {
-    const { token } = JSON.parse(userInfo);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  try {
+    const userInfo = localStorage.getItem('userInfo');
+    if (userInfo) {
+      const parsed = JSON.parse(userInfo);
+      if (parsed?.token) {
+        config.headers.Authorization = `Bearer ${parsed.token}`;
+      }
     }
+  } catch (e) {
+    // Corrupted localStorage data — clear it
+    console.warn('Corrupted auth data in localStorage, clearing...');
+    localStorage.removeItem('userInfo');
   }
   return config;
 });
 
-// Auto-logout on 401 (expired/invalid token)
+// Response interceptor: auto-logout on 401 (expired/invalid token)
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
+      // Clear ALL auth-related storage
       localStorage.removeItem('userInfo');
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/cashier-login') {
+      sessionStorage.clear();
+
+      // Only redirect if not already on a login page
+      const path = window.location.pathname;
+      if (path !== '/login' && path !== '/cashier-login' && path !== '/register') {
         window.location.href = '/login';
       }
     }

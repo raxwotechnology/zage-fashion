@@ -31,7 +31,8 @@ const useCurrencyStore = create((set, get) => ({
     if (now - lastFetched < 30 * 60 * 1000) return;
 
     try {
-      const res = await fetch('/api/currency/rate');
+      const baseURL = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${baseURL}/api/currency/rate`);
       const data = await res.json();
       if (data.rate) {
         get().setExchangeRate(data.rate);
