@@ -3,20 +3,40 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const Store = require('../models/Store');
 
-// @desc    Get products for cashier's assigned store
+// Helper: resolve store ID for the current user (cashier, manager, or admin)
+const resolveStoreId = async (user) => {
+  // Cashier / stockEmployee — use assignedStore
+  if (user.assignedStore) return user.assignedStore;
+
+  // Manager — find store they manage
+  if (user.role === 'manager') {
+    const store = await Store.findOne({ managerId: user._id });
+    return store?._id || null;
+  }
+
+  // Admin — use first store (they can access any)
+  if (user.role === 'admin') {
+    const store = await Store.findOne({ isActive: true });
+    return store?._id || null;
+  }
+
+  return null;
+};
+
+// @desc    Get products for POS
 // @route   GET /api/pos/products
-// @access  Private/Cashier
+// @access  Private/Cashier/Manager/Admin
 const getPosProducts = async (req, res, next) => {
   try {
-    const cashier = await User.findById(req.user._id);
-    if (!cashier || !cashier.assignedStore) {
+    const storeId = await resolveStoreId(req.user);
+    if (!storeId) {
       res.status(400);
-      return next(new Error('No store assigned to this cashier'));
+      return next(new Error('No store found for your account'));
     }
 
     const { search, category } = req.query;
     const filter = {
-      storeId: cashier.assignedStore,
+      storeId,
       status: 'active',
     };
 
@@ -26,7 +46,6 @@ const getPosProducts = async (req, res, next) => {
 
     let products;
     if (search) {
-      // Search by name, barcode, or sku
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { barcode: search },
@@ -51,18 +70,18 @@ const getPosProducts = async (req, res, next) => {
 
 // @desc    Look up a product by barcode
 // @route   GET /api/pos/products/barcode/:code
-// @access  Private/Cashier
+// @access  Private/Cashier/Manager/Admin
 const getProductByBarcode = async (req, res, next) => {
   try {
-    const cashier = await User.findById(req.user._id);
-    if (!cashier || !cashier.assignedStore) {
+    const storeId = await resolveStoreId(req.user);
+    if (!storeId) {
       res.status(400);
-      return next(new Error('No store assigned to this cashier'));
+      return next(new Error('No store found for your account'));
     }
 
     const product = await Product.findOne({
       barcode: req.params.code,
-      storeId: cashier.assignedStore,
+      storeId,
       status: 'active',
     })
       .select('name price mrp stock images unit barcode sku variants discount')
@@ -90,6 +109,9 @@ const posCheckout = async (req, res, next) => {
       tenderedAmount,
       discount,
       discountType,
+      couponCode,
+      customerName,
+      customerPhone,
     } = req.body;
 
     if (!items || items.length === 0) {
@@ -97,16 +119,16 @@ const posCheckout = async (req, res, next) => {
       return next(new Error('No items in cart'));
     }
 
-    const cashier = await User.findById(req.user._id);
-    if (!cashier || !cashier.assignedStore) {
+    const storeId = await resolveStoreId(req.user);
+    if (!storeId) {
       res.status(400);
-      return next(new Error('No store assigned to this cashier'));
+      return next(new Error('No store found for your account'));
     }
 
-    const store = await Store.findById(cashier.assignedStore);
+    const store = await Store.findById(storeId);
     if (!store) {
       res.status(404);
-      return next(new Error('Assigned store not found'));
+      return next(new Error('Store not found'));
     }
 
     // Validate stock and calculate totals
@@ -138,7 +160,7 @@ const posCheckout = async (req, res, next) => {
       });
     }
 
-    // Calculate discount
+    // Calculate manual discount
     let discountAmount = 0;
     if (discount && discount > 0) {
       if (discountType === 'percentage') {
@@ -148,9 +170,55 @@ const posCheckout = async (req, res, next) => {
       }
     }
 
-    // Tax (5%)
-    const taxableAmount = subtotal - discountAmount;
-    const tax = parseFloat((taxableAmount * 0.05).toFixed(2));
+    // Apply coupon/voucher discount
+    let couponDiscount = 0;
+    let appliedCoupon = null;
+    if (couponCode) {
+      try {
+        const Voucher = require('../models/Voucher');
+        const voucher = await Voucher.findOne({
+          code: couponCode.toUpperCase(),
+          isActive: true,
+        });
+        if (voucher) {
+          if (voucher.expiresAt && new Date(voucher.expiresAt) < new Date()) {
+            // Expired — skip silently
+          } else if (voucher.usedCount >= voucher.maxUses) {
+            // Max uses reached — skip silently
+          } else if (voucher.minOrderAmount && subtotal < voucher.minOrderAmount) {
+            // Min order not met — skip silently
+          } else {
+            if (voucher.type === 'percentage') {
+              couponDiscount = (subtotal * voucher.value) / 100;
+              if (voucher.maxDiscountAmount) {
+                couponDiscount = Math.min(couponDiscount, voucher.maxDiscountAmount);
+              }
+            } else {
+              couponDiscount = Math.min(voucher.value, subtotal);
+            }
+            // Increment usage
+            voucher.usedCount = (voucher.usedCount || 0) + 1;
+            await voucher.save();
+            appliedCoupon = voucher.code;
+          }
+        }
+      } catch (err) {
+        // Voucher model may not exist — skip coupon
+      }
+    }
+
+    const totalDiscount = discountAmount + couponDiscount;
+
+    // Dynamic tax from settings
+    let taxRate = 0.05; // default 5%
+    try {
+      const Settings = require('../models/Settings');
+      const settings = await Settings.findOne();
+      if (settings?.taxRate !== undefined) taxRate = settings.taxRate;
+    } catch (err) { /* use default */ }
+
+    const taxableAmount = Math.max(0, subtotal - totalDiscount);
+    const tax = parseFloat((taxableAmount * taxRate).toFixed(2));
     const totalAmount = parseFloat((taxableAmount + tax).toFixed(2));
 
     // Change calculation for cash
@@ -165,8 +233,8 @@ const posCheckout = async (req, res, next) => {
 
     // Create the POS order
     const order = await Order.create({
-      userId: cashier._id,
-      storeId: cashier.assignedStore,
+      userId: req.user._id,
+      storeId,
       items: validatedItems,
       totalAmount,
       tax,
@@ -175,9 +243,12 @@ const posCheckout = async (req, res, next) => {
       paymentStatus: 'completed',
       orderStatus: 'completed',
       isPosOrder: true,
-      cashierId: cashier._id,
+      cashierId: req.user._id,
       tenderedAmount: tenderedAmount || totalAmount,
       changeGiven,
+      customerName: customerName || undefined,
+      customerPhone: customerPhone || undefined,
+      couponCode: appliedCoupon || undefined,
     });
 
     // Deduct stock
@@ -198,6 +269,8 @@ const posCheckout = async (req, res, next) => {
     populatedOrder.discountAmount = discountAmount;
     populatedOrder.discountType = discountType || null;
     populatedOrder.discountValue = discount || 0;
+    populatedOrder.couponCode = appliedCoupon;
+    populatedOrder.couponDiscount = couponDiscount;
 
     res.status(201).json(populatedOrder);
   } catch (error) {
@@ -231,6 +304,9 @@ const getPosOrders = async (req, res, next) => {
     const cardSales = orders
       .filter((o) => o.paymentMethod === 'card')
       .reduce((sum, o) => sum + o.totalAmount, 0);
+    const kokoSales = orders
+      .filter((o) => o.paymentMethod === 'koko')
+      .reduce((sum, o) => sum + o.totalAmount, 0);
 
     res.json({
       orders,
@@ -239,6 +315,7 @@ const getPosOrders = async (req, res, next) => {
         totalOrders,
         cashSales: parseFloat(cashSales.toFixed(2)),
         cardSales: parseFloat(cardSales.toFixed(2)),
+        kokoSales: parseFloat(kokoSales.toFixed(2)),
       },
     });
   } catch (error) {

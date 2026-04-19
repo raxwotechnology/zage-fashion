@@ -72,6 +72,11 @@ const userSchema = mongoose.Schema(
       enum: ['LKR', 'USD'],
       default: 'LKR',
     },
+    // Account status
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

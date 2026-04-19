@@ -13,7 +13,7 @@ router.get('/my', protect, authorize('manager'), getMyStore);
 
 router.route('/')
   .get(getStores)
-  .post(protect, authorize('manager'), createStore);
+  .post(protect, authorize('manager', 'admin'), createStore);
 
 router.route('/:id')
   .get(getStoreById)

@@ -18,8 +18,12 @@ import {
   DollarSign,
   Clock,
   TrendingUp,
+  Ticket,
+  User,
+  Phone,
+  Smartphone,
 } from 'lucide-react';
-import { getPosProducts, getProductByBarcode, posCheckout, getPosOrders } from '../../services/api';
+import { getPosProducts, getProductByBarcode, posCheckout, getPosOrders, applyVoucher, getSettings } from '../../services/api';
 import usePosStore from '../../store/posStore';
 import useAuthStore from '../../store/authStore';
 import BarcodeScannerModal from './BarcodeScannerModal';
@@ -42,15 +46,26 @@ const POSScreen = () => {
   const [showShiftSummary, setShowShiftSummary] = useState(false);
   const [shiftData, setShiftData] = useState(null);
   const [discountInput, setDiscountInput] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [discountTypeInput, setDiscountTypeInput] = useState('percentage');
 
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  // Load initial products
+  // Load initial products + settings for tax rate
   useEffect(() => {
     loadProducts();
+    loadTaxRate();
   }, []);
+
+  const loadTaxRate = async () => {
+    try {
+      const { data } = await getSettings();
+      if (data?.taxRate !== undefined) pos.setTaxRate(data.taxRate);
+    } catch (err) { /* use default */ }
+  };
 
   // Focus search on mount
   useEffect(() => {
@@ -125,6 +140,28 @@ const POSScreen = () => {
     toast.success('Discount applied!');
   };
 
+  // Apply coupon/voucher
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) { toast.error('Enter a coupon code'); return; }
+    setApplyingCoupon(true);
+    try {
+      const { data } = await applyVoucher({ code: couponCode.toUpperCase(), orderTotal: pos.getSubtotal() });
+      pos.setCoupon({
+        code: data.code || couponCode.toUpperCase(),
+        value: data.discount || data.value,
+        type: data.type || 'percentage',
+        maxDiscount: data.maxDiscountAmount,
+        description: data.description || '',
+      });
+      toast.success(`Coupon applied: ${data.description || couponCode.toUpperCase()} 🎉`);
+      setCouponCode('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid or expired coupon');
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
   // Checkout
   const handleCheckout = async () => {
     if (pos.cart.length === 0) {
@@ -154,6 +191,9 @@ const POSScreen = () => {
         tenderedAmount: pos.paymentMethod === 'cash' ? parseFloat(pos.tenderedAmount) : undefined,
         discount: pos.discount,
         discountType: pos.discountType,
+        couponCode: pos.coupon?.code || undefined,
+        customerName: pos.customerName || undefined,
+        customerPhone: pos.customerPhone || undefined,
       });
 
       setLastOrder(data);
@@ -194,6 +234,9 @@ const POSScreen = () => {
 
   const subtotal = pos.getSubtotal();
   const discountAmount = pos.getDiscountAmount();
+  const couponDiscount = pos.getCouponDiscount();
+  const totalDiscount = pos.getTotalDiscount();
+  const taxPercent = (pos.taxRate * 100).toFixed(0);
   const tax = pos.getTax();
   const grandTotal = pos.getGrandTotal();
   const change = pos.getChange();
@@ -302,7 +345,7 @@ const POSScreen = () => {
                   <div className="pos-product-info">
                     <h4 className="pos-product-name">{product.name}</h4>
                     <div className="pos-product-meta">
-                      <span className="pos-product-price">${product.price.toFixed(2)}</span>
+                      <span className="pos-product-price">Rs. {product.price.toFixed(2)}</span>
                       <span className="pos-product-unit">/{product.unit}</span>
                     </div>
                     <div className="pos-product-stock-row">
@@ -347,7 +390,7 @@ const POSScreen = () => {
                   <div className="pos-cart-item-info">
                     <h4 className="pos-cart-item-name">{item.name}</h4>
                     <p className="pos-cart-item-price">
-                      ${item.price.toFixed(2)} × {item.quantity}
+                      Rs.{item.price.toFixed(2)} × {item.quantity}
                     </p>
                   </div>
                   <div className="pos-cart-item-controls">
@@ -368,7 +411,7 @@ const POSScreen = () => {
                       </button>
                     </div>
                     <span className="pos-cart-item-total">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      Rs.{(item.price * item.quantity).toFixed(2)}
                     </span>
                     <button
                       className="pos-cart-remove"
@@ -387,7 +430,7 @@ const POSScreen = () => {
             <div className="pos-cart-totals">
               <div className="pos-total-row">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>Rs. {subtotal.toFixed(2)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="pos-total-row pos-discount-row">
@@ -395,7 +438,7 @@ const POSScreen = () => {
                     Discount
                     {pos.discountType === 'percentage' ? ` (${pos.discount}%)` : ''}
                   </span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                  <span>-Rs. {discountAmount.toFixed(2)}</span>
                   <button
                     className="pos-discount-clear"
                     onClick={() => pos.setDiscount(0, 'percentage')}
@@ -404,13 +447,51 @@ const POSScreen = () => {
                   </button>
                 </div>
               )}
+              {couponDiscount > 0 && (
+                <div className="pos-total-row pos-discount-row">
+                  <span>
+                    🎟️ Coupon ({pos.coupon?.code})
+                  </span>
+                  <span>-Rs. {couponDiscount.toFixed(2)}</span>
+                  <button
+                    className="pos-discount-clear"
+                    onClick={() => pos.clearCoupon()}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
               <div className="pos-total-row">
-                <span>Tax (5%)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>Tax ({taxPercent}%)</span>
+                <span>Rs. {tax.toFixed(2)}</span>
               </div>
               <div className="pos-total-row pos-grand-total">
                 <span>TOTAL</span>
-                <span>${grandTotal.toFixed(2)}</span>
+                <span>Rs. {grandTotal.toFixed(2)}</span>
+              </div>
+
+              {/* Coupon Input */}
+              <div style={{display:'flex', gap:'6px', marginBottom:'8px'}}>
+                <div style={{flex:1, position:'relative'}}>
+                  <Ticket size={16} style={{position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', color:'#9ca3af'}} />
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Coupon code"
+                    className="pos-input"
+                    style={{paddingLeft:'32px', width:'100%', fontSize:'13px'}}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                  />
+                </div>
+                <button
+                  className="pos-btn-green"
+                  onClick={handleApplyCoupon}
+                  disabled={applyingCoupon}
+                  style={{padding:'8px 14px', fontSize:'12px', whiteSpace:'nowrap'}}
+                >
+                  {applyingCoupon ? '...' : 'Apply'}
+                </button>
               </div>
 
               {/* Discount Button */}
@@ -421,6 +502,36 @@ const POSScreen = () => {
                 <Percent size={16} />
                 Apply Discount
               </button>
+
+              {/* Customer Info Toggle */}
+              <button
+                className="pos-apply-discount-btn"
+                onClick={() => setShowCustomerInfo(!showCustomerInfo)}
+                style={{marginTop:'4px', background: showCustomerInfo ? '#dbeafe' : undefined, color: showCustomerInfo ? '#2563eb' : undefined}}
+              >
+                <User size={16} />
+                {pos.customerName ? `Customer: ${pos.customerName}` : 'Add Customer Info'}
+              </button>
+              {showCustomerInfo && (
+                <div style={{display:'flex', gap:'6px', marginBottom:'6px'}}>
+                  <input
+                    type="text"
+                    value={pos.customerName}
+                    onChange={(e) => pos.setCustomerInfo(e.target.value, pos.customerPhone)}
+                    placeholder="Customer name"
+                    className="pos-input"
+                    style={{flex:1, fontSize:'12px'}}
+                  />
+                  <input
+                    type="tel"
+                    value={pos.customerPhone}
+                    onChange={(e) => pos.setCustomerInfo(pos.customerName, e.target.value)}
+                    placeholder="Phone"
+                    className="pos-input"
+                    style={{flex:1, fontSize:'12px'}}
+                  />
+                </div>
+              )}
 
               {/* Payment Method */}
               <div className="pos-payment-methods">
@@ -438,6 +549,14 @@ const POSScreen = () => {
                   <CreditCard size={20} />
                   Card
                 </button>
+                <button
+                  className={`pos-payment-btn ${pos.paymentMethod === 'koko' ? 'active' : ''}`}
+                  onClick={() => pos.setPaymentMethod('koko')}
+                  title="Koko Pay - Buy Now Pay Later"
+                >
+                  <Smartphone size={20} />
+                  Koko
+                </button>
               </div>
 
               {/* Cash tendered */}
@@ -445,7 +564,7 @@ const POSScreen = () => {
                 <div className="pos-cash-section">
                   <label className="pos-cash-label">Amount Tendered</label>
                   <div className="pos-cash-input-wrapper">
-                    <DollarSign size={18} className="pos-cash-icon" />
+                    <span className="pos-cash-icon" style={{fontSize:'14px', fontWeight:'bold', color:'#9ca3af'}}>Rs.</span>
                     <input
                       type="number"
                       value={pos.tenderedAmount}
@@ -459,7 +578,7 @@ const POSScreen = () => {
                   {parseFloat(pos.tenderedAmount) >= grandTotal && (
                     <div className="pos-change-display">
                       <span>Change Due:</span>
-                      <span className="pos-change-amount">${change.toFixed(2)}</span>
+                      <span className="pos-change-amount">Rs. {change.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -476,7 +595,7 @@ const POSScreen = () => {
                 ) : (
                   <>
                     <Receipt size={22} />
-                    CHECKOUT — ${grandTotal.toFixed(2)}
+                    CHECKOUT — Rs. {grandTotal.toFixed(2)}
                   </>
                 )}
               </button>
@@ -561,7 +680,7 @@ const POSScreen = () => {
             <div className="pos-shift-stats">
               <div className="pos-shift-stat">
                 <span className="pos-shift-stat-label">Total Sales</span>
-                <span className="pos-shift-stat-value">${shiftData.summary.totalSales.toFixed(2)}</span>
+                <span className="pos-shift-stat-value">Rs. {shiftData.summary.totalSales.toFixed(2)}</span>
               </div>
               <div className="pos-shift-stat">
                 <span className="pos-shift-stat-label">Transactions</span>
@@ -569,11 +688,15 @@ const POSScreen = () => {
               </div>
               <div className="pos-shift-stat">
                 <span className="pos-shift-stat-label">Cash Sales</span>
-                <span className="pos-shift-stat-value">${shiftData.summary.cashSales.toFixed(2)}</span>
+                <span className="pos-shift-stat-value">Rs. {shiftData.summary.cashSales.toFixed(2)}</span>
               </div>
               <div className="pos-shift-stat">
                 <span className="pos-shift-stat-label">Card Sales</span>
-                <span className="pos-shift-stat-value">${shiftData.summary.cardSales.toFixed(2)}</span>
+                <span className="pos-shift-stat-value">Rs. {shiftData.summary.cardSales.toFixed(2)}</span>
+              </div>
+              <div className="pos-shift-stat">
+                <span className="pos-shift-stat-label">Koko Sales</span>
+                <span className="pos-shift-stat-value">Rs. {(shiftData.summary.kokoSales || 0).toFixed(2)}</span>
               </div>
             </div>
             {shiftData.orders.length > 0 && (
@@ -584,7 +707,7 @@ const POSScreen = () => {
                     <span className="pos-shift-order-id">#{order._id.slice(-6)}</span>
                     <span className="pos-shift-order-method">{order.paymentMethod}</span>
                     <span className="pos-shift-order-items">{order.items.length} items</span>
-                    <span className="pos-shift-order-total">${order.totalAmount.toFixed(2)}</span>
+                    <span className="pos-shift-order-total">Rs. {order.totalAmount.toFixed(2)}</span>
                   </div>
                 ))}
               </div>

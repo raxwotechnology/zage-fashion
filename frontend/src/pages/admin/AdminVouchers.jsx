@@ -1,20 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Monitor, Settings, BarChart3, Ticket, Plus, Edit2, Trash2, X, Search, Copy, Check } from 'lucide-react';
+import { Ticket, Plus, Edit2, Trash2, X, Search, Copy, Check } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { path: '/admin', label: 'Overview', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Users', icon: Users },
-  { path: '/admin/stores', label: 'Stores', icon: Store },
-  { path: '/admin/categories', label: 'Categories', icon: Tag },
-  { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
-  { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
-];
+import navItems from './adminNavItems';
 
 const emptyForm = { code: '', type: 'percentage', value: '', minOrderAmount: '', maxDiscountAmount: '', maxUses: '', description: '', expiresAt: '', source: 'admin' };
 

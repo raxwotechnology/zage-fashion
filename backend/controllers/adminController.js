@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Store = require('../models/Store');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const { sendNotification } = require('../utils/notificationService');
 
 // @desc    Get all users
 // @route   GET /api/admin/users
@@ -21,6 +22,43 @@ const updateUserRole = async (req, res, next) => {
     user.role = req.body.role;
     await user.save();
     res.json({ _id: user._id, name: user.name, email: user.email, role: user.role });
+  } catch (error) { next(error); }
+};
+
+// @desc    Toggle user active status (activate/deactivate)
+// @route   PUT /api/admin/users/:id/toggle-status
+const toggleUserStatus = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404); return next(new Error('User not found')); }
+
+    // Prevent deactivating yourself
+    if (user._id.toString() === req.user._id.toString()) {
+      res.status(400);
+      return next(new Error('You cannot deactivate your own account'));
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+
+    // Notify user
+    await sendNotification({
+      userId: user._id,
+      type: 'account_update',
+      title: user.isActive ? 'Account Activated ✅' : 'Account Deactivated ⛔',
+      message: user.isActive
+        ? 'Your account has been reactivated. You can now log in again.'
+        : 'Your account has been deactivated by an administrator.',
+    });
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+    });
   } catch (error) { next(error); }
 };
 
@@ -68,6 +106,70 @@ const getAllOrders = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// @desc    Approve order
+// @route   PUT /api/admin/orders/:id/approve
+const approveOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) { res.status(404); return next(new Error('Order not found')); }
+
+    if (order.orderStatus !== 'pending') {
+      res.status(400);
+      return next(new Error(`Cannot approve order with status "${order.orderStatus}"`));
+    }
+
+    order.orderStatus = 'confirmed';
+    const updated = await order.save();
+
+    // Notify customer
+    await sendNotification({
+      userId: order.userId,
+      type: 'order_update',
+      title: 'Order Confirmed ✅',
+      message: `Your order #${order._id.toString().slice(-8).toUpperCase()} has been approved and confirmed.`,
+      link: '/orders',
+    });
+
+    res.json(updated);
+  } catch (error) { next(error); }
+};
+
+// @desc    Cancel order
+// @route   PUT /api/admin/orders/:id/cancel
+const cancelOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) { res.status(404); return next(new Error('Order not found')); }
+
+    if (['delivered', 'completed', 'cancelled'].includes(order.orderStatus)) {
+      res.status(400);
+      return next(new Error(`Cannot cancel order with status "${order.orderStatus}"`));
+    }
+
+    // Restore stock
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: item.quantity },
+      });
+    }
+
+    order.orderStatus = 'cancelled';
+    order.paymentStatus = order.paymentStatus === 'completed' ? 'refunded' : 'failed';
+    const updated = await order.save();
+
+    // Notify customer
+    await sendNotification({
+      userId: order.userId,
+      type: 'order_update',
+      title: 'Order Cancelled ❌',
+      message: `Your order #${order._id.toString().slice(-8).toUpperCase()} has been cancelled.${req.body.reason ? ' Reason: ' + req.body.reason : ''}`,
+      link: '/orders',
+    });
+
+    res.json(updated);
+  } catch (error) { next(error); }
+};
+
 // @desc    Get platform stats
 // @route   GET /api/admin/stats
 const getStats = async (req, res, next) => {
@@ -78,18 +180,38 @@ const getStats = async (req, res, next) => {
       Product.countDocuments(),
       Order.find({}),
     ]);
+
     const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
     const pendingOrders = orders.filter((o) => o.orderStatus === 'pending').length;
-    const completedOrders = orders.filter((o) => o.orderStatus === 'delivered').length;
+    const completedOrders = orders.filter((o) => ['delivered', 'completed'].includes(o.orderStatus)).length;
+    const cancelledOrders = orders.filter((o) => o.orderStatus === 'cancelled').length;
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const deactivatedUsers = await User.countDocuments({ isActive: false });
 
     res.json({
-      users, stores, products,
+      users,
+      activeUsers,
+      deactivatedUsers,
+      stores,
+      products,
       totalOrders: orders.length,
       totalRevenue,
       pendingOrders,
       completedOrders,
+      cancelledOrders,
     });
   } catch (error) { next(error); }
 };
 
-module.exports = { getUsers, updateUserRole, deleteUser, getAllStores, toggleStore, getAllOrders, getStats };
+module.exports = {
+  getUsers,
+  updateUserRole,
+  toggleUserStatus,
+  deleteUser,
+  getAllStores,
+  toggleStore,
+  getAllOrders,
+  approveOrder,
+  cancelOrder,
+  getStats,
+};

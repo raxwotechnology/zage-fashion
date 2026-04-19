@@ -1,19 +1,11 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, Users, Calendar, CreditCard, Search, Edit3, Save, X, Clock, Plus, UserPlus } from 'lucide-react';
+import { Users, Search, Edit3, Save, X, UserPlus } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getEmployees, addEmployee, updateEmployee } from '../../services/api';
 import { toast } from 'react-toastify';
+import managerNavItems from './managerNavItems';
 
-const navItems = [
-  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
-  { path: '/manager/products', label: 'Products', icon: Package },
-  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/manager/employees', label: 'Employees', icon: Users },
-  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
-  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
-  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
-  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
-];
+
 
 const roleColors = {
   cashier: 'bg-teal-100 text-teal-700',
@@ -101,7 +93,7 @@ const ManagerEmployees = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Manager Dashboard">
+      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -110,7 +102,7 @@ const ManagerEmployees = () => {
   }
 
   return (
-    <DashboardLayout navItems={navItems} title="Manager Dashboard">
+    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>

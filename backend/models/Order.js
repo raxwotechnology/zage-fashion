@@ -56,7 +56,7 @@ const orderSchema = mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['card', 'upi', 'cod', 'wallet', 'payhere', 'cash', 'mobile_money'],
+      enum: ['card', 'upi', 'cod', 'wallet', 'payhere', 'cash', 'mobile_money', 'koko'],
       default: 'cod',
     },
     paymentStatus: {
@@ -115,6 +115,16 @@ const orderSchema = mongoose.Schema(
     discountAmount: {
       type: Number,
       default: 0,
+    },
+    // POS customer info
+    customerName: {
+      type: String,
+    },
+    customerPhone: {
+      type: String,
+    },
+    couponCode: {
+      type: String,
     },
   },
   {

@@ -1,20 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, Filter, ChevronDown, Users, Calendar, CreditCard, Clock } from 'lucide-react';
+import { ChevronDown, CheckCircle, XCircle } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getStoreOrders, updateOrderStatus } from '../../services/api';
-import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
-  { path: '/manager/products', label: 'Products', icon: Package },
-  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/manager/employees', label: 'Employees', icon: Users },
-  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
-  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
-  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
-  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
-];
+import managerNavItems from './managerNavItems';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
@@ -61,7 +50,7 @@ const StoreOrders = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Manager Dashboard">
+      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -70,7 +59,7 @@ const StoreOrders = () => {
   }
 
   return (
-    <DashboardLayout navItems={navItems} title="Store Dashboard">
+    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -121,7 +110,7 @@ const StoreOrders = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-bold text-dark-navy">${order.totalAmount?.toFixed(2)}</p>
+                    <p className="font-bold text-dark-navy">Rs. {order.totalAmount?.toFixed(2)}</p>
                     <p className="text-xs text-muted-text">{new Date(order.createdAt).toLocaleDateString()}</p>
                   </div>
                   <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColors[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}>
@@ -144,7 +133,7 @@ const StoreOrders = () => {
                             <img src={item.image || 'https://via.placeholder.com/35'} alt="" className="w-9 h-9 rounded-lg object-cover" />
                             <span>{item.name} × {item.quantity}</span>
                           </div>
-                          <span className="font-medium">{useCurrencyStore.getState().formatPrice(useCurrencyStore.getState().convertPrice(item.price * item.quantity))}</span>
+                          <span className="font-medium">Rs. {(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -172,6 +161,18 @@ const StoreOrders = () => {
                         <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                       ))}
                     </select>
+                    {order.orderStatus === 'pending' && (
+                      <div className="flex gap-2 ml-2">
+                        <button onClick={() => handleStatusUpdate(order._id, 'confirmed')}
+                          className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-emerald-100">
+                          <CheckCircle size={14} /> Approve
+                        </button>
+                        <button onClick={() => handleStatusUpdate(order._id, 'cancelled')}
+                          className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-red-100">
+                          <XCircle size={14} /> Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

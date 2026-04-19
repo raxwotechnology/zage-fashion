@@ -4,6 +4,9 @@ const {
   checkIn, checkOut, getMyAttendance, getAttendanceReport,
   requestLeave, getMyLeaves, getStoreLeaves, approveLeave, rejectLeave,
   getEmployees, addEmployee, updateEmployee,
+  startBreak, endBreak, getBreakHistory, getActiveBreak,
+  createTarget, getTargets, getMyTargets, updateTargetProgress, payTargetBonus,
+  getEmployeePerformance,
 } = require('../controllers/hrController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -26,5 +29,21 @@ router.put('/leaves/:id/reject', authorize('manager', 'admin'), rejectLeave);
 router.get('/employees', authorize('manager', 'admin'), getEmployees);
 router.post('/employees', authorize('manager', 'admin'), addEmployee);
 router.put('/employees/:id', authorize('manager', 'admin'), updateEmployee);
+
+// Breaks
+router.post('/breaks/start', authorize('cashier', 'deliveryGuy', 'stockEmployee', 'manager'), startBreak);
+router.post('/breaks/end', authorize('cashier', 'deliveryGuy', 'stockEmployee', 'manager'), endBreak);
+router.get('/breaks/active', getActiveBreak);
+router.get('/breaks', getBreakHistory);
+
+// Targets
+router.post('/targets', authorize('manager', 'admin'), createTarget);
+router.get('/targets/me', getMyTargets);
+router.get('/targets', authorize('manager', 'admin'), getTargets);
+router.put('/targets/:id/progress', authorize('manager', 'admin'), updateTargetProgress);
+router.put('/targets/:id/pay-bonus', authorize('manager', 'admin'), payTargetBonus);
+
+// Performance
+router.get('/performance/:employeeId', authorize('manager', 'admin'), getEmployeePerformance);
 
 module.exports = router;

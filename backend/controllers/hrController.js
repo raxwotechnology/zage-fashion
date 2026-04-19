@@ -336,9 +336,296 @@ const addEmployee = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// =================== BREAKS ===================
+
+const EmployeeBreak = require('../models/EmployeeBreak');
+
+// @desc    Start break
+// @route   POST /api/hr/breaks/start
+const startBreak = async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if already on break
+    const activeBreak = await EmployeeBreak.findOne({
+      employeeId: req.user._id,
+      date: { $gte: today },
+      breakEnd: null,
+    });
+    if (activeBreak) {
+      res.status(400);
+      return next(new Error('You are already on a break'));
+    }
+
+    const brk = await EmployeeBreak.create({
+      employeeId: req.user._id,
+      storeId: req.user.assignedStore || null,
+      date: new Date(),
+      breakStart: new Date(),
+      type: req.body.type || 'short',
+    });
+
+    res.status(201).json(brk);
+  } catch (error) { next(error); }
+};
+
+// @desc    End break
+// @route   POST /api/hr/breaks/end
+const endBreak = async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const brk = await EmployeeBreak.findOne({
+      employeeId: req.user._id,
+      date: { $gte: today },
+      breakEnd: null,
+    });
+
+    if (!brk) {
+      res.status(400);
+      return next(new Error('No active break found'));
+    }
+
+    brk.breakEnd = new Date();
+    brk.duration = Math.round((brk.breakEnd - brk.breakStart) / 60000); // minutes
+    await brk.save();
+
+    res.json(brk);
+  } catch (error) { next(error); }
+};
+
+// @desc    Get break history
+// @route   GET /api/hr/breaks
+const getBreakHistory = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const filter = { employeeId: req.user._id };
+    if (startDate || endDate) {
+      filter.date = {};
+      if (startDate) filter.date.$gte = new Date(startDate);
+      if (endDate) filter.date.$lte = new Date(endDate);
+    }
+    const breaks = await EmployeeBreak.find(filter).sort({ date: -1 }).limit(100);
+    res.json(breaks);
+  } catch (error) { next(error); }
+};
+
+// @desc    Get today's active break (if any)
+// @route   GET /api/hr/breaks/active
+const getActiveBreak = async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const brk = await EmployeeBreak.findOne({
+      employeeId: req.user._id,
+      date: { $gte: today },
+      breakEnd: null,
+    });
+    res.json(brk || null);
+  } catch (error) { next(error); }
+};
+
+// =================== TARGETS ===================
+
+const EmployeeTarget = require('../models/EmployeeTarget');
+
+// @desc    Create target for employee
+// @route   POST /api/hr/targets
+const createTarget = async (req, res, next) => {
+  try {
+    const { employeeId, targetType, targetValue, month, year, bonusAmount, notes } = req.body;
+
+    // Determine store
+    let storeId = req.body.storeId;
+    if (!storeId && req.user.role === 'manager') {
+      const store = await Store.findOne({ managerId: req.user._id });
+      if (store) storeId = store._id;
+    }
+
+    const target = await EmployeeTarget.create({
+      employeeId,
+      storeId,
+      targetType,
+      targetValue,
+      month,
+      year,
+      bonusAmount: bonusAmount || 0,
+      notes: notes || '',
+      createdBy: req.user._id,
+    });
+
+    const populated = await EmployeeTarget.findById(target._id).populate('employeeId', 'name email role');
+    res.status(201).json(populated);
+  } catch (error) { next(error); }
+};
+
+// @desc    Get targets (filtered by store/employee/month)
+// @route   GET /api/hr/targets
+const getTargets = async (req, res, next) => {
+  try {
+    const { employeeId, month, year } = req.query;
+    const filter = {};
+
+    if (req.user.role === 'manager') {
+      const store = await Store.findOne({ managerId: req.user._id });
+      if (store) filter.storeId = store._id;
+    }
+
+    if (employeeId) filter.employeeId = employeeId;
+    if (month) filter.month = parseInt(month);
+    if (year) filter.year = parseInt(year);
+
+    const targets = await EmployeeTarget.find(filter)
+      .populate('employeeId', 'name email role')
+      .sort({ year: -1, month: -1 });
+
+    res.json(targets);
+  } catch (error) { next(error); }
+};
+
+// @desc    Get my targets (for employee)
+// @route   GET /api/hr/targets/me
+const getMyTargets = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const targets = await EmployeeTarget.find({
+      employeeId: req.user._id,
+      $or: [
+        { status: 'active' },
+        { month: now.getMonth() + 1, year: now.getFullYear() },
+      ],
+    }).sort({ year: -1, month: -1 });
+
+    res.json(targets);
+  } catch (error) { next(error); }
+};
+
+// @desc    Update target progress
+// @route   PUT /api/hr/targets/:id/progress
+const updateTargetProgress = async (req, res, next) => {
+  try {
+    const target = await EmployeeTarget.findById(req.params.id);
+    if (!target) { res.status(404); return next(new Error('Target not found')); }
+
+    target.achievedValue = req.body.achievedValue || target.achievedValue;
+    if (target.achievedValue >= target.targetValue) {
+      target.status = 'completed';
+    }
+    if (req.body.notes) target.notes = req.body.notes;
+
+    await target.save();
+    const populated = await EmployeeTarget.findById(target._id).populate('employeeId', 'name email role');
+    res.json(populated);
+  } catch (error) { next(error); }
+};
+
+// @desc    Mark target bonus as paid
+// @route   PUT /api/hr/targets/:id/pay-bonus
+const payTargetBonus = async (req, res, next) => {
+  try {
+    const target = await EmployeeTarget.findById(req.params.id);
+    if (!target) { res.status(404); return next(new Error('Target not found')); }
+
+    if (target.status !== 'completed') {
+      res.status(400);
+      return next(new Error('Can only pay bonus for completed targets'));
+    }
+
+    target.bonusPaid = true;
+    await target.save();
+
+    await sendNotification({
+      userId: target.employeeId,
+      type: 'payroll',
+      title: 'Bonus Paid! 🎉',
+      message: `Your bonus of Rs. ${target.bonusAmount} for meeting your ${target.targetType} target has been processed.`,
+    });
+
+    res.json(target);
+  } catch (error) { next(error); }
+};
+
+// @desc    Get employee performance summary
+// @route   GET /api/hr/performance/:employeeId
+const getEmployeePerformance = async (req, res, next) => {
+  try {
+    const { employeeId } = req.params;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Attendance this month
+    const attendance = await Attendance.find({
+      employeeId,
+      date: { $gte: startOfMonth },
+    });
+    const totalWorkDays = Math.ceil((now - startOfMonth) / (1000 * 60 * 60 * 24));
+    const presentDays = attendance.filter(a => a.status === 'present').length;
+    const attendanceRate = totalWorkDays > 0 ? Math.round((presentDays / totalWorkDays) * 100) : 0;
+
+    // Average hours
+    const totalHours = attendance.reduce((s, a) => s + (a.totalHours || 0), 0);
+    const avgHours = presentDays > 0 ? (totalHours / presentDays).toFixed(1) : 0;
+
+    // Breaks this month
+    const breaks = await EmployeeBreak.find({
+      employeeId,
+      date: { $gte: startOfMonth },
+    });
+    const totalBreakMinutes = breaks.reduce((s, b) => s + (b.duration || 0), 0);
+    const avgBreakMinutes = presentDays > 0 ? Math.round(totalBreakMinutes / presentDays) : 0;
+
+    // Targets
+    const targets = await EmployeeTarget.find({
+      employeeId,
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+    });
+    const completedTargets = targets.filter(t => t.status === 'completed').length;
+    const totalBonusEarned = targets.filter(t => t.status === 'completed').reduce((s, t) => s + (t.bonusAmount || 0), 0);
+
+    // Leaves this month
+    const leaves = await Leave.find({
+      employeeId,
+      startDate: { $gte: startOfMonth },
+    });
+
+    const user = await User.findById(employeeId).select('name email role');
+
+    res.json({
+      employee: user,
+      attendance: {
+        presentDays,
+        totalWorkDays,
+        attendanceRate,
+        avgHours: parseFloat(avgHours),
+      },
+      breaks: {
+        totalBreakMinutes,
+        avgBreakMinutes,
+        breakCount: breaks.length,
+      },
+      targets: {
+        total: targets.length,
+        completed: completedTargets,
+        inProgress: targets.filter(t => t.status === 'active').length,
+        totalBonusEarned,
+      },
+      leaves: {
+        total: leaves.length,
+        approved: leaves.filter(l => l.status === 'approved').length,
+        pending: leaves.filter(l => l.status === 'pending').length,
+      },
+    });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   checkIn, checkOut, getMyAttendance, getAttendanceReport,
   requestLeave, getMyLeaves, getStoreLeaves, approveLeave, rejectLeave,
   getEmployees, addEmployee, updateEmployee,
+  startBreak, endBreak, getBreakHistory, getActiveBreak,
+  createTarget, getTargets, getMyTargets, updateTargetProgress, payTargetBonus,
+  getEmployeePerformance,
 };
-

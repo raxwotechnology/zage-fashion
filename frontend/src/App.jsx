@@ -24,6 +24,9 @@ import ManagerEmployees from './pages/storeOwner/ManagerEmployees';
 import ManagerAttendance from './pages/storeOwner/ManagerAttendance';
 import ManagerLeaves from './pages/storeOwner/ManagerLeaves';
 import ManagerPayroll from './pages/storeOwner/ManagerPayroll';
+import ManagerTargets from './pages/storeOwner/ManagerTargets';
+import ManagerPerformance from './pages/storeOwner/ManagerPerformance';
+import ManagerInventory from './pages/storeOwner/ManagerInventory';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminStores from './pages/admin/AdminStores';
@@ -32,6 +35,10 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminVouchers from './pages/admin/AdminVouchers';
 import AdminReports from './pages/admin/AdminReports';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminExpenses from './pages/admin/AdminExpenses';
+import AdminFinancials from './pages/admin/AdminFinancials';
+import AdminInventory from './pages/admin/AdminInventory';
+import AdminPromotions from './pages/admin/AdminPromotions';
 import CashierLogin from './pages/cashier/CashierLogin';
 import POSScreen from './pages/cashier/POSScreen';
 import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
@@ -40,6 +47,7 @@ import EmployeeProfile from './pages/employee/EmployeeProfile';
 import EmployeeAttendance from './pages/employee/EmployeeAttendance';
 import EmployeeLeaves from './pages/employee/EmployeeLeaves';
 import EmployeeSalary from './pages/employee/EmployeeSalary';
+import CashierStock from './pages/employee/CashierStock';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -88,6 +96,9 @@ function App() {
           <Route path="/manager/attendance" element={<ProtectedRoute roles={['manager']}><ManagerAttendance /></ProtectedRoute>} />
           <Route path="/manager/leaves" element={<ProtectedRoute roles={['manager']}><ManagerLeaves /></ProtectedRoute>} />
           <Route path="/manager/payroll" element={<ProtectedRoute roles={['manager']}><ManagerPayroll /></ProtectedRoute>} />
+          <Route path="/manager/targets" element={<ProtectedRoute roles={['manager']}><ManagerTargets /></ProtectedRoute>} />
+          <Route path="/manager/performance" element={<ProtectedRoute roles={['manager']}><ManagerPerformance /></ProtectedRoute>} />
+          <Route path="/manager/inventory" element={<ProtectedRoute roles={['manager']}><ManagerInventory /></ProtectedRoute>} />
 
           {/* Admin */}
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminOverview /></ProtectedRoute>} />
@@ -98,10 +109,14 @@ function App() {
           <Route path="/admin/vouchers" element={<ProtectedRoute roles={['admin']}><AdminVouchers /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute roles={['admin']}><AdminReports /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><AdminSettings /></ProtectedRoute>} />
+          <Route path="/admin/expenses" element={<ProtectedRoute roles={['admin']}><AdminExpenses /></ProtectedRoute>} />
+          <Route path="/admin/financials" element={<ProtectedRoute roles={['admin']}><AdminFinancials /></ProtectedRoute>} />
+          <Route path="/admin/inventory" element={<ProtectedRoute roles={['admin']}><AdminInventory /></ProtectedRoute>} />
+          <Route path="/admin/promotions" element={<ProtectedRoute roles={['admin']}><AdminPromotions /></ProtectedRoute>} />
 
           {/* Cashier */}
           <Route path="/cashier-login" element={<CashierLogin />} />
-          <Route path="/pos" element={<ProtectedRoute roles={['cashier', 'manager']}><POSScreen /></ProtectedRoute>} />
+          <Route path="/pos" element={<ProtectedRoute roles={['cashier', 'manager', 'admin']}><POSScreen /></ProtectedRoute>} />
 
           {/* Delivery */}
           <Route path="/delivery" element={<ProtectedRoute roles={['deliveryGuy']}><DeliveryDashboard /></ProtectedRoute>} />
@@ -112,6 +127,7 @@ function App() {
           <Route path="/employee/attendance" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeAttendance /></ProtectedRoute>} />
           <Route path="/employee/leaves" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeLeaves /></ProtectedRoute>} />
           <Route path="/employee/salary" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeSalary /></ProtectedRoute>} />
+          <Route path="/employee/stock" element={<ProtectedRoute roles={['cashier', 'stockEmployee']}><CashierStock /></ProtectedRoute>} />
         </Routes>
       </AppLayout>
       <ToastContainer position="top-right" autoClose={3000} theme="colored" />

@@ -6,13 +6,16 @@ const usePosStore = create((set, get) => ({
   discountType: 'percentage', // 'percentage' or 'fixed'
   paymentMethod: 'cash',
   tenderedAmount: '',
+  taxRate: 0.05, // 5% default, can be updated from settings
+  coupon: null, // { code, value, type, description }
+  customerName: '',
+  customerPhone: '',
 
   addItem: (product) => {
     const { cart } = get();
     const existing = cart.find((item) => item.productId === product._id);
 
     if (existing) {
-      // Don't exceed stock
       if (existing.quantity >= product.stock) return;
       set({
         cart: cart.map((item) =>
@@ -63,12 +66,28 @@ const usePosStore = create((set, get) => ({
     set({ discount: value, discountType: type });
   },
 
+  setCoupon: (coupon) => {
+    set({ coupon });
+  },
+
+  clearCoupon: () => {
+    set({ coupon: null });
+  },
+
   setPaymentMethod: (method) => {
     set({ paymentMethod: method });
   },
 
   setTenderedAmount: (amount) => {
     set({ tenderedAmount: amount });
+  },
+
+  setTaxRate: (rate) => {
+    set({ taxRate: rate });
+  },
+
+  setCustomerInfo: (name, phone) => {
+    set({ customerName: name, customerPhone: phone });
   },
 
   clearCart: () => {
@@ -78,6 +97,9 @@ const usePosStore = create((set, get) => ({
       discountType: 'percentage',
       paymentMethod: 'cash',
       tenderedAmount: '',
+      coupon: null,
+      customerName: '',
+      customerPhone: '',
     });
   },
 
@@ -96,17 +118,33 @@ const usePosStore = create((set, get) => ({
     return Math.min(discount, subtotal);
   },
 
+  getCouponDiscount: () => {
+    const subtotal = get().getSubtotal();
+    const { coupon } = get();
+    if (!coupon) return 0;
+    if (coupon.type === 'percentage') {
+      const raw = (subtotal * coupon.value) / 100;
+      return coupon.maxDiscount ? Math.min(raw, coupon.maxDiscount) : raw;
+    }
+    return Math.min(coupon.value, subtotal);
+  },
+
+  getTotalDiscount: () => {
+    return get().getDiscountAmount() + get().getCouponDiscount();
+  },
+
   getTax: () => {
     const subtotal = get().getSubtotal();
-    const discountAmount = get().getDiscountAmount();
-    return parseFloat(((subtotal - discountAmount) * 0.05).toFixed(2));
+    const totalDiscount = get().getTotalDiscount();
+    const { taxRate } = get();
+    return parseFloat(((subtotal - totalDiscount) * taxRate).toFixed(2));
   },
 
   getGrandTotal: () => {
     const subtotal = get().getSubtotal();
-    const discountAmount = get().getDiscountAmount();
+    const totalDiscount = get().getTotalDiscount();
     const tax = get().getTax();
-    return parseFloat((subtotal - discountAmount + tax).toFixed(2));
+    return parseFloat(Math.max(0, subtotal - totalDiscount + tax).toFixed(2));
   },
 
   getChange: () => {

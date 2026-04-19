@@ -1,22 +1,11 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Monitor, BarChart3, Ticket, DollarSign } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminOrders } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { path: '/admin', label: 'Overview', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Users', icon: Users },
-  { path: '/admin/stores', label: 'Stores', icon: Store },
-  { path: '/admin/categories', label: 'Categories', icon: Tag },
-  { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
-  { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
-];
+import navItems from './adminNavItems';
 
 const STATUS_COLORS = { pending: '#f59e0b', confirmed: '#3b82f6', packed: '#6366f1', shipped: '#06b6d4', out_for_delivery: '#0ea5e9', delivered: '#10b981', cancelled: '#ef4444' };
 

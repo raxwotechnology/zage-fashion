@@ -50,6 +50,9 @@ app.use('/api/delivery', require('./routes/deliveryRoutes'));
 app.use('/api/hr', require('./routes/hrRoutes'));
 app.use('/api/payroll', require('./routes/payrollRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/expenses', require('./routes/expenseRoutes'));
+app.use('/api/finance', require('./routes/financeRoutes'));
+app.use('/api/promotions', require('./routes/promotionRoutes'));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

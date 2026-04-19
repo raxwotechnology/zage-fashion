@@ -1,29 +1,22 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, Plus, Edit2, Trash2, X, Search, Eye, EyeOff, Users, Calendar, CreditCard, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Search, Package } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getMyStoreProducts, createProduct, updateProduct, deleteProduct, getCategories } from '../../services/api';
+import { getMyStoreProducts, createProduct, updateProduct, deleteProduct, getCategories, getStores } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
+import managerNavItems from './managerNavItems';
 
-const navItems = [
-  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
-  { path: '/manager/products', label: 'Products', icon: Package },
-  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/manager/employees', label: 'Employees', icon: Users },
-  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
-  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
-  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
-  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
-];
+
 
 const emptyForm = {
   name: '', categoryId: '', description: '', price: '', mrp: '', discount: '', unit: 'kg',
-  stock: '', images: '', isFeatured: false, isOnSale: false, status: 'active',
+  stock: '', images: '', isFeatured: false, isOnSale: false, status: 'active', storeId: '',
 };
 
 const StoreProducts = () => {
   const [products, setProducts] = useState([]);
   const [storeInfo, setStoreInfo] = useState(null);
+  const [allStores, setAllStores] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -34,10 +27,11 @@ const StoreProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const [prodRes, catRes] = await Promise.all([getMyStoreProducts(), getCategories()]);
+      const [prodRes, catRes, storesRes] = await Promise.all([getMyStoreProducts(), getCategories(), getStores()]);
       setProducts(prodRes.data.products);
       setStoreInfo(prodRes.data.store);
       setCategories(catRes.data);
+      setAllStores(storesRes.data || []);
     } catch (err) {
       toast.error('Failed to load products');
     } finally {
@@ -83,7 +77,7 @@ const StoreProducts = () => {
         discount: Number(form.discount) || 0,
         stock: Number(form.stock),
         images: form.images ? form.images.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        storeId: storeInfo?._id,
+        storeId: storeInfo?._id || form.storeId,
       };
 
       if (editingId) {
@@ -265,6 +259,13 @@ const StoreProducts = () => {
                   <select required value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green">
                     <option value="">Select category</option>
                     {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-dark-navy mb-1">Store</label>
+                  <select value={form.storeId || storeInfo?._id || ''} onChange={(e) => setForm({ ...form, storeId: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green">
+                    {storeInfo && <option value={storeInfo._id}>{storeInfo.name} (My Store)</option>}
+                    {allStores.filter(s => s._id !== storeInfo?._id).map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>

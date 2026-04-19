@@ -1,19 +1,10 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, DollarSign, Clock, TrendingUp, AlertCircle, Users, Calendar, CreditCard } from 'lucide-react';
+import { Package, ShoppingBag, DollarSign, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getMyStoreProducts, getStoreOrders, getMyStore } from '../../services/api';
 import { Link } from 'react-router-dom';
+import managerNavItems from './managerNavItems';
 
-const navItems = [
-  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
-  { path: '/manager/products', label: 'Products', icon: Package },
-  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/manager/employees', label: 'Employees', icon: Users },
-  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
-  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
-  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
-  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
-];
 
 const StoreOverview = () => {
   const [stats, setStats] = useState(null);
@@ -56,7 +47,7 @@ const StoreOverview = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Manager Dashboard">
+      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -82,7 +73,7 @@ const StoreOverview = () => {
   };
 
   return (
-    <DashboardLayout navItems={navItems} title="Store Dashboard">
+    <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
       <div>
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-dark-navy">Store Overview</h1>

@@ -6,6 +6,13 @@ import useAuthStore from '../store/authStore';
 import { registerUser } from '../services/api';
 import { toast } from 'react-toastify';
 
+// Sri Lankan phone validation
+const SL_PHONE_REGEX = /^(?:\+94|0)?[0-9]{9}$/;
+const isValidSLPhone = (phone) => {
+  if (!phone) return true; // optional field
+  return SL_PHONE_REGEX.test(phone.replace(/[\s\-()]/g, ''));
+};
+
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -13,13 +20,27 @@ const Register = () => {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
+
+  const handlePhoneChange = (value) => {
+    setPhone(value);
+    if (value && !isValidSLPhone(value)) {
+      setPhoneError('Enter a valid Sri Lankan number (e.g., 0771234567 or +94771234567)');
+    } else {
+      setPhoneError('');
+    }
+  };
 
   const submitHandler = async (e) => {
     e.preventDefault();
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (phone && !isValidSLPhone(phone)) {
+      toast.error('Please enter a valid Sri Lankan phone number');
       return;
     }
     setLoading(true);
@@ -80,16 +101,21 @@ const Register = () => {
 
           <div>
             <label className="block text-sm font-medium text-dark-navy mb-1.5" htmlFor="reg-phone">
-              Phone Number
+              Phone Number <span className="text-xs text-muted-text font-normal">(Sri Lankan)</span>
             </label>
             <input
               type="tel"
               id="reg-phone"
-              className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none transition-all"
-              placeholder="+1 (555) 000-0000"
+              className={`w-full border rounded-xl px-4 py-3 focus:ring-2 focus:border-transparent outline-none transition-all ${
+                phoneError ? 'border-red-400 focus:ring-red-300' : 'border-card-border focus:ring-primary-green'
+              }`}
+              placeholder="0771234567 or +94771234567"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
             />
+            {phoneError && (
+              <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+            )}
           </div>
 
           <div>

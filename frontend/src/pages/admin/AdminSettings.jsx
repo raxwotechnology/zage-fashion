@@ -1,20 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Monitor, BarChart3, Ticket, Settings, Save, Upload, Globe, Phone, Mail, MapPin, Palette, DollarSign, Gift, Shield } from 'lucide-react';
+import { Settings, Save, Upload, Globe, Phone, Mail, MapPin, Palette, DollarSign, Gift, Shield, Store } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getSettings, updateSettings, uploadLogo } from '../../services/api';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { path: '/admin', label: 'Overview', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Users', icon: Users },
-  { path: '/admin/stores', label: 'Stores', icon: Store },
-  { path: '/admin/categories', label: 'Categories', icon: Tag },
-  { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { path: '/admin/settings', label: 'Settings', icon: Settings },
-  { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
-];
+import navItems from './adminNavItems';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState(null);

@@ -1,20 +1,12 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, ShoppingBag, Users, Calendar, CreditCard, Clock, CheckCircle, XCircle, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAttendanceReport, getEmployees } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-toastify';
+import managerNavItems from './managerNavItems';
 
-const navItems = [
-  { path: '/manager', label: 'Overview', icon: LayoutDashboard },
-  { path: '/manager/products', label: 'Products', icon: Package },
-  { path: '/manager/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/manager/employees', label: 'Employees', icon: Users },
-  { path: '/manager/attendance', label: 'Attendance', icon: Clock },
-  { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
-  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
-  { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
-];
+
 
 const now = new Date();
 
@@ -64,10 +56,10 @@ const ManagerAttendance = () => {
     toast.success('Report downloaded');
   };
 
-  if (loading) return <DashboardLayout navItems={navItems} title="Manager Dashboard"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
+  if (loading) return <DashboardLayout navItems={managerNavItems} title="Manager Dashboard"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
 
   return (
-    <DashboardLayout navItems={navItems} title="Manager Dashboard">
+    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
       <div>
         <div className="flex items-center justify-between mb-6">
           <div><h1 className="text-2xl font-bold text-dark-navy">📋 Attendance Report</h1><p className="text-muted-text text-sm mt-1">{records.length} records for {month}/{year}</p></div>

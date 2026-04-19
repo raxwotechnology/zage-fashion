@@ -67,6 +67,18 @@ const InvoiceModal = ({ isOpen, onClose, order, onNewSale }) => {
                 {order.paymentMethod?.toUpperCase()}
               </span>
             </div>
+            {order.customerName && (
+              <div className="pos-receipt-meta-row">
+                <span>Customer:</span>
+                <span>{order.customerName}</span>
+              </div>
+            )}
+            {order.customerPhone && (
+              <div className="pos-receipt-meta-row">
+                <span>Phone:</span>
+                <span>{order.customerPhone}</span>
+              </div>
+            )}
           </div>
 
           <div className="pos-receipt-divider">{'─'.repeat(40)}</div>
@@ -85,10 +97,10 @@ const InvoiceModal = ({ isOpen, onClose, order, onNewSale }) => {
                 <span className="pos-receipt-item-name-col">{item.name}</span>
                 <span className="pos-receipt-item-qty-col">{item.quantity}</span>
                 <span className="pos-receipt-item-price-col">
-                  ${item.price.toFixed(2)}
+                  Rs.{item.price.toFixed(2)}
                 </span>
                 <span className="pos-receipt-item-total-col">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  Rs.{(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
             ))}
@@ -100,7 +112,7 @@ const InvoiceModal = ({ isOpen, onClose, order, onNewSale }) => {
           <div className="pos-receipt-totals">
             <div className="pos-receipt-total-row">
               <span>Subtotal:</span>
-              <span>${(order.subtotal ?? order.totalAmount).toFixed(2)}</span>
+              <span>Rs. {(order.subtotal ?? order.totalAmount).toFixed(2)}</span>
             </div>
             {order.discountAmount > 0 && (
               <div className="pos-receipt-total-row pos-receipt-discount">
@@ -111,30 +123,42 @@ const InvoiceModal = ({ isOpen, onClose, order, onNewSale }) => {
                     : ''}
                   :
                 </span>
-                <span>-${order.discountAmount.toFixed(2)}</span>
+                <span>-Rs. {order.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
+            {order.couponCode && (
+              <div className="pos-receipt-total-row pos-receipt-discount">
+                <span>Coupon ({order.couponCode}):</span>
+                <span>-Rs. {(order.couponDiscount || 0).toFixed(2)}</span>
               </div>
             )}
             <div className="pos-receipt-total-row">
-              <span>Tax (5%):</span>
-              <span>${(order.tax || 0).toFixed(2)}</span>
+              <span>Tax:</span>
+              <span>Rs. {(order.tax || 0).toFixed(2)}</span>
             </div>
             <div className="pos-receipt-divider-thin">{'─'.repeat(40)}</div>
             <div className="pos-receipt-total-row pos-receipt-grand-total">
               <span>TOTAL:</span>
-              <span>${order.totalAmount.toFixed(2)}</span>
+              <span>Rs. {order.totalAmount.toFixed(2)}</span>
             </div>
 
             {order.paymentMethod === 'cash' && (
               <>
                 <div className="pos-receipt-total-row">
                   <span>Tendered:</span>
-                  <span>${(order.tenderedAmount || 0).toFixed(2)}</span>
+                  <span>Rs. {(order.tenderedAmount || 0).toFixed(2)}</span>
                 </div>
                 <div className="pos-receipt-total-row pos-receipt-change">
                   <span>Change:</span>
-                  <span>${(order.changeGiven || 0).toFixed(2)}</span>
+                  <span>Rs. {(order.changeGiven || 0).toFixed(2)}</span>
                 </div>
               </>
+            )}
+
+            {order.paymentMethod === 'koko' && (
+              <div className="pos-receipt-total-row" style={{marginTop:'8px'}}>
+                <span style={{fontSize:'11px', color:'#6b7280'}}>Koko Pay - Buy Now Pay Later</span>
+              </div>
             )}
           </div>
 

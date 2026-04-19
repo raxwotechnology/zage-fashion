@@ -110,10 +110,13 @@ export const getPayHereHash = (orderId) => API.post(`/orders/${orderId}/payhere-
 export const getAdminStats = () => API.get('/admin/stats');
 export const getAdminUsers = () => API.get('/admin/users');
 export const updateUserRole = (id, data) => API.put(`/admin/users/${id}/role`, data);
+export const toggleUserStatus = (id) => API.put(`/admin/users/${id}/toggle-status`);
 export const deleteUser = (id) => API.delete(`/admin/users/${id}`);
 export const getAdminStores = () => API.get('/admin/stores');
 export const toggleStoreStatus = (id) => API.put(`/admin/stores/${id}/toggle`);
 export const getAdminOrders = () => API.get('/admin/orders');
+export const approveOrder = (id) => API.put(`/admin/orders/${id}/approve`);
+export const cancelOrder = (id, data) => API.put(`/admin/orders/${id}/cancel`, data);
 
 // POS (Cashier)
 export const getPosProducts = (params) => API.get('/pos/products', { params });
@@ -160,6 +163,20 @@ export const getEmployees = () => API.get('/hr/employees');
 export const addEmployee = (data) => API.post('/hr/employees', data);
 export const updateEmployee = (id, data) => API.put(`/hr/employees/${id}`, data);
 
+// Breaks
+export const startBreak = (data) => API.post('/hr/breaks/start', data);
+export const endBreak = () => API.post('/hr/breaks/end');
+export const getActiveBreak = () => API.get('/hr/breaks/active');
+export const getBreakHistory = (params) => API.get('/hr/breaks', { params });
+
+// Targets & Performance
+export const createTarget = (data) => API.post('/hr/targets', data);
+export const getTargets = (params) => API.get('/hr/targets', { params });
+export const getMyTargets = () => API.get('/hr/targets/me');
+export const updateTargetProgress = (id, data) => API.put(`/hr/targets/${id}/progress`, data);
+export const payTargetBonus = (id) => API.put(`/hr/targets/${id}/pay-bonus`);
+export const getEmployeePerformance = (employeeId) => API.get(`/hr/performance/${employeeId}`);
+
 // Payroll (Phase 5)
 export const calculateSalary = (data) => API.post('/payroll/calculate', data);
 export const processSalaryPayment = (data) => API.post('/payroll/pay', data);
@@ -170,5 +187,26 @@ export const getPayrollReport = (params) => API.get('/payroll/report', { params 
 export const getSettings = () => API.get('/settings');
 export const updateSettings = (data) => API.put('/settings', data);
 export const uploadLogo = (formData) => API.post('/settings/logo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+
+// Expenses
+export const getExpenses = (params) => API.get('/expenses', { params });
+export const getExpenseSummary = (params) => API.get('/expenses/summary', { params });
+export const createExpense = (data) => API.post('/expenses', data);
+export const updateExpense = (id, data) => API.put(`/expenses/${id}`, data);
+export const deleteExpense = (id) => API.delete(`/expenses/${id}`);
+
+// Finance
+export const getFinancialDashboard = (params) => API.get('/finance/dashboard', { params });
+export const getAdditionalIncomes = (params) => API.get('/finance/income', { params });
+export const addAdditionalIncome = (data) => API.post('/finance/income', data);
+export const deleteAdditionalIncome = (id) => API.delete(`/finance/income/${id}`);
+
+// Promotions
+export const getPromotions = (params) => API.get('/promotions', { params });
+export const getActivePromotions = () => API.get('/promotions/active');
+export const createPromotion = (data) => API.post('/promotions', data);
+export const updatePromotion = (id, data) => API.put(`/promotions/${id}`, data);
+export const togglePromotion = (id) => API.put(`/promotions/${id}/toggle`);
+export const deletePromotion = (id) => API.delete(`/promotions/${id}`);
 
 export default API;

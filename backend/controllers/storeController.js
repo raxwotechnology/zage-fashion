@@ -50,20 +50,26 @@ const getMyStore = async (req, res, next) => {
 
 // @desc    Create a store
 // @route   POST /api/stores
-// @access  Private/Manager
+// @access  Private/Manager/Admin
 const createStore = async (req, res, next) => {
   try {
-    const { name, description, address, city, phone, email, bannerImage, logo, operatingHours } = req.body;
+    const { name, description, address, city, phone, email, bannerImage, logo, operatingHours, managerId } = req.body;
     const slug = name.toLowerCase().replace(/\s+/g, '-');
 
-    const existingStore = await Store.findOne({ managerId: req.user._id });
-    if (existingStore) {
-      res.status(400);
-      return next(new Error('You already have a store registered'));
+    // Admin can specify managerId; manager uses their own
+    const ownerId = req.user.role === 'admin' && managerId ? managerId : req.user._id;
+
+    // Only enforce "one store per manager" for non-admin users
+    if (req.user.role !== 'admin') {
+      const existingStore = await Store.findOne({ managerId: ownerId });
+      if (existingStore) {
+        res.status(400);
+        return next(new Error('You already have a store registered'));
+      }
     }
 
     const store = await Store.create({
-      managerId: req.user._id,
+      managerId: ownerId,
       name,
       slug,
       description,

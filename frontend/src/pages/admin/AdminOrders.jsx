@@ -1,21 +1,10 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, ChevronDown, Monitor, Ticket, BarChart3 } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getAdminOrders, updateOrderStatus } from '../../services/api';
+import { getAdminOrders, updateOrderStatus, approveOrder, cancelOrder } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
-
-const navItems = [
-  { path: '/admin', label: 'Overview', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Users', icon: Users },
-  { path: '/admin/stores', label: 'Stores', icon: Store },
-  { path: '/admin/categories', label: 'Categories', icon: Tag },
-  { path: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { path: '/admin/vouchers', label: 'Vouchers', icon: Ticket },
-  { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
-  { path: '/cashier-login', label: 'POS Terminal', icon: Monitor },
-];
+import navItems from './adminNavItems';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
@@ -24,6 +13,7 @@ const statusColors = {
   shipped: 'bg-cyan-100 text-cyan-700',
   out_for_delivery: 'bg-teal-100 text-teal-700',
   delivered: 'bg-emerald-100 text-emerald-700',
+  completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
 };
 
@@ -34,7 +24,7 @@ const paymentColors = {
   refunded: 'bg-gray-100 text-gray-600',
 };
 
-const statusFlow = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+const statusFlow = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -66,7 +56,36 @@ const AdminOrders = () => {
     }
   };
 
+  const handleApprove = async (orderId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Approve this order? It will be marked as Confirmed.')) return;
+    try {
+      await approveOrder(orderId);
+      toast.success('Order approved ✅');
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve order');
+    }
+  };
+
+  const handleCancel = async (orderId, e) => {
+    e.stopPropagation();
+    const reason = window.prompt('Reason for cancellation (optional):');
+    if (reason === null) return; // user pressed Cancel on prompt
+    try {
+      await cancelOrder(orderId, { reason });
+      toast.success('Order cancelled');
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel order');
+    }
+  };
+
   const filtered = filter === 'all' ? orders : orders.filter((o) => o.orderStatus === filter);
+
+  // Summary stats
+  const pendingCount = orders.filter((o) => o.orderStatus === 'pending').length;
+  const totalRevenue = orders.filter((o) => ['delivered', 'completed'].includes(o.orderStatus)).reduce((s, o) => s + o.totalAmount, 0);
 
   if (loading) {
     return (
@@ -81,12 +100,16 @@ const AdminOrders = () => {
   return (
     <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-dark-navy">All Orders</h1>
-          <p className="text-muted-text text-sm mt-1">{orders.length} total platform orders</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-dark-navy">Order Management</h1>
+            <p className="text-muted-text text-sm mt-1">
+              {orders.length} total · <span className="text-amber-600">{pendingCount} pending approval</span> · Revenue: <span className="text-emerald-600 font-semibold">{formatPrice(convertPrice(totalRevenue))}</span>
+            </p>
+          </div>
         </div>
 
-        {/* Filter */}
+        {/* Filter Pills */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {['all', ...statusFlow].map((status) => (
             <button
@@ -116,12 +139,25 @@ const AdminOrders = () => {
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Payment</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Status</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Date</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-text">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-card-border">
                 {filtered.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}>
-                    <td className="px-6 py-3.5 font-mono text-xs">#{order._id.slice(-8).toUpperCase()}</td>
+                  <tr
+                    key={order._id}
+                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${order.orderStatus === 'cancelled' ? 'opacity-50' : ''}`}
+                    onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
+                  >
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs">#{order._id.slice(-8).toUpperCase()}</span>
+                        {expandedId === order._id ? <ChevronUp size={14} /> : <ChevronDown size={14} className="text-gray-400" />}
+                        {order.isPosOrder && (
+                          <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded">POS</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-3.5">
                       <p className="font-medium text-dark-navy">{order.userId?.name || 'N/A'}</p>
                       <p className="text-xs text-muted-text">{order.userId?.email}</p>
@@ -143,7 +179,31 @@ const AdminOrders = () => {
                         {statusFlow.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
                       </select>
                     </td>
-                    <td className="px-6 py-3.5 text-muted-text">{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-3.5 text-muted-text text-xs">{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {order.orderStatus === 'pending' && (
+                          <button
+                            onClick={(e) => handleApprove(order._id, e)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-colors"
+                            title="Approve order"
+                          >
+                            <CheckCircle size={14} />
+                            Approve
+                          </button>
+                        )}
+                        {!['delivered', 'completed', 'cancelled'].includes(order.orderStatus) && (
+                          <button
+                            onClick={(e) => handleCancel(order._id, e)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold transition-colors"
+                            title="Cancel order"
+                          >
+                            <XCircle size={14} />
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
