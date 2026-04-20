@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getSettings, updateSettings, uploadLogo } from '../../services/api';
 import { toast } from 'react-toastify';
 import navItems from './adminNavItems';
+import useSettingsStore from '../../store/settingsStore';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState(null);
@@ -11,6 +12,7 @@ const AdminSettings = () => {
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState('general');
   const fileRef = useRef(null);
+  const setSettingsLocal = useSettingsStore((s) => s.setSettingsLocal);
 
   useEffect(() => { fetchSettings(); }, []);
 
@@ -18,6 +20,7 @@ const AdminSettings = () => {
     try {
       const { data } = await getSettings();
       setSettings(data);
+      setSettingsLocal(data);
     } catch (err) { toast.error('Failed to load settings'); }
     finally { setLoading(false); }
   };
@@ -35,6 +38,7 @@ const AdminSettings = () => {
     try {
       const { data } = await updateSettings(settings);
       setSettings(data);
+      setSettingsLocal(data);
       toast.success('Settings saved successfully!');
     } catch (err) { toast.error('Failed to save settings'); }
     finally { setSaving(false); }
@@ -47,7 +51,9 @@ const AdminSettings = () => {
     formData.append('logo', file);
     try {
       const { data } = await uploadLogo(formData);
-      setSettings(prev => ({ ...prev, logo: data.logo }));
+      const merged = { ...settings, logo: data.logo };
+      setSettings(merged);
+      setSettingsLocal(merged);
       toast.success('Logo uploaded!');
     } catch (err) { toast.error('Failed to upload logo'); }
   };

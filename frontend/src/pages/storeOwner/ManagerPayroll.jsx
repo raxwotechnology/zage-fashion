@@ -10,7 +10,7 @@ import managerNavItems from './managerNavItems';
 
 const now = new Date();
 
-const ManagerPayroll = () => {
+const ManagerPayroll = ({ navItems = managerNavItems, title = 'Manager Dashboard' }) => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState('');
@@ -26,7 +26,10 @@ const ManagerPayroll = () => {
   useEffect(() => { fetchEmployees(); }, []);
 
   const fetchEmployees = async () => {
-    try { const { data } = await getEmployees(); setEmployees(data); }
+    try {
+      const { data } = await getEmployees({ includeManagers: true });
+      setEmployees(data);
+    }
     catch { toast.error('Failed to load employees'); }
     finally { setLoading(false); }
   };
@@ -75,10 +78,10 @@ const ManagerPayroll = () => {
     toast.success('Payroll report exported');
   };
 
-  if (loading) return <DashboardLayout navItems={managerNavItems} title="Manager Dashboard"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
+  if (loading) return <DashboardLayout navItems={navItems} title={title}><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title={title}>
       <div>
         <h1 className="text-2xl font-bold text-dark-navy mb-2">💰 Payroll Management</h1>
         <p className="text-muted-text text-sm mb-6">Process salaries with Sri Lankan EPF/ETF compliance</p>

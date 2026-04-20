@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingBag, Users, Clock, Calendar, CreditCard, Target, BarChart3, Warehouse } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Users, Clock, Calendar, Target, BarChart3, Warehouse } from 'lucide-react';
 
 const managerNavItems = [
   { path: '/manager', label: 'Overview', icon: LayoutDashboard },
@@ -8,7 +8,6 @@ const managerNavItems = [
   { path: '/manager/employees', label: 'Employees', icon: Users },
   { path: '/manager/attendance', label: 'Attendance', icon: Clock },
   { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
-  { path: '/manager/payroll', label: 'Payroll', icon: CreditCard },
   { path: '/manager/targets', label: 'Targets', icon: Target },
   { path: '/manager/performance', label: 'Performance', icon: BarChart3 },
   { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },

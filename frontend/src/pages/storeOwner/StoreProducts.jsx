@@ -10,7 +10,7 @@ import managerNavItems from './managerNavItems';
 
 const emptyForm = {
   name: '', categoryId: '', description: '', price: '', mrp: '', discount: '', unit: 'kg',
-  stock: '', images: '', isFeatured: false, isOnSale: false, status: 'active', storeId: '',
+  stock: '', images: '', isFeatured: false, isOnSale: false, allowKokoOnline: true, allowKokoPos: true, status: 'active', storeId: '',
 };
 
 const StoreProducts = () => {
@@ -24,16 +24,21 @@ const StoreProducts = () => {
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchProducts = async () => {
     try {
+      setError('');
+      setLoading(true);
       const [prodRes, catRes, storesRes] = await Promise.all([getMyStoreProducts(), getCategories(), getStores()]);
       setProducts(prodRes.data.products);
       setStoreInfo(prodRes.data.store);
       setCategories(catRes.data);
       setAllStores(storesRes.data || []);
     } catch (err) {
-      toast.error('Failed to load products');
+      const msg = err.response?.data?.message || 'Failed to load products';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -61,6 +66,8 @@ const StoreProducts = () => {
       images: (product.images || []).join(', '),
       isFeatured: product.isFeatured || false,
       isOnSale: product.isOnSale || false,
+      allowKokoOnline: product.allowKokoOnline !== false,
+      allowKokoPos: product.allowKokoPos !== false,
       status: product.status || 'active',
     });
     setShowModal(true);
@@ -113,7 +120,7 @@ const StoreProducts = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Manager Dashboard">
+      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -122,8 +129,14 @@ const StoreProducts = () => {
   }
 
   return (
-    <DashboardLayout navItems={navItems} title="Store Dashboard">
+    <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
       <div>
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={fetchProducts} className="font-semibold hover:underline">Retry</button>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-dark-navy">Products</h1>
@@ -181,6 +194,7 @@ const StoreProducts = () => {
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Price</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Stock</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Status</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Koko</th>
                   <th className="text-right px-6 py-3 font-medium text-muted-text">Actions</th>
                 </tr>
               </thead>
@@ -216,6 +230,16 @@ const StoreProducts = () => {
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${product.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
                         {product.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${product.allowKokoOnline !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                          Online {product.allowKokoOnline !== false ? 'ON' : 'OFF'}
+                        </span>
+                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${product.allowKokoPos !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                          POS {product.allowKokoPos !== false ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -307,6 +331,29 @@ const StoreProducts = () => {
                     <input type="checkbox" checked={form.isOnSale} onChange={(e) => setForm({ ...form, isOnSale: e.target.checked })} className="w-4 h-4 rounded text-primary-green focus:ring-primary-green" />
                     On Sale
                   </label>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-dark-navy mb-1">Koko Pay Availability</label>
+                  <div className="flex flex-wrap gap-6 border border-card-border rounded-xl px-4 py-3">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.allowKokoOnline}
+                        onChange={(e) => setForm({ ...form, allowKokoOnline: e.target.checked })}
+                        className="w-4 h-4 rounded text-primary-green focus:ring-primary-green"
+                      />
+                      Allow Koko on Online Checkout
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.allowKokoPos}
+                        onChange={(e) => setForm({ ...form, allowKokoPos: e.target.checked })}
+                        className="w-4 h-4 rounded text-primary-green focus:ring-primary-green"
+                      />
+                      Allow Koko on POS
+                    </label>
+                  </div>
                 </div>
                 {editingId && (
                   <div>

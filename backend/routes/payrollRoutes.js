@@ -11,7 +11,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.use(protect);
 
 router.post('/calculate', authorize('manager', 'admin'), calculateSalary);
-router.post('/pay', authorize('manager', 'admin'), processSalaryPayment);
+router.post('/pay', authorize('admin'), processSalaryPayment);
 router.get('/history/:employeeId', getSalaryHistory);
 router.get('/report', authorize('manager', 'admin'), getPayrollReport);
 

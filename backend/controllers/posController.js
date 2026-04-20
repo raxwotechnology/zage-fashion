@@ -2,6 +2,9 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const User = require('../models/User');
 const Store = require('../models/Store');
+const { isValidSLPhone, formatSLPhone, isStrictSLE164Phone, isValidEmail } = require('../utils/validators');
+const { sendSms, buildPosReceiptMessage } = require('../utils/smsService');
+const { sendEmail, posReceiptEmail } = require('../utils/emailService');
 
 // Helper: resolve store ID for the current user (cashier, manager, or admin)
 const resolveStoreId = async (user) => {
@@ -52,12 +55,12 @@ const getPosProducts = async (req, res, next) => {
         { sku: { $regex: search, $options: 'i' } },
       ];
       products = await Product.find(filter)
-        .select('name price mrp stock images unit barcode sku variants discount')
+        .select('name price mrp stock images unit barcode sku variants discount allowKokoPos')
         .limit(50)
         .lean();
     } else {
       products = await Product.find(filter)
-        .select('name price mrp stock images unit barcode sku variants discount')
+        .select('name price mrp stock images unit barcode sku variants discount allowKokoPos')
         .limit(100)
         .lean();
     }
@@ -84,7 +87,7 @@ const getProductByBarcode = async (req, res, next) => {
       storeId,
       status: 'active',
     })
-      .select('name price mrp stock images unit barcode sku variants discount')
+      .select('name price mrp stock images unit barcode sku variants discount allowKokoPos')
       .lean();
 
     if (!product) {
@@ -112,7 +115,29 @@ const posCheckout = async (req, res, next) => {
       couponCode,
       customerName,
       customerPhone,
+      sendSmsReceipt = false,
+      sendReceiptEmail = false,
+      receiptEmail,
+      printReceipt = true,
     } = req.body;
+    let normalizedCustomerPhone = customerPhone ? formatSLPhone(customerPhone) : undefined;
+    if (customerPhone && !isValidSLPhone(customerPhone)) {
+      res.status(400);
+      return next(new Error('Customer phone must be a valid Sri Lankan mobile number.'));
+    }
+    if (sendSmsReceipt && !normalizedCustomerPhone) {
+      res.status(400);
+      return next(new Error('Customer phone is required when SMS receipt is enabled.'));
+    }
+    if (sendSmsReceipt && !isStrictSLE164Phone(normalizedCustomerPhone)) {
+      res.status(400);
+      return next(new Error('Customer phone must be in +947XXXXXXXX format for SMS receipts.'));
+    }
+    if (sendReceiptEmail && receiptEmail && !isValidEmail(receiptEmail)) {
+      res.status(400);
+      return next(new Error('Please enter a valid email address for receipt delivery.'));
+    }
+
 
     if (!items || items.length === 0) {
       res.status(400);
@@ -146,6 +171,10 @@ const posCheckout = async (req, res, next) => {
         return next(
           new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`)
         );
+      }
+      if (paymentMethod === 'koko' && product.allowKokoPos === false) {
+        res.status(400);
+        return next(new Error(`${product.name} is not eligible for Koko Pay in POS.`));
       }
 
       const lineTotal = item.price * item.quantity;
@@ -247,8 +276,12 @@ const posCheckout = async (req, res, next) => {
       tenderedAmount: tenderedAmount || totalAmount,
       changeGiven,
       customerName: customerName || undefined,
-      customerPhone: customerPhone || undefined,
+      customerPhone: normalizedCustomerPhone || undefined,
       couponCode: appliedCoupon || undefined,
+      sendReceiptEmail: !!sendReceiptEmail,
+      receiptEmail: receiptEmail || undefined,
+      sendSmsReceipt: !!sendSmsReceipt,
+      printReceipt: !!printReceipt,
     });
 
     // Deduct stock
@@ -271,6 +304,41 @@ const posCheckout = async (req, res, next) => {
     populatedOrder.discountValue = discount || 0;
     populatedOrder.couponCode = appliedCoupon;
     populatedOrder.couponDiscount = couponDiscount;
+    populatedOrder.sendReceiptEmail = !!sendReceiptEmail;
+    populatedOrder.receiptEmail = receiptEmail || undefined;
+    populatedOrder.sendSmsReceipt = !!sendSmsReceipt;
+    populatedOrder.printReceipt = !!printReceipt;
+
+    if (sendSmsReceipt && normalizedCustomerPhone) {
+      try {
+        await sendSms(normalizedCustomerPhone, buildPosReceiptMessage(totalAmount));
+      } catch (smsErr) {
+        populatedOrder.smsReceiptError = smsErr.message;
+      }
+    }
+
+    if (sendReceiptEmail) {
+      try {
+        const cashier = await User.findById(req.user._id).select('name email phone').lean();
+        const targetEmail = receiptEmail || cashier?.email;
+        if (targetEmail) {
+          const template = posReceiptEmail(populatedOrder, {
+            name: customerName || 'Walk-in Customer',
+            email: targetEmail,
+            phone: normalizedCustomerPhone || '',
+          });
+          const sent = await sendEmail(targetEmail, template.subject, template.html);
+          if (sent) {
+            await Order.findByIdAndUpdate(order._id, { receiptEmailSentAt: new Date(), receiptEmailError: undefined });
+          } else {
+            await Order.findByIdAndUpdate(order._id, { receiptEmailError: 'Email service failed to deliver receipt' });
+            populatedOrder.receiptEmailError = 'Email service failed to deliver receipt';
+          }
+        }
+      } catch (emailErr) {
+        populatedOrder.receiptEmailError = emailErr.message;
+      }
+    }
 
     res.status(201).json(populatedOrder);
   } catch (error) {

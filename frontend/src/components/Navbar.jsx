@@ -6,12 +6,18 @@ import useCartStore from '../store/cartStore';
 import useCurrencyStore from '../store/currencyStore';
 import { searchProducts } from '../services/api';
 import NotificationBell from './NotificationBell';
+import useSettingsStore from '../store/settingsStore';
 
 const Navbar = () => {
   const { user, logout } = useAuthStore();
   const cartCount = useCartStore((s) => s.getCount());
   const fetchCart = useCartStore((s) => s.fetchCart);
   const { currency, toggleCurrency, fetchRate, getProductPrice } = useCurrencyStore();
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
+  const brandLogoUrl = settings?.logoUrl;
+  const brandPhone = settings?.phone || '+94 11 255 5000';
+  const freeDeliveryThreshold = Number(settings?.deliveryFeeThreshold || 5000).toLocaleString();
 
   useEffect(() => {
     if (user) fetchCart();
@@ -84,11 +90,12 @@ const Navbar = () => {
   };
 
   // Navigation links with role visibility
+  const shouldHidePublicTabs = !!user && ['admin', 'manager', 'cashier'].includes(user.role);
   const navLinks = [
-    { path: '/', label: 'Home', icon: Home, show: true },
-    { path: '/shop', label: 'Shop', icon: ShoppingBag, show: true },
-    { path: '/deals', label: 'Deals', icon: Tag, show: true },
-    { path: '/stores', label: 'Stores', icon: MapPin, show: true },
+    { path: '/', label: 'Home', icon: Home, show: !shouldHidePublicTabs },
+    { path: '/shop', label: 'Shop', icon: ShoppingBag, show: !shouldHidePublicTabs },
+    { path: '/deals', label: 'Deals', icon: Tag, show: !shouldHidePublicTabs },
+    { path: '/stores', label: 'Stores', icon: MapPin, show: !shouldHidePublicTabs },
   ];
 
   const getDashboardLink = () => {
@@ -111,10 +118,10 @@ const Navbar = () => {
       {/* Top Utility Bar */}
       <div className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white text-xs">
         <div className="base-container py-1.5 flex items-center justify-between">
-          <span className="hidden sm:inline">🚚 Free delivery on orders over Rs. 5,000</span>
-          <span className="sm:hidden text-[11px]">🚚 Free delivery over Rs.5,000</span>
+          <span className="hidden sm:inline">🚚 Free delivery on orders over Rs. {freeDeliveryThreshold}</span>
+          <span className="sm:hidden text-[11px]">🚚 Free delivery over Rs.{freeDeliveryThreshold}</span>
           <div className="flex items-center gap-3">
-            <span className="hidden md:inline">📞 +94 11 255 5000</span>
+            <span className="hidden md:inline">📞 {brandPhone}</span>
             {/* Currency Toggle */}
             <button
               onClick={toggleCurrency}
@@ -131,13 +138,14 @@ const Navbar = () => {
       {/* Main Nav */}
       <div className="base-container py-3 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold text-primary-green flex-shrink-0">
-          FreshCart
+        <Link to="/" className="text-2xl font-bold text-primary-green flex-shrink-0 flex items-center gap-2">
+          {brandLogoUrl && <img src={brandLogoUrl} alt={brandName} className="w-8 h-8 rounded object-cover" />}
+          <span>{brandName}</span>
         </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-1">
-          {navLinks.map((link) => (
+          {navLinks.filter((l) => l.show).map((link) => (
             <Link
               key={link.path}
               to={link.path}
@@ -330,7 +338,7 @@ const Navbar = () => {
             </form>
 
             {/* Nav Links */}
-            {navLinks.map((link) => (
+            {navLinks.filter((l) => l.show).map((link) => (
               <Link
                 key={link.path}
                 to={link.path}

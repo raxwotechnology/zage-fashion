@@ -240,7 +240,11 @@ const rejectLeave = async (req, res, next) => {
 // @access  Private/Manager/Admin
 const getEmployees = async (req, res, next) => {
   try {
-    const filter = { role: { $in: ['cashier', 'deliveryGuy', 'stockEmployee'] } };
+    const roles = ['cashier', 'deliveryGuy', 'stockEmployee'];
+    if (req.user.role === 'admin' && String(req.query.includeManagers || '').toLowerCase() === 'true') {
+      roles.push('manager');
+    }
+    const filter = { role: { $in: roles } };
     if (req.query.storeId) filter.assignedStore = req.query.storeId;
 
     // If manager, only show their store's employees

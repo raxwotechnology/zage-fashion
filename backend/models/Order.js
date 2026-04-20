@@ -69,6 +69,7 @@ const orderSchema = mongoose.Schema(
       enum: [
         'pending',
         'confirmed',
+        'assigned_delivery',
         'packed',
         'shipped',
         'out_for_delivery',
@@ -125,6 +126,34 @@ const orderSchema = mongoose.Schema(
     },
     couponCode: {
       type: String,
+    },
+    paymentOtpRequired: {
+      type: Boolean,
+      default: false,
+    },
+    paymentOtpVerifiedAt: {
+      type: Date,
+    },
+    sendReceiptEmail: {
+      type: Boolean,
+      default: false,
+    },
+    receiptEmail: {
+      type: String,
+    },
+    receiptEmailSentAt: {
+      type: Date,
+    },
+    receiptEmailError: {
+      type: String,
+    },
+    sendSmsReceipt: {
+      type: Boolean,
+      default: false,
+    },
+    printReceipt: {
+      type: Boolean,
+      default: true,
     },
   },
   {

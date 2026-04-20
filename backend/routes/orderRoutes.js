@@ -6,6 +6,8 @@ const {
   getOrderById,
   updateOrderStatus,
   generatePayHereHash,
+  requestPaymentOtp,
+  verifyPaymentOtp,
   payHereNotify,
   getStoreOrders,
 } = require('../controllers/orderController');
@@ -21,6 +23,8 @@ router.route('/store').get(protect, authorize('manager'), getStoreOrders);
 router.route('/:id').get(protect, getOrderById);
 router.route('/:id/status').put(protect, authorize('manager', 'admin'), updateOrderStatus);
 router.route('/:id/payhere-hash').post(protect, generatePayHereHash);
+router.route('/:id/payment-otp/request').post(protect, requestPaymentOtp);
+router.route('/:id/payment-otp/verify').post(protect, verifyPaymentOtp);
 
 module.exports = router;
 

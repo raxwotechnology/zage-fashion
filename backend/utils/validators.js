@@ -2,9 +2,10 @@
  * Shared validation utilities for FreshCart
  */
 
-// Sri Lankan phone number validation
-// Accepts: +94771234567, 0771234567, 771234567
-const SL_PHONE_REGEX = /^(?:\+94|0)?[0-9]{9}$/;
+// Sri Lankan mobile number validation
+// Accepts input as: +94771234567, 0771234567, 771234567
+// Canonical stored/sent format must be: +947XXXXXXXX
+const SL_PHONE_REGEX = /^(?:\+94|0)?7\d{8}$/;
 
 const isValidSLPhone = (phone) => {
   if (!phone) return false;
@@ -22,6 +23,8 @@ const formatSLPhone = (phone) => {
   return cleaned;
 };
 
+const isStrictSLE164Phone = (phone) => /^\+947\d{8}$/.test(phone || '');
+
 // Email validation
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,6 +41,7 @@ const isPositiveNumber = (val) => typeof val === 'number' && val > 0;
 module.exports = {
   isValidSLPhone,
   formatSLPhone,
+  isStrictSLE164Phone,
   isValidEmail,
   isNonEmptyString,
   isPositiveNumber,

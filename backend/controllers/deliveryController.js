@@ -11,7 +11,7 @@ const getMyDeliveries = async (req, res, next) => {
   try {
     const orders = await Order.find({
       deliveryGuyId: req.user._id,
-      orderStatus: { $in: ['confirmed', 'packed', 'shipped', 'out_for_delivery'] },
+      orderStatus: { $in: ['assigned_delivery', 'packed', 'shipped', 'out_for_delivery'] },
     })
       .populate('userId', 'name phone email addresses')
       .populate('storeId', 'name address phone')
@@ -52,7 +52,7 @@ const updateDeliveryStatus = async (req, res, next) => {
     if (!order) { res.status(404); return next(new Error('Order not found or not assigned to you')); }
 
     const { status } = req.body;
-    const validStatuses = ['shipped', 'out_for_delivery', 'delivered'];
+    const validStatuses = ['out_for_delivery', 'delivered'];
     if (!validStatuses.includes(status)) {
       res.status(400);
       return next(new Error(`Invalid status. Valid: ${validStatuses.join(', ')}`));
@@ -136,8 +136,8 @@ const assignDeliveryGuy = async (req, res, next) => {
     if (!deliveryGuy) { res.status(404); return next(new Error('Delivery person not found')); }
 
     order.deliveryGuyId = deliveryGuyId;
-    if (order.orderStatus === 'confirmed' || order.orderStatus === 'packed') {
-      order.orderStatus = 'shipped';
+    if (['pending', 'confirmed', 'packed'].includes(order.orderStatus)) {
+      order.orderStatus = 'assigned_delivery';
     }
     await order.save();
 

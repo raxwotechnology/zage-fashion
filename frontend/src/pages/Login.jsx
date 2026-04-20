@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useAuthStore from '../store/authStore';
+import useSettingsStore from '../store/settingsStore';
 import { loginUser } from '../services/api';
 import { toast } from 'react-toastify';
 
@@ -12,6 +13,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login, user, isAuthenticated, logout } = useAuthStore();
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
+  const brandLogoUrl = settings?.logoUrl;
   const navigate = useNavigate();
 
   const submitHandler = async (e) => {
@@ -47,7 +51,10 @@ const Login = () => {
           initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         >
           <div className="text-center mb-6">
-            <Link to="/" className="text-3xl font-bold text-primary-green inline-block mb-4">FreshCart</Link>
+            <Link to="/" className="text-3xl font-bold text-primary-green inline-flex items-center gap-2 mb-4">
+              {brandLogoUrl && <img src={brandLogoUrl} alt={brandName} className="w-9 h-9 rounded object-cover" />}
+              <span>{brandName}</span>
+            </Link>
             <h1 className="text-2xl font-bold text-dark-navy mt-0 mb-2">Already Signed In</h1>
           </div>
 
@@ -86,7 +93,10 @@ const Login = () => {
         initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
       >
         <div className="text-center mb-8">
-          <Link to="/" className="text-3xl font-bold text-primary-green inline-block mb-4">FreshCart</Link>
+          <Link to="/" className="text-3xl font-bold text-primary-green inline-flex items-center gap-2 mb-4">
+            {brandLogoUrl && <img src={brandLogoUrl} alt={brandName} className="w-9 h-9 rounded object-cover" />}
+            <span>{brandName}</span>
+          </Link>
           <h1 className="text-2xl font-bold text-dark-navy mt-0 mb-2">Welcome Back</h1>
           <p className="text-muted-text m-0">Sign in to continue shopping</p>
         </div>

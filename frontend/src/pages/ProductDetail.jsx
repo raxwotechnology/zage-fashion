@@ -74,6 +74,15 @@ const ProductDetail = () => {
     }
   };
 
+  const handleReviewsChanged = (stats) => {
+    if (!stats || !product) return;
+    setProduct((prev) => prev ? {
+      ...prev,
+      averageRating: stats.averageRating ?? prev.averageRating,
+      totalReviews: stats.totalReviews ?? prev.totalReviews,
+    } : prev);
+  };
+
   if (loading) {
     return (
       <div className="base-container py-8">
@@ -219,7 +228,7 @@ const ProductDetail = () => {
         </div>
         <div className="bg-white border border-card-border rounded-2xl p-6">
           {activeTab === 'description' && <p className="text-dark-navy leading-relaxed m-0">{product.description}</p>}
-          {activeTab === 'reviews' && <ReviewSection productId={product._id} />}
+          {activeTab === 'reviews' && <ReviewSection productId={product._id} onReviewsChanged={handleReviewsChanged} />}
           {activeTab === 'details' && (
             <div className="grid grid-cols-2 gap-4 text-sm">
               {[

@@ -101,8 +101,21 @@ const getAllOrders = async (req, res, next) => {
     const orders = await Order.find({})
       .populate('userId', 'name email')
       .populate('storeId', 'name')
+      .populate('deliveryGuyId', 'name email phone')
       .sort({ createdAt: -1 });
     res.json(orders);
+  } catch (error) { next(error); }
+};
+
+// @desc    Get all products for admin
+// @route   GET /api/admin/products
+const getAllProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find({})
+      .populate('categoryId', 'name')
+      .populate('storeId', 'name')
+      .sort({ createdAt: -1 });
+    res.json(products);
   } catch (error) { next(error); }
 };
 
@@ -211,6 +224,7 @@ module.exports = {
   getAllStores,
   toggleStore,
   getAllOrders,
+  getAllProducts,
   approveOrder,
   cancelOrder,
   getStats,

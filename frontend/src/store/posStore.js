@@ -10,6 +10,10 @@ const usePosStore = create((set, get) => ({
   coupon: null, // { code, value, type, description }
   customerName: '',
   customerPhone: '',
+  sendReceiptEmail: false,
+  receiptEmail: '',
+  sendSmsReceipt: false,
+  printReceipt: true,
 
   addItem: (product) => {
     const { cart } = get();
@@ -90,6 +94,15 @@ const usePosStore = create((set, get) => ({
     set({ customerName: name, customerPhone: phone });
   },
 
+  setReceiptOptions: (opts) => {
+    set({
+      sendSmsReceipt: !!opts.sendSmsReceipt,
+      sendReceiptEmail: !!opts.sendReceiptEmail,
+      receiptEmail: opts.receiptEmail !== undefined ? opts.receiptEmail : get().receiptEmail,
+      printReceipt: opts.printReceipt !== false,
+    });
+  },
+
   clearCart: () => {
     set({
       cart: [],
@@ -100,6 +113,10 @@ const usePosStore = create((set, get) => ({
       coupon: null,
       customerName: '',
       customerPhone: '',
+      sendReceiptEmail: false,
+      receiptEmail: '',
+      sendSmsReceipt: false,
+      printReceipt: true,
     });
   },
 

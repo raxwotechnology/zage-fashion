@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Clock, CreditCard, Truck, ChevronRight, ShieldCheck } from 'lucide-react';
+import { MapPin, Clock, CreditCard, Truck, ChevronRight, ShieldCheck, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import useCurrencyStore from '../store/currencyStore';
-import { createOrder, getPayHereHash } from '../services/api';
+import { createOrder, getPayHereHash, requestOrderPaymentOtp, verifyOrderPaymentOtp } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Checkout = () => {
@@ -18,7 +18,14 @@ const Checkout = () => {
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryTime, setDeliveryTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [sendReceiptEmail, setSendReceiptEmail] = useState(false);
+  const [receiptEmail, setReceiptEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpOrderId, setOtpOrderId] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
 
   const subtotal = getSubtotal();
   const deliveryFee = subtotal > 50 ? 0 : 4.99;
@@ -75,14 +82,24 @@ const Checkout = () => {
         paymentMethod,
         deliveryFee,
         tax,
+        sendReceiptEmail,
+        receiptEmail: sendReceiptEmail ? (receiptEmail || user?.email || '') : undefined,
       };
 
       const { data: order } = await createOrder(orderData);
 
       if (paymentMethod === 'payhere') {
-        // Get PayHere hash and redirect
-        const { data: payData } = await getPayHereHash(order._id);
-        initiatePayHere(payData, order);
+        await sendPaymentOtp(order._id);
+        setOtpOrderId(order._id);
+        setOtpModalOpen(true);
+      } else if (paymentMethod === 'koko') {
+        clearItems();
+        if (order?.splitOrders?.isSplit) {
+          toast.info(order.splitOrders.message);
+        } else {
+          toast.success('Koko order placed successfully!');
+        }
+        navigate(`/order-confirmation/${order._id}`);
       } else {
         // COD — go to confirmation
         clearItems();
@@ -93,6 +110,39 @@ const Checkout = () => {
       toast.error(err.response?.data?.message || 'Failed to place order');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendPaymentOtp = async (orderId) => {
+    try {
+      setOtpSending(true);
+      await requestOrderPaymentOtp(orderId);
+      toast.success('Payment OTP sent to your phone');
+    } catch (err) {
+      throw new Error(err.response?.data?.message || 'Failed to send payment OTP');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyPaymentOtp = async () => {
+    if (!otpOrderId) return;
+    if (!otpCode || otpCode.trim().length !== 6) {
+      toast.error('Enter the 6-digit OTP');
+      return;
+    }
+    try {
+      setOtpVerifying(true);
+      await verifyOrderPaymentOtp(otpOrderId, { otp: otpCode.trim() });
+      const { data: payData } = await getPayHereHash(otpOrderId);
+      setOtpModalOpen(false);
+      setOtpCode('');
+      const payOrder = { _id: otpOrderId, items };
+      initiatePayHere(payData, payOrder);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'OTP verification failed');
+    } finally {
+      setOtpVerifying(false);
     }
   };
 
@@ -246,6 +296,7 @@ const Checkout = () => {
               {[
                 { id: 'cod', label: 'Cash on Delivery', icon: '💵', desc: 'Pay when your order arrives' },
                 { id: 'payhere', label: 'PayHere (Card/Bank)', icon: '💳', desc: 'Secure online payment via PayHere' },
+                { id: 'koko', label: 'Koko Pay', icon: '📱', desc: 'Buy now and pay later with Koko' },
               ].map((method) => (
                 <label key={method.id}
                   className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
@@ -262,6 +313,34 @@ const Checkout = () => {
                 </label>
               ))}
             </div>
+          </motion.div>
+
+          <motion.div
+            className="bg-white border border-card-border rounded-2xl p-6"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
+          >
+            <h3 className="font-bold text-dark-navy mt-0 mb-4">Receipt Delivery</h3>
+            <label className="flex items-center gap-3 p-3 rounded-xl border border-card-border cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendReceiptEmail}
+                onChange={(e) => setSendReceiptEmail(e.target.checked)}
+                className="accent-primary-green"
+              />
+              <span className="text-sm text-dark-navy">Send receipt via Email after successful payment</span>
+            </label>
+            {sendReceiptEmail && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-dark-navy mb-1">Receipt Email</label>
+                <input
+                  type="email"
+                  value={receiptEmail}
+                  onChange={(e) => setReceiptEmail(e.target.value)}
+                  placeholder={user?.email || 'you@example.com'}
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm"
+                />
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -317,7 +396,7 @@ const Checkout = () => {
               disabled={loading}
               className="w-full bg-primary-green text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? 'Processing...' : paymentMethod === 'payhere' ? 'Pay Now' : 'Place Order'}
+              {loading ? 'Processing...' : paymentMethod === 'payhere' ? 'Pay Now' : paymentMethod === 'koko' ? 'Place Koko Order' : 'Place Order'}
               <ChevronRight size={18} />
             </button>
 
@@ -328,6 +407,49 @@ const Checkout = () => {
           </motion.div>
         </div>
       </div>
+
+      {otpModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md border border-card-border shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-dark-navy m-0">Verify Payment OTP</h3>
+              <button
+                onClick={() => setOtpModalOpen(false)}
+                className="text-muted-text hover:text-dark-navy"
+                aria-label="Close OTP dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-sm text-muted-text mb-4">
+              Enter the 6-digit OTP sent to your phone to continue with payment.
+            </p>
+            <input
+              type="text"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="Enter OTP"
+              className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none text-sm mb-4"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => sendPaymentOtp(otpOrderId)}
+                disabled={otpSending || otpVerifying}
+                className="flex-1 border border-primary-green text-primary-green font-semibold py-2.5 rounded-xl hover:bg-emerald-50 transition-all disabled:opacity-60"
+              >
+                {otpSending ? 'Sending...' : 'Resend OTP'}
+              </button>
+              <button
+                onClick={handleVerifyPaymentOtp}
+                disabled={otpVerifying || otpSending}
+                className="flex-1 bg-primary-green text-white font-semibold py-2.5 rounded-xl hover:bg-emerald-600 transition-all disabled:opacity-60"
+              >
+                {otpVerifying ? 'Verifying...' : 'Verify & Pay'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -26,6 +26,7 @@ import {
 import { getPosProducts, getProductByBarcode, posCheckout, getPosOrders, applyVoucher, getSettings } from '../../services/api';
 import usePosStore from '../../store/posStore';
 import useAuthStore from '../../store/authStore';
+import useSettingsStore from '../../store/settingsStore';
 import BarcodeScannerModal from './BarcodeScannerModal';
 import InvoiceModal from './InvoiceModal';
 import { toast } from 'react-toastify';
@@ -33,6 +34,8 @@ import { toast } from 'react-toastify';
 const POSScreen = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
   const pos = usePosStore();
 
   const [products, setProducts] = useState([]);
@@ -194,11 +197,23 @@ const POSScreen = () => {
         couponCode: pos.coupon?.code || undefined,
         customerName: pos.customerName || undefined,
         customerPhone: pos.customerPhone || undefined,
+        sendSmsReceipt: pos.sendSmsReceipt,
+        sendReceiptEmail: pos.sendReceiptEmail,
+        receiptEmail: pos.receiptEmail || undefined,
+        printReceipt: pos.printReceipt,
       });
 
       setLastOrder(data);
       setShowInvoice(true);
-      toast.success('Sale completed! 🎉');
+      if (data?.smsReceiptError) {
+        toast.warning(`Sale completed, but SMS failed: ${data.smsReceiptError}`);
+      } else {
+        toast.success('Sale completed! 🎉');
+      }
+
+      if (pos.printReceipt) {
+        setTimeout(() => window.print(), 350);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Checkout failed');
     } finally {
@@ -247,7 +262,7 @@ const POSScreen = () => {
       <header className="pos-topbar">
         <div className="pos-topbar-left">
           <ShoppingCart size={26} className="pos-topbar-icon" />
-          <h1 className="pos-topbar-title">FreshCart POS</h1>
+          <h1 className="pos-topbar-title">{brandName} POS</h1>
         </div>
         <div className="pos-topbar-center">
           <span className="pos-topbar-store">{user?.assignedStoreName || 'Store'}</span>
@@ -532,6 +547,43 @@ const POSScreen = () => {
                   />
                 </div>
               )}
+
+              <div style={{display:'flex', flexDirection:'column', gap:'6px', marginBottom:'10px'}}>
+                <label style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', color:'#374151'}}>
+                  <input
+                    type="checkbox"
+                    checked={pos.sendSmsReceipt}
+                    onChange={(e) => pos.setReceiptOptions({ sendSmsReceipt: e.target.checked, sendReceiptEmail: pos.sendReceiptEmail, receiptEmail: pos.receiptEmail, printReceipt: pos.printReceipt })}
+                  />
+                  Send SMS Receipt
+                </label>
+                <label style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', color:'#374151'}}>
+                  <input
+                    type="checkbox"
+                    checked={pos.sendReceiptEmail}
+                    onChange={(e) => pos.setReceiptOptions({ sendSmsReceipt: pos.sendSmsReceipt, sendReceiptEmail: e.target.checked, receiptEmail: pos.receiptEmail, printReceipt: pos.printReceipt })}
+                  />
+                  Send Receipt via Email
+                </label>
+                {pos.sendReceiptEmail && (
+                  <input
+                    type="email"
+                    value={pos.receiptEmail}
+                    onChange={(e) => pos.setReceiptOptions({ sendSmsReceipt: pos.sendSmsReceipt, sendReceiptEmail: pos.sendReceiptEmail, receiptEmail: e.target.value, printReceipt: pos.printReceipt })}
+                    placeholder="customer@email.com"
+                    className="pos-input"
+                    style={{fontSize:'12px'}}
+                  />
+                )}
+                <label style={{display:'flex', alignItems:'center', gap:'8px', fontSize:'13px', color:'#374151'}}>
+                  <input
+                    type="checkbox"
+                    checked={pos.printReceipt}
+                    onChange={(e) => pos.setReceiptOptions({ sendSmsReceipt: pos.sendSmsReceipt, sendReceiptEmail: pos.sendReceiptEmail, receiptEmail: pos.receiptEmail, printReceipt: e.target.checked })}
+                  />
+                  Print Receipt
+                </label>
+              </div>
 
               {/* Payment Method */}
               <div className="pos-payment-methods">

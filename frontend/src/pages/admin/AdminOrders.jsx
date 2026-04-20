@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getAdminOrders, updateOrderStatus, approveOrder, cancelOrder } from '../../services/api';
+import { getAdminOrders, updateOrderStatus, approveOrder, cancelOrder, assignDeliveryGuy, getAvailableDeliveryGuys } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
 import navItems from './adminNavItems';
@@ -9,6 +9,7 @@ import navItems from './adminNavItems';
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
   confirmed: 'bg-blue-100 text-blue-700',
+  assigned_delivery: 'bg-purple-100 text-purple-700',
   packed: 'bg-indigo-100 text-indigo-700',
   shipped: 'bg-cyan-100 text-cyan-700',
   out_for_delivery: 'bg-teal-100 text-teal-700',
@@ -24,23 +25,38 @@ const paymentColors = {
   refunded: 'bg-gray-100 text-gray-600',
 };
 
-const statusFlow = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
+const statusFlow = ['pending', 'confirmed', 'assigned_delivery', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [expandedId, setExpandedId] = useState(null);
+  const [deliveryGuys, setDeliveryGuys] = useState([]);
   const { convertPrice, formatPrice } = useCurrencyStore();
 
   const fetchOrders = async () => {
     try {
       const { data } = await getAdminOrders();
       setOrders(data);
+      const { data: guys } = await getAvailableDeliveryGuys();
+      setDeliveryGuys(guys || []);
     } catch (err) {
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignDelivery = async (orderId, deliveryGuyId) => {
+    if (!deliveryGuyId) return;
+    try {
+      await assignDeliveryGuy(orderId, { deliveryGuyId });
+      toast.success('Delivery person assigned');
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to assign delivery');
     }
   };
 
@@ -81,7 +97,13 @@ const AdminOrders = () => {
     }
   };
 
-  const filtered = filter === 'all' ? orders : orders.filter((o) => o.orderStatus === filter);
+  const filtered = (filter === 'all' ? orders : orders.filter((o) => o.orderStatus === filter))
+    .sort((a, b) => {
+      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+      if (sortBy === 'amount_high') return (b.totalAmount || 0) - (a.totalAmount || 0);
+      if (sortBy === 'amount_low') return (a.totalAmount || 0) - (b.totalAmount || 0);
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
   // Summary stats
   const pendingCount = orders.filter((o) => o.orderStatus === 'pending').length;
@@ -107,6 +129,16 @@ const AdminOrders = () => {
               {orders.length} total · <span className="text-amber-600">{pendingCount} pending approval</span> · Revenue: <span className="text-emerald-600 font-semibold">{formatPrice(convertPrice(totalRevenue))}</span>
             </p>
           </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="border border-card-border rounded-xl py-2 px-3 text-sm"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="amount_high">Amount high to low</option>
+            <option value="amount_low">Amount low to high</option>
+          </select>
         </div>
 
         {/* Filter Pills */}
@@ -138,73 +170,96 @@ const AdminOrders = () => {
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Total</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Payment</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Status</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Delivery</th>
                   <th className="text-left px-6 py-3 font-medium text-muted-text">Date</th>
                   <th className="text-right px-6 py-3 font-medium text-muted-text">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-card-border">
                 {filtered.map((order) => (
-                  <tr
-                    key={order._id}
-                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${order.orderStatus === 'cancelled' ? 'opacity-50' : ''}`}
-                    onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
-                  >
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs">#{order._id.slice(-8).toUpperCase()}</span>
-                        {expandedId === order._id ? <ChevronUp size={14} /> : <ChevronDown size={14} className="text-gray-400" />}
-                        {order.isPosOrder && (
-                          <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded">POS</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <p className="font-medium text-dark-navy">{order.userId?.name || 'N/A'}</p>
-                      <p className="text-xs text-muted-text">{order.userId?.email}</p>
-                    </td>
-                    <td className="px-6 py-3.5 text-muted-text">{order.storeId?.name || 'N/A'}</td>
-                    <td className="px-6 py-3.5 font-semibold">{formatPrice(convertPrice(order.totalAmount))}</td>
-                    <td className="px-6 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${paymentColors[order.paymentStatus] || 'bg-gray-100 text-gray-600'}`}>
-                        {order.paymentStatus}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <select
-                        value={order.orderStatus}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 appearance-none cursor-pointer ${statusColors[order.orderStatus]} focus:outline-none focus:ring-2 focus:ring-primary-green`}
-                      >
-                        {statusFlow.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-                      </select>
-                    </td>
-                    <td className="px-6 py-3.5 text-muted-text text-xs">{new Date(order.createdAt).toLocaleDateString()}</td>
-                    <td className="px-6 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {order.orderStatus === 'pending' && (
-                          <button
-                            onClick={(e) => handleApprove(order._id, e)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-colors"
-                            title="Approve order"
-                          >
-                            <CheckCircle size={14} />
-                            Approve
-                          </button>
-                        )}
-                        {!['delivered', 'completed', 'cancelled'].includes(order.orderStatus) && (
-                          <button
-                            onClick={(e) => handleCancel(order._id, e)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold transition-colors"
-                            title="Cancel order"
-                          >
-                            <XCircle size={14} />
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={order._id}>
+                    <tr
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${order.orderStatus === 'cancelled' ? 'opacity-50' : ''}`}
+                      onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
+                    >
+                      <td className="px-6 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs">#{order._id.slice(-8).toUpperCase()}</span>
+                          {expandedId === order._id ? <ChevronUp size={14} /> : <ChevronDown size={14} className="text-gray-400" />}
+                          {order.isPosOrder && (
+                            <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded">POS</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <p className="font-medium text-dark-navy">{order.userId?.name || 'N/A'}</p>
+                        <p className="text-xs text-muted-text">{order.userId?.email}</p>
+                      </td>
+                      <td className="px-6 py-3.5 text-muted-text">{order.storeId?.name || 'N/A'}</td>
+                      <td className="px-6 py-3.5 font-semibold">{formatPrice(convertPrice(order.totalAmount))}</td>
+                      <td className="px-6 py-3.5">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${paymentColors[order.paymentStatus] || 'bg-gray-100 text-gray-600'}`}>
+                          {order.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <select
+                          value={order.orderStatus}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 appearance-none cursor-pointer ${statusColors[order.orderStatus]} focus:outline-none focus:ring-2 focus:ring-primary-green`}
+                        >
+                          {statusFlow.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <select
+                          value={order.deliveryGuyId?._id || ''}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleAssignDelivery(order._id, e.target.value)}
+                          className="border border-card-border rounded-lg py-1.5 px-2 text-xs"
+                        >
+                          <option value="">Assign delivery</option>
+                          {deliveryGuys.map((g) => (
+                            <option key={g._id} value={g._id}>{g.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-6 py-3.5 text-muted-text text-xs">{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {order.orderStatus === 'pending' && (
+                            <button
+                              onClick={(e) => handleApprove(order._id, e)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-colors"
+                              title="Approve order"
+                            >
+                              <CheckCircle size={14} />
+                              Approve
+                            </button>
+                          )}
+                          {!['delivered', 'completed', 'cancelled'].includes(order.orderStatus) && (
+                            <button
+                              onClick={(e) => handleCancel(order._id, e)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold transition-colors"
+                              title="Cancel order"
+                            >
+                              <XCircle size={14} />
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedId === order._id && (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-4 bg-gray-50 text-sm">
+                          <p><strong>Assigned Delivery:</strong> {order.deliveryGuyId?.name || 'Not assigned'}</p>
+                          <p><strong>Delivery Address:</strong> {order.deliveryAddress ? `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} ${order.deliveryAddress.zipCode}` : 'N/A'}</p>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

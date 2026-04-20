@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { loginUser } from '../../services/api';
 import useAuthStore from '../../store/authStore';
+import useSettingsStore from '../../store/settingsStore';
 import { toast } from 'react-toastify';
 
 const CashierLogin = () => {
@@ -13,6 +14,9 @@ const CashierLogin = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
+  const brandLogoUrl = settings?.logoUrl;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,9 +50,9 @@ const CashierLogin = () => {
         <div className="pos-login-branding">
           <div className="pos-login-brand-content">
             <div className="pos-login-logo">
-              <ShoppingCart size={40} />
+              {brandLogoUrl ? <img src={brandLogoUrl} alt={brandName} className="w-12 h-12 rounded-xl object-cover" /> : <ShoppingCart size={40} />}
             </div>
-            <h1>FreshCart</h1>
+            <h1>{brandName}</h1>
             <p className="pos-login-tagline">Point of Sale System</p>
             <div className="pos-login-features">
               <div className="pos-login-feature">

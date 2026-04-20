@@ -2,8 +2,29 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const PaymentOtp = require('../models/PaymentOtp');
 const crypto = require('crypto');
 const { sendEmail, paymentReceiptEmail, orderConfirmationEmail } = require('../utils/emailService');
+const { sendSms, buildPaymentMessage, buildOtpMessage } = require('../utils/smsService');
+const { isValidSLPhone, formatSLPhone } = require('../utils/validators');
+
+const PAYMENT_OTP_EXPIRY_MINUTES = 5;
+const PAYMENT_OTP_VERIFY_WINDOW_MINUTES = 15;
+const hashOtp = (otp) => crypto.createHash('sha256').update(otp).digest('hex');
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+const buildOrderItems = (items) => items.map((item) => ({
+  productId: item.productId,
+  name: item.name,
+  image: item.image,
+  quantity: item.quantity,
+  price: item.price,
+}));
+
+const calculateTotal = (items, deliveryFee = 0, tax = 0) => {
+  const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  return itemsTotal + (deliveryFee || 0) + (tax || 0);
+};
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -17,6 +38,8 @@ const createOrder = async (req, res, next) => {
       paymentMethod,
       deliveryFee,
       tax,
+      sendReceiptEmail = false,
+      receiptEmail,
     } = req.body;
 
     if (!items || items.length === 0) {
@@ -24,35 +47,98 @@ const createOrder = async (req, res, next) => {
       return next(new Error('No order items'));
     }
 
-    // Calculate total
-    let totalAmount = 0;
+    const productIds = items.map((item) => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } })
+      .select('_id allowKokoOnline storeId')
+      .lean();
+    const productMap = new Map(products.map((p) => [String(p._id), p]));
+
+    const kokoEligibleItems = [];
+    const nonKokoItems = [];
     for (const item of items) {
-      totalAmount += item.price * item.quantity;
+      const dbProduct = productMap.get(String(item.productId));
+      if (!dbProduct) {
+        res.status(400);
+        return next(new Error(`Invalid product in order: ${item.productId}`));
+      }
+      if (paymentMethod === 'koko' && dbProduct.allowKokoOnline === false) {
+        nonKokoItems.push(item);
+      } else {
+        kokoEligibleItems.push(item);
+      }
     }
-    totalAmount += (deliveryFee || 0) + (tax || 0);
 
     // Group items by store
-    const storeId = items[0].storeId || null;
+    const storeId = items[0].storeId || productMap.get(String(items[0].productId))?.storeId || null;
 
-    const order = await Order.create({
-      userId: req.user._id,
-      storeId,
-      items: items.map((item) => ({
-        productId: item.productId,
-        name: item.name,
-        image: item.image,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      deliveryAddress,
-      deliverySlot,
-      totalAmount,
-      deliveryFee: deliveryFee || 0,
-      tax: tax || 0,
-      paymentMethod: paymentMethod || 'cod',
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
-      orderStatus: 'pending',
-    });
+    let order;
+    let splitOrders = null;
+    if (paymentMethod === 'koko' && nonKokoItems.length > 0) {
+      const kokoTotal = calculateTotal(kokoEligibleItems, 0, 0);
+      const nonKokoTotal = calculateTotal(nonKokoItems, deliveryFee || 0, tax || 0);
+
+      const kokoOrder = kokoEligibleItems.length
+        ? await Order.create({
+          userId: req.user._id,
+          storeId,
+          items: buildOrderItems(kokoEligibleItems),
+          deliveryAddress,
+          deliverySlot,
+          totalAmount: kokoTotal,
+          deliveryFee: 0,
+          tax: 0,
+          paymentMethod: 'koko',
+          paymentStatus: 'pending',
+          orderStatus: 'pending',
+          paymentOtpRequired: false,
+          sendReceiptEmail: !!sendReceiptEmail,
+          receiptEmail: receiptEmail || undefined,
+        })
+        : null;
+
+      const fallbackOrder = await Order.create({
+        userId: req.user._id,
+        storeId,
+        items: buildOrderItems(nonKokoItems),
+        deliveryAddress,
+        deliverySlot,
+        totalAmount: nonKokoTotal,
+        deliveryFee: deliveryFee || 0,
+        tax: tax || 0,
+        paymentMethod: 'cod',
+        paymentStatus: 'pending',
+        orderStatus: 'pending',
+        paymentOtpRequired: false,
+        sendReceiptEmail: !!sendReceiptEmail,
+        receiptEmail: receiptEmail || undefined,
+      });
+
+      order = kokoOrder || fallbackOrder;
+      splitOrders = {
+        isSplit: true,
+        message: 'Some items are not eligible for Koko Pay. Order has been split automatically.',
+        kokoOrderId: kokoOrder?._id || null,
+        fallbackOrderId: fallbackOrder._id,
+      };
+    } else {
+      const totalAmount = calculateTotal(items, deliveryFee, tax);
+      order = await Order.create({
+        userId: req.user._id,
+        storeId,
+        items: buildOrderItems(items),
+        deliveryAddress,
+        deliverySlot,
+        totalAmount,
+        deliveryFee: deliveryFee || 0,
+        tax: tax || 0,
+        paymentMethod: paymentMethod || 'cod',
+        paymentStatus: 'pending',
+        orderStatus: 'pending',
+        paymentOtpRequired: paymentMethod === 'payhere',
+        sendReceiptEmail: !!sendReceiptEmail,
+        receiptEmail: receiptEmail || undefined,
+      });
+    }
 
     // Update product stock
     for (const item of items) {
@@ -67,18 +153,10 @@ const createOrder = async (req, res, next) => {
       { items: [] }
     );
 
-    // Send order confirmation & receipt email
-    try {
-      const customer = await User.findById(req.user._id);
-      if (customer?.email) {
-        const receipt = paymentReceiptEmail(order, customer.name);
-        await sendEmail(customer.email, receipt.subject, receipt.html);
-      }
-    } catch (emailErr) {
-      console.error('[Email] Receipt send failed:', emailErr.message);
-    }
-
-    res.status(201).json(order);
+    res.status(201).json({
+      ...order.toObject(),
+      splitOrders,
+    });
   } catch (error) {
     next(error);
   }
@@ -161,6 +239,24 @@ const generatePayHereHash = async (req, res, next) => {
       res.status(404);
       return next(new Error('Order not found'));
     }
+    if (order.userId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      return next(new Error('Not authorized for this order'));
+    }
+
+    if (order.paymentMethod === 'payhere') {
+      if (!order.paymentOtpVerifiedAt) {
+        res.status(403);
+        return next(new Error('Payment OTP verification is required before payment.'));
+      }
+      const maxAgeMs = PAYMENT_OTP_VERIFY_WINDOW_MINUTES * 60 * 1000;
+      if (Date.now() - new Date(order.paymentOtpVerifiedAt).getTime() > maxAgeMs) {
+        order.paymentOtpVerifiedAt = undefined;
+        await order.save();
+        res.status(403);
+        return next(new Error('Payment OTP expired. Please verify again.'));
+      }
+    }
 
     const merchantId = process.env.PAYHERE_MERCHANT_ID;
     const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET;
@@ -190,6 +286,116 @@ const generatePayHereHash = async (req, res, next) => {
       hash,
       sandbox: process.env.PAYHERE_SANDBOX === 'true',
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Request payment OTP for an order
+// @route   POST /api/orders/:id/payment-otp/request
+// @access  Private
+const requestPaymentOtp = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      res.status(404);
+      return next(new Error('Order not found'));
+    }
+    if (order.userId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      return next(new Error('Not authorized for this order'));
+    }
+    if (order.paymentMethod !== 'payhere') {
+      res.status(400);
+      return next(new Error('Payment OTP is only required for online payment orders.'));
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user?.phone || !isValidSLPhone(user.phone)) {
+      res.status(400);
+      return next(new Error('A valid Sri Lankan phone number is required to receive OTP.'));
+    }
+
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + PAYMENT_OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    await PaymentOtp.findOneAndUpdate(
+      { orderId: order._id },
+      {
+        orderId: order._id,
+        userId: req.user._id,
+        otpHash: hashOtp(otp),
+        expiresAt,
+        attempts: 0,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    order.paymentOtpVerifiedAt = undefined;
+    order.paymentOtpRequired = true;
+    await order.save();
+
+    await sendSms(formatSLPhone(user.phone), buildOtpMessage(otp));
+
+    res.json({
+      message: 'Payment OTP sent successfully',
+      expiresInSeconds: PAYMENT_OTP_EXPIRY_MINUTES * 60,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify payment OTP for an order
+// @route   POST /api/orders/:id/payment-otp/verify
+// @access  Private
+const verifyPaymentOtp = async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+    if (!otp) {
+      res.status(400);
+      return next(new Error('OTP is required'));
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      res.status(404);
+      return next(new Error('Order not found'));
+    }
+    if (order.userId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      return next(new Error('Not authorized for this order'));
+    }
+
+    const paymentOtp = await PaymentOtp.findOne({ orderId: order._id });
+    if (!paymentOtp) {
+      res.status(400);
+      return next(new Error('No payment OTP found. Please request a new OTP.'));
+    }
+    if (paymentOtp.expiresAt < new Date()) {
+      await PaymentOtp.deleteOne({ _id: paymentOtp._id });
+      res.status(400);
+      return next(new Error('OTP expired. Please request a new OTP.'));
+    }
+    if (paymentOtp.attempts >= 5) {
+      await PaymentOtp.deleteOne({ _id: paymentOtp._id });
+      res.status(429);
+      return next(new Error('Too many invalid attempts. Request a new OTP.'));
+    }
+
+    if (paymentOtp.otpHash !== hashOtp(String(otp).trim())) {
+      paymentOtp.attempts += 1;
+      await paymentOtp.save();
+      res.status(400);
+      return next(new Error('Invalid OTP'));
+    }
+
+    order.paymentOtpVerifiedAt = new Date();
+    order.paymentOtpRequired = false;
+    await order.save();
+    await PaymentOtp.deleteOne({ _id: paymentOtp._id });
+
+    res.json({ message: 'Payment OTP verified successfully' });
   } catch (error) {
     next(error);
   }
@@ -244,15 +450,33 @@ const payHereNotify = async (req, res, next) => {
       order.paymentStatus = 'completed';
       order.orderStatus = 'confirmed';
 
-      // Send payment receipt email
+      // Send payment receipt email only when user opted in.
       try {
         const customer = await User.findById(order.userId);
-        if (customer?.email) {
+        const targetEmail = order.receiptEmail || customer?.email;
+        if (order.sendReceiptEmail && targetEmail) {
           const receipt = paymentReceiptEmail(order, customer.name);
-          await sendEmail(customer.email, receipt.subject, receipt.html);
+          const sent = await sendEmail(targetEmail, receipt.subject, receipt.html);
+          if (sent) {
+            order.receiptEmailSentAt = new Date();
+            order.receiptEmailError = undefined;
+          } else {
+            order.receiptEmailError = 'Email service failed to deliver receipt';
+          }
         }
       } catch (emailErr) {
         console.error('[Email] PayHere receipt failed:', emailErr.message);
+        order.receiptEmailError = emailErr.message;
+      }
+
+      // Send payment confirmation SMS if customer has a valid Sri Lankan phone.
+      try {
+        const customer = await User.findById(order.userId);
+        if (customer?.phone && isValidSLPhone(customer.phone)) {
+          await sendSms(formatSLPhone(customer.phone), buildPaymentMessage(order.totalAmount));
+        }
+      } catch (smsErr) {
+        console.error('[SMS] Payment confirmation failed:', smsErr.message);
       }
     } else if (status_code === '0') {
       order.paymentStatus = 'pending';
@@ -281,6 +505,7 @@ const getStoreOrders = async (req, res, next) => {
     }
     const orders = await Order.find({ storeId: store._id })
       .populate('userId', 'name email phone')
+      .populate('deliveryGuyId', 'name email phone')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
@@ -294,6 +519,8 @@ module.exports = {
   getOrderById,
   updateOrderStatus,
   generatePayHereHash,
+  requestPaymentOtp,
+  verifyPaymentOtp,
   payHereNotify,
   getStoreOrders,
 };

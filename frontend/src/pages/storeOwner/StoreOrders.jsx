@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
-import { ChevronDown, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect, Fragment } from 'react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getStoreOrders, updateOrderStatus } from '../../services/api';
+import { getStoreOrders, updateOrderStatus, assignDeliveryGuy, getAvailableDeliveryGuys } from '../../services/api';
+import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
 import managerNavItems from './managerNavItems';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
   confirmed: 'bg-blue-100 text-blue-700',
+  assigned_delivery: 'bg-purple-100 text-purple-700',
   packed: 'bg-indigo-100 text-indigo-700',
   shipped: 'bg-cyan-100 text-cyan-700',
   out_for_delivery: 'bg-teal-100 text-teal-700',
@@ -15,18 +17,35 @@ const statusColors = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
-const statusFlow = ['pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+const paymentColors = {
+  pending: 'bg-amber-100 text-amber-700',
+  completed: 'bg-emerald-100 text-emerald-700',
+  failed: 'bg-red-100 text-red-700',
+  refunded: 'bg-gray-100 text-gray-600',
+};
+
+const statusFlow = ['pending', 'confirmed', 'assigned_delivery', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
 
 const StoreOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [expandedId, setExpandedId] = useState(null);
+  const [deliveryGuys, setDeliveryGuys] = useState([]);
+  const { convertPrice, formatPrice } = useCurrencyStore();
 
   const fetchOrders = async () => {
     try {
       const { data } = await getStoreOrders();
       setOrders(data);
+      if (data?.[0]?.storeId?._id) {
+        const { data: guys } = await getAvailableDeliveryGuys({ storeId: data[0].storeId._id });
+        setDeliveryGuys(guys || []);
+      } else {
+        const { data: guys } = await getAvailableDeliveryGuys();
+        setDeliveryGuys(guys || []);
+      }
     } catch (err) {
       toast.error('Failed to load orders');
     } finally {
@@ -46,7 +65,35 @@ const StoreOrders = () => {
     }
   };
 
-  const filtered = filter === 'all' ? orders : orders.filter((o) => o.orderStatus === filter);
+  const handleAssignDelivery = async (orderId, deliveryGuyId) => {
+    if (!deliveryGuyId) return;
+    try {
+      await assignDeliveryGuy(orderId, { deliveryGuyId });
+      toast.success('Delivery person assigned');
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to assign delivery');
+    }
+  };
+
+  const handleCancel = async (orderId, e) => {
+    e.stopPropagation();
+    try {
+      await updateOrderStatus(orderId, { orderStatus: 'cancelled', paymentStatus: 'failed' });
+      toast.success('Order cancelled');
+      fetchOrders();
+    } catch (err) {
+      toast.error('Failed to cancel order');
+    }
+  };
+
+  const filtered = (filter === 'all' ? orders : orders.filter((o) => o.orderStatus === filter))
+    .sort((a, b) => {
+      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+      if (sortBy === 'amount_high') return (b.totalAmount || 0) - (a.totalAmount || 0);
+      if (sortBy === 'amount_low') return (a.totalAmount || 0) - (b.totalAmount || 0);
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
 
   if (loading) {
     return (
@@ -61,123 +108,164 @@ const StoreOrders = () => {
   return (
     <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-dark-navy">Orders</h1>
-            <p className="text-muted-text text-sm mt-1">{orders.length} total orders</p>
+        <div className="mb-6">
+          <div className="bg-white rounded-3xl border border-card-border shadow-sm p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-dark-navy">Orders</h1>
+              <p className="text-muted-text text-sm mt-1">Manage statuses, payments, and delivery assignments.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-muted-text hidden sm:block">
+                <span className="font-semibold text-dark-navy">{orders.length}</span> total
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-card-border rounded-xl py-2.5 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="amount_high">Amount high to low</option>
+                <option value="amount_low">Amount low to high</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Filter Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {['all', ...statusFlow].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                filter === status
-                  ? 'bg-primary-green text-white shadow-lg shadow-emerald-200'
-                  : 'bg-white border border-card-border text-muted-text hover:bg-gray-50'
-              }`}
-            >
-              {status === 'all' ? 'All' : status.replace(/_/g, ' ')}
-              {status !== 'all' && ` (${orders.filter((o) => o.orderStatus === status).length})`}
-            </button>
-          ))}
+          {['all', ...statusFlow].map((status) => {
+            const count = status === 'all' ? orders.length : orders.filter((o) => o.orderStatus === status).length;
+            return (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  filter === status
+                    ? 'bg-primary-green text-white shadow-lg shadow-emerald-200'
+                    : 'bg-white border border-card-border text-muted-text hover:bg-gray-50'
+                }`}
+              >
+                {status === 'all' ? 'All' : status.replace(/_/g, ' ')}
+                <span className={`ml-2 inline-flex items-center justify-center min-w-[22px] h-[18px] px-1.5 rounded-full text-[10px] font-bold ${
+                  filter === status ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Orders List */}
-        <div className="space-y-4">
-          {filtered.length === 0 && (
-            <div className="bg-white rounded-2xl border border-card-border p-12 text-center text-muted-text text-sm">
-              No orders found for this filter
-            </div>
-          )}
-
-          {filtered.map((order) => (
-            <div key={order._id} className="bg-white rounded-2xl border border-card-border shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-              {/* Order Header */}
-              <div
-                className="px-6 py-4 flex items-center justify-between cursor-pointer"
-                onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
-              >
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="font-mono text-xs text-muted-text">#{order._id.slice(-8).toUpperCase()}</p>
-                    <p className="font-semibold text-dark-navy">{order.userId?.name || 'N/A'}</p>
-                    <p className="text-xs text-muted-text">{order.userId?.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-bold text-dark-navy">Rs. {order.totalAmount?.toFixed(2)}</p>
-                    <p className="text-xs text-muted-text">{new Date(order.createdAt).toLocaleDateString()}</p>
-                  </div>
-                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColors[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}>
-                    {order.orderStatus?.replace(/_/g, ' ')}
-                  </span>
-                  <ChevronDown size={18} className={`text-muted-text transition-transform ${expandedId === order._id ? 'rotate-180' : ''}`} />
-                </div>
-              </div>
-
-              {/* Expanded Details */}
-              {expandedId === order._id && (
-                <div className="px-6 pb-5 border-t border-card-border pt-4">
-                  {/* Items */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-dark-navy mb-2">Items</h4>
-                    <div className="space-y-2">
-                      {order.items?.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-3">
-                            <img src={item.image || 'https://via.placeholder.com/35'} alt="" className="w-9 h-9 rounded-lg object-cover" />
-                            <span>{item.name} × {item.quantity}</span>
-                          </div>
-                          <span className="font-medium">Rs. {(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Delivery Address */}
-                  {order.deliveryAddress && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-semibold text-dark-navy mb-1">Delivery Address</h4>
-                      <p className="text-sm text-muted-text">
-                        {order.deliveryAddress.street}, {order.deliveryAddress.city}, {order.deliveryAddress.state} {order.deliveryAddress.zipCode}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Update Status */}
-                  <div className="flex items-center gap-3 pt-2">
-                    <label className="text-sm font-medium text-dark-navy">Update Status:</label>
-                    <select
-                      value={order.orderStatus}
-                      onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
-                      className="border border-card-border rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
+        <div className="bg-white rounded-2xl border border-card-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Order</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Customer</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Total</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Payment</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Status</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Delivery</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-text">Date</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-text">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-card-border">
+                {filtered.map((order) => (
+                  <Fragment key={order._id}>
+                    <tr
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${order.orderStatus === 'cancelled' ? 'opacity-50' : ''}`}
+                      onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
                     >
-                      {statusFlow.map((s) => (
-                        <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                      ))}
-                    </select>
-                    {order.orderStatus === 'pending' && (
-                      <div className="flex gap-2 ml-2">
-                        <button onClick={() => handleStatusUpdate(order._id, 'confirmed')}
-                          className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-emerald-100">
-                          <CheckCircle size={14} /> Approve
-                        </button>
-                        <button onClick={() => handleStatusUpdate(order._id, 'cancelled')}
-                          className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-red-100">
-                          <XCircle size={14} /> Cancel
-                        </button>
-                      </div>
+                      <td className="px-6 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs">#{order._id.slice(-8).toUpperCase()}</span>
+                          {expandedId === order._id ? <ChevronUp size={14} /> : <ChevronDown size={14} className="text-gray-400" />}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <p className="font-medium text-dark-navy">{order.userId?.name || 'N/A'}</p>
+                        <p className="text-xs text-muted-text">{order.userId?.email}</p>
+                      </td>
+                      <td className="px-6 py-3.5 font-semibold">{formatPrice(convertPrice(order.totalAmount || 0))}</td>
+                      <td className="px-6 py-3.5">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${paymentColors[order.paymentStatus] || 'bg-gray-100 text-gray-600'}`}>
+                          {order.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <select
+                          value={order.orderStatus}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer ${statusColors[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}
+                        >
+                          {statusFlow.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <select
+                          value={order.deliveryGuyId?._id || ''}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleAssignDelivery(order._id, e.target.value)}
+                          className="border border-card-border rounded-lg py-1.5 px-2 text-xs"
+                        >
+                          <option value="">Assign delivery</option>
+                          {deliveryGuys.map((g) => (
+                            <option key={g._id} value={g._id}>{g.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-6 py-3.5 text-muted-text text-xs">{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {order.orderStatus === 'pending' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order._id, 'confirmed'); }}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-colors"
+                            >
+                              <CheckCircle size={14} /> Approve
+                            </button>
+                          )}
+                          {!['delivered', 'completed', 'cancelled'].includes(order.orderStatus) && (
+                            <button
+                              onClick={(e) => handleCancel(order._id, e)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold transition-colors"
+                            >
+                              <XCircle size={14} /> Cancel
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedId === order._id && (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-4 bg-gray-50">
+                          <div className="space-y-2 text-sm">
+                            <p><strong>Assigned Delivery:</strong> {order.deliveryGuyId?.name || 'Not assigned'}</p>
+                            <p><strong>Delivery Address:</strong> {order.deliveryAddress ? `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.state} ${order.deliveryAddress.zipCode}` : 'N/A'}</p>
+                            <div>
+                              <strong>Items:</strong>
+                              <ul className="list-disc pl-6">
+                                {order.items?.map((item, i) => (
+                                  <li key={i}>{item.name} x {item.quantity} - Rs. {(item.price * item.quantity).toFixed(2)}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <div className="text-center py-12 text-muted-text text-sm">No orders found</div>
+            )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

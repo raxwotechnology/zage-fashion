@@ -258,6 +258,54 @@ const paymentReceiptEmail = (order, customerName) => {
   };
 };
 
+const posReceiptEmail = (order, customer = {}) => {
+  const customerName = customer.name || order.customerName || 'Customer';
+  const customerEmail = customer.email || order.receiptEmail || 'N/A';
+  const customerPhone = customer.phone || order.customerPhone || 'N/A';
+  const subtotal = order.subtotal || order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const discount = (order.discountAmount || 0) + (order.couponDiscount || 0);
+  const itemsHtml = (order.items || []).map((item) => `
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid #eee;">${item.name}</td>
+      <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${item.quantity}</td>
+      <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">LKR ${item.price.toFixed(2)}</td>
+      <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">LKR ${(item.price * item.quantity).toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  return {
+    subject: `Receipt #${order._id.toString().slice(-8).toUpperCase()}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:650px;margin:0 auto;">
+        <h2 style="color:#059669;">FreshCart POS Receipt</h2>
+        <p><strong>Receipt ID:</strong> #${order._id.toString().slice(-8).toUpperCase()}</p>
+        <p><strong>Date:</strong> ${new Date(order.createdAt || Date.now()).toLocaleString()}</p>
+        <h3>Customer Details</h3>
+        <p><strong>Name:</strong> ${customerName}<br/><strong>Email:</strong> ${customerEmail}<br/><strong>Phone:</strong> ${customerPhone}</p>
+        <h3>Items Purchased</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f0fdf4;">
+              <th style="padding:8px;text-align:left;">Item</th>
+              <th style="padding:8px;text-align:center;">Qty</th>
+              <th style="padding:8px;text-align:right;">Price</th>
+              <th style="padding:8px;text-align:right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div style="margin-top:16px;padding:12px;background:#f8fafc;border-radius:8px;">
+          <p style="margin:4px 0;"><strong>Subtotal:</strong> LKR ${subtotal.toFixed(2)}</p>
+          <p style="margin:4px 0;"><strong>Discounts:</strong> LKR ${discount.toFixed(2)}</p>
+          <p style="margin:4px 0;"><strong>Tax:</strong> LKR ${(order.tax || 0).toFixed(2)}</p>
+          <p style="margin:4px 0;font-size:18px;"><strong>Total Amount:</strong> LKR ${(order.totalAmount || 0).toFixed(2)}</p>
+          <p style="margin:4px 0;"><strong>Payment Method:</strong> ${(order.paymentMethod || '').toUpperCase()}</p>
+        </div>
+      </div>
+    `,
+  };
+};
+
 module.exports = {
   sendEmail,
   orderConfirmationEmail,
@@ -265,4 +313,5 @@ module.exports = {
   salaryPaidEmail,
   welcomeEmail,
   paymentReceiptEmail,
+  posReceiptEmail,
 };

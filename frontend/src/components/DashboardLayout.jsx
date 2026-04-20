@@ -15,11 +15,12 @@ const DashboardLayout = ({ children, navItems, title }) => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-140px)] flex bg-gray-50">
+    <div className="min-h-[calc(100vh-140px)] flex bg-gray-50 relative">
       {/* Mobile Sidebar Toggle */}
       <button
-        className="lg:hidden fixed bottom-6 right-6 z-50 bg-primary-green text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all"
+        className="lg:hidden fixed top-20 left-4 z-50 bg-primary-green text-white w-11 h-11 rounded-xl shadow-xl flex items-center justify-center hover:bg-emerald-600 transition-all"
         onClick={() => setSidebarOpen(!sidebarOpen)}
+        aria-label="Toggle dashboard menu"
       >
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -34,7 +35,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-40 h-screen lg:h-[calc(100vh-140px)] w-72 bg-white border-r border-card-border transform transition-transform duration-300 ease-out overflow-y-auto ${
+        className={`fixed lg:sticky top-0 left-0 z-40 h-screen lg:h-[calc(100vh-140px)] w-72 bg-white border-r border-card-border transform transition-transform duration-300 ease-out flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -52,7 +53,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
           <p className="text-[10px] uppercase tracking-widest text-muted-text font-semibold px-3 mb-3">{title}</p>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -76,7 +77,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-card-border bg-white">
+        <div className="p-4 border-t border-card-border bg-white">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all w-full"
@@ -88,7 +89,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto pt-20 lg:pt-8">
         {children}
       </main>
     </div>

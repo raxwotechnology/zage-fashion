@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useAuthStore from '../store/authStore';
-import { registerUser } from '../services/api';
+import useSettingsStore from '../store/settingsStore';
+import { requestRegistrationOtp, verifyRegistrationOtp } from '../services/api';
 import { toast } from 'react-toastify';
 
 // Sri Lankan phone validation
@@ -19,9 +20,14 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
   const [loading, setLoading] = useState(false);
   const [phoneError, setPhoneError] = useState('');
   const login = useAuthStore((state) => state.login);
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
+  const brandLogoUrl = settings?.logoUrl;
   const navigate = useNavigate();
 
   const handlePhoneChange = (value) => {
@@ -33,10 +39,14 @@ const Register = () => {
     }
   };
 
-  const submitHandler = async (e) => {
-    e.preventDefault();
+  const requestOtpHandler = async (e) => {
+    e?.preventDefault?.();
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (!phone) {
+      toast.error('Phone number is required for OTP verification');
       return;
     }
     if (phone && !isValidSLPhone(phone)) {
@@ -45,7 +55,25 @@ const Register = () => {
     }
     setLoading(true);
     try {
-      const { data } = await registerUser({ name, email, password, phone });
+      await requestRegistrationOtp({ name, email, password, phone });
+      setOtpRequested(true);
+      toast.success('OTP sent to your phone');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtpHandler = async (e) => {
+    e?.preventDefault?.();
+    if (!otp || otp.trim().length !== 6) {
+      toast.error('Enter the 6-digit OTP');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await verifyRegistrationOtp({ email, otp: otp.trim() });
       login(data);
       toast.success('Account created successfully!');
       navigate('/');
@@ -63,12 +91,15 @@ const Register = () => {
         initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
       >
         <div className="text-center mb-8">
-          <Link to="/" className="text-3xl font-bold text-primary-green inline-block mb-4">FreshCart</Link>
+          <Link to="/" className="text-3xl font-bold text-primary-green inline-flex items-center gap-2 mb-4">
+            {brandLogoUrl && <img src={brandLogoUrl} alt={brandName} className="w-9 h-9 rounded object-cover" />}
+            <span>{brandName}</span>
+          </Link>
           <h1 className="text-2xl font-bold text-dark-navy mt-0 mb-2">Create Account</h1>
-          <p className="text-muted-text m-0">Join FreshCart for fresh groceries</p>
+          <p className="text-muted-text m-0">Join {brandName} for fresh groceries</p>
         </div>
 
-        <form onSubmit={submitHandler} className="space-y-4">
+        <form onSubmit={otpRequested ? verifyOtpHandler : requestOtpHandler} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-dark-navy mb-1.5" htmlFor="reg-name">
               Full Name
@@ -92,7 +123,7 @@ const Register = () => {
               type="email"
               id="reg-email"
               className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none transition-all"
-              placeholder="you@example.com"
+              placeholder="yourname@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -142,12 +173,38 @@ const Register = () => {
             </div>
           </div>
 
+          {otpRequested && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1.5" htmlFor="reg-otp">
+                  OTP Code
+                </label>
+                <input
+                  type="text"
+                  id="reg-otp"
+                  className="w-full border border-card-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-green focus:border-transparent outline-none transition-all"
+                  placeholder="Enter 6-digit OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                />
+              </div>
+              <button
+                type="button"
+                onClick={requestOtpHandler}
+                disabled={loading}
+                className="w-full border border-primary-green text-primary-green font-semibold py-3 rounded-xl hover:bg-emerald-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Resend OTP
+              </button>
+            </>
+          )}
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-primary-green text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading ? (otpRequested ? 'Verifying OTP...' : 'Sending OTP...') : (otpRequested ? 'Verify OTP & Create Account' : 'Send OTP')}
           </button>
         </form>
 

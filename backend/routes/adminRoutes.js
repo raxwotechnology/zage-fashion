@@ -8,6 +8,7 @@ const {
   getAllStores,
   toggleStore,
   getAllOrders,
+  getAllProducts,
   approveOrder,
   cancelOrder,
   getStats,
@@ -33,5 +34,6 @@ router.put('/stores/:id/toggle', toggleStore);
 router.get('/orders', getAllOrders);
 router.put('/orders/:id/approve', approveOrder);
 router.put('/orders/:id/cancel', cancelOrder);
+router.get('/products', getAllProducts);
 
 module.exports = router;

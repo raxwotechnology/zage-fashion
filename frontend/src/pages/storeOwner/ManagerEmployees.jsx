@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getEmployees, addEmployee, updateEmployee } from '../../services/api';
 import { toast } from 'react-toastify';
 import managerNavItems from './managerNavItems';
+import useAuthStore from '../../store/authStore';
 
 
 
@@ -11,6 +12,7 @@ const roleColors = {
   cashier: 'bg-teal-100 text-teal-700',
   deliveryGuy: 'bg-blue-100 text-blue-700',
   stockEmployee: 'bg-purple-100 text-purple-700',
+  manager: 'bg-amber-100 text-amber-700',
 };
 
 const emptyNewForm = {
@@ -18,7 +20,8 @@ const emptyNewForm = {
   salary: '', department: '', bankAccount: '', bankName: '', epfNo: '', etfNo: '',
 };
 
-const ManagerEmployees = () => {
+const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboard' }) => {
+  const user = useAuthStore((s) => s.user);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -32,7 +35,7 @@ const ManagerEmployees = () => {
 
   const fetchEmployees = async () => {
     try {
-      const { data } = await getEmployees();
+      const { data } = await getEmployees({ includeManagers: user?.role === 'admin' });
       setEmployees(data);
     } catch (err) {
       toast.error('Failed to load employees');
@@ -93,7 +96,7 @@ const ManagerEmployees = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title={title}>
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -102,7 +105,7 @@ const ManagerEmployees = () => {
   }
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title={title}>
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>

@@ -167,6 +167,8 @@ const createProduct = async (req, res, next) => {
       images,
       isFeatured,
       isOnSale,
+      allowKokoOnline,
+      allowKokoPos,
     } = req.body;
 
     const slug = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
@@ -187,6 +189,8 @@ const createProduct = async (req, res, next) => {
       images: images || [],
       isFeatured: isFeatured || false,
       isOnSale: isOnSale || false,
+      allowKokoOnline: allowKokoOnline !== undefined ? !!allowKokoOnline : true,
+      allowKokoPos: allowKokoPos !== undefined ? !!allowKokoPos : true,
     });
 
     res.status(201).json(product);
@@ -209,7 +213,7 @@ const updateProduct = async (req, res, next) => {
     const fields = [
       'name', 'categoryId', 'subCategory', 'description', 'price',
       'mrp', 'discount', 'unit', 'variants', 'stock', 'images',
-      'isFeatured', 'isOnSale', 'status',
+      'isFeatured', 'isOnSale', 'status', 'allowKokoOnline', 'allowKokoPos',
     ];
 
     fields.forEach((field) => {

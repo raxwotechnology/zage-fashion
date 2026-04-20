@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Globe, MessageCircle, Camera, Play } from 'lucide-react';
+import useSettingsStore from '../store/settingsStore';
 
 const Footer = () => {
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
+  const footerText = settings?.footerText || `© ${new Date().getFullYear()} FreshCart. All rights reserved.`;
+  const brandEmail = settings?.email || 'support@freshcart.com';
+  const brandPhone = settings?.phone || '+94 11 255 5000';
+  const brandAddress = settings?.address || '456 Market Street, New York, NY 10001';
+  const brandLogoUrl = settings?.logoUrl;
   return (
     <footer className="bg-dark-navy text-white">
       {/* Main Footer */}
@@ -9,7 +17,10 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <Link to="/" className="text-2xl font-bold text-primary-green mb-4 inline-block">FreshCart</Link>
+            <Link to="/" className="text-2xl font-bold text-primary-green mb-4 inline-flex items-center gap-2">
+              {brandLogoUrl && <img src={brandLogoUrl} alt={brandName} className="w-8 h-8 rounded object-cover" />}
+              <span>{brandName}</span>
+            </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-4">
               Your one-stop destination for farm-fresh groceries delivered to your doorstep. Shop from multiple local stores with ease.
             </p>
@@ -65,15 +76,15 @@ const Footer = () => {
             <div className="space-y-3">
               <p className="text-sm text-gray-400 flex items-start gap-2 m-0">
                 <MapPin size={16} className="mt-0.5 text-primary-green flex-shrink-0" />
-                456 Market Street, New York, NY 10001
+                {brandAddress}
               </p>
               <p className="text-sm text-gray-400 flex items-center gap-2 m-0">
                 <Phone size={16} className="text-primary-green flex-shrink-0" />
-                +1 (212) 555-CART
+                {brandPhone}
               </p>
               <p className="text-sm text-gray-400 flex items-center gap-2 m-0">
                 <Mail size={16} className="text-primary-green flex-shrink-0" />
-                support@freshcart.com
+                {brandEmail}
               </p>
             </div>
           </div>
@@ -83,7 +94,7 @@ const Footer = () => {
       {/* Bottom Bar */}
       <div className="border-t border-white/10">
         <div className="base-container py-4 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-gray-500 m-0">&copy; {new Date().getFullYear()} FreshCart. All rights reserved.</p>
+          <p className="text-xs text-gray-500 m-0">{footerText}</p>
           <div className="flex items-center gap-4">
             <span className="text-xs text-gray-500">We accept:</span>
             <div className="flex gap-2 text-lg">

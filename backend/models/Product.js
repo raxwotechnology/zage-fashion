@@ -88,6 +88,14 @@ const productSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    allowKokoOnline: {
+      type: Boolean,
+      default: true,
+    },
+    allowKokoPos: {
+      type: Boolean,
+      default: true,
+    },
     status: {
       type: String,
       enum: ['active', 'inactive', 'out_of_stock'],
@@ -107,11 +115,10 @@ const productSchema = mongoose.Schema(
 );
 
 // Auto-set priceLKR from price if not provided
-productSchema.pre('save', function (next) {
+productSchema.pre('save', function () {
   if (!this.priceLKR && this.price) {
     this.priceLKR = this.price;
   }
-  next();
 });
 
 productSchema.index({ name: 'text', description: 'text' });

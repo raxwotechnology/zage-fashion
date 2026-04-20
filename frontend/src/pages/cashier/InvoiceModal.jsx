@@ -1,7 +1,11 @@
 import { X, Printer, RotateCcw } from 'lucide-react';
 
+import useSettingsStore from '../../store/settingsStore';
+
 const InvoiceModal = ({ isOpen, onClose, order, onNewSale }) => {
   if (!isOpen || !order) return null;
+  const settings = useSettingsStore((s) => s.settings);
+  const brandName = settings?.shopName || 'FreshCart';
 
   const handlePrint = () => {
     window.print();
@@ -35,7 +39,7 @@ const InvoiceModal = ({ isOpen, onClose, order, onNewSale }) => {
         <div className="pos-receipt" id="pos-receipt-content">
           <div className="pos-receipt-header">
             <h2 className="pos-receipt-store-name">
-              {order.storeId?.name || 'FreshCart Store'}
+              {order.storeId?.name || `${brandName} Store`}
             </h2>
             <p className="pos-receipt-store-info">
               {order.storeId?.address || ''}

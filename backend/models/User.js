@@ -89,9 +89,15 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+// Use promise-style middleware (no callback `next`) for Mongoose v8/v9 compatibility.
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    next();
+    return;
+  }
+
+  // Allow controlled flows (e.g., OTP-completed registrations) to persist an already-hashed password.
+  if (/^\$2[aby]\$\d{2}\$/.test(this.password || '')) {
+    return;
   }
 
   const salt = await bcrypt.genSalt(10);

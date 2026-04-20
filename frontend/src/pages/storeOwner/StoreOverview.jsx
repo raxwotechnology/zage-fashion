@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, ShoppingBag, DollarSign, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getMyStoreProducts, getStoreOrders, getMyStore } from '../../services/api';
+import { getMyStoreProducts, getStoreOrders } from '../../services/api';
 import { Link } from 'react-router-dom';
 import managerNavItems from './managerNavItems';
 
@@ -58,7 +58,7 @@ const StoreOverview = () => {
   const statCards = [
     { label: 'Total Products', value: stats?.totalProducts || 0, icon: Package, color: 'emerald', gradient: 'from-emerald-400 to-teal-500' },
     { label: 'Total Orders', value: stats?.totalOrders || 0, icon: ShoppingBag, color: 'blue', gradient: 'from-blue-400 to-indigo-500' },
-    { label: 'Revenue', value: `$${(stats?.totalRevenue || 0).toFixed(2)}`, icon: DollarSign, color: 'amber', gradient: 'from-amber-400 to-orange-500' },
+    { label: 'Revenue', value: `Rs. ${(stats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'amber', gradient: 'from-amber-400 to-orange-500' },
     { label: 'Pending Orders', value: stats?.pendingOrders || 0, icon: Clock, color: 'purple', gradient: 'from-purple-400 to-pink-500' },
   ];
 
@@ -76,8 +76,18 @@ const StoreOverview = () => {
     <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
       <div>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-dark-navy">Store Overview</h1>
-          <p className="text-muted-text text-sm mt-1">Welcome back! Here's what's happening with your store.</p>
+          <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-blue-600 rounded-3xl p-6 text-white shadow-lg">
+            <h1 className="text-2xl sm:text-3xl font-bold">Store Overview</h1>
+            <p className="text-white/80 text-sm mt-1">Track products, orders, and revenue at a glance.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to="/manager/orders" className="bg-white/15 hover:bg-white/20 backdrop-blur px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+                View Orders
+              </Link>
+              <Link to="/manager/products" className="bg-white/15 hover:bg-white/20 backdrop-blur px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+                Manage Products
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -127,7 +137,7 @@ const StoreOverview = () => {
                     <tr key={order._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-3.5 font-mono text-xs">{order._id.slice(-8).toUpperCase()}</td>
                       <td className="px-6 py-3.5">{order.userId?.name || 'N/A'}</td>
-                      <td className="px-6 py-3.5 font-semibold">${order.totalAmount?.toFixed(2)}</td>
+                      <td className="px-6 py-3.5 font-semibold">Rs. {(order.totalAmount || 0).toLocaleString()}</td>
                       <td className="px-6 py-3.5">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}>
                           {order.orderStatus?.replace(/_/g, ' ')}

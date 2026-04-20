@@ -53,6 +53,8 @@ API.interceptors.response.use(
 // Auth
 export const loginUser = (data) => API.post('/auth/login', data);
 export const registerUser = (data) => API.post('/auth/register', data);
+export const requestRegistrationOtp = (data) => API.post('/auth/register/request-otp', data);
+export const verifyRegistrationOtp = (data) => API.post('/auth/register/verify-otp', data);
 export const getMe = () => API.get('/auth/me');
 export const updateProfile = (data) => API.put('/auth/profile', data);
 
@@ -105,6 +107,8 @@ export const getOrderById = (id) => API.get(`/orders/${id}`);
 export const getStoreOrders = () => API.get('/orders/store');
 export const updateOrderStatus = (id, data) => API.put(`/orders/${id}/status`, data);
 export const getPayHereHash = (orderId) => API.post(`/orders/${orderId}/payhere-hash`);
+export const requestOrderPaymentOtp = (orderId) => API.post(`/orders/${orderId}/payment-otp/request`);
+export const verifyOrderPaymentOtp = (orderId, data) => API.post(`/orders/${orderId}/payment-otp/verify`, data);
 
 // Admin
 export const getAdminStats = () => API.get('/admin/stats');
@@ -115,6 +119,7 @@ export const deleteUser = (id) => API.delete(`/admin/users/${id}`);
 export const getAdminStores = () => API.get('/admin/stores');
 export const toggleStoreStatus = (id) => API.put(`/admin/stores/${id}/toggle`);
 export const getAdminOrders = () => API.get('/admin/orders');
+export const getAdminProducts = () => API.get('/admin/products');
 export const approveOrder = (id) => API.put(`/admin/orders/${id}/approve`);
 export const cancelOrder = (id, data) => API.put(`/admin/orders/${id}/cancel`, data);
 
@@ -149,6 +154,7 @@ export const updateDeliveryStatus = (id, data) => API.put(`/delivery/orders/${id
 export const getDeliveryHistory = () => API.get('/delivery/history');
 export const getDeliveryEarnings = () => API.get('/delivery/earnings');
 export const assignDeliveryGuy = (orderId, data) => API.post(`/delivery/assign/${orderId}`, data);
+export const getAvailableDeliveryGuys = (params) => API.get('/delivery/available', { params });
 
 // HR (Phase 5)
 export const checkIn = () => API.post('/hr/attendance/check-in');
@@ -159,7 +165,7 @@ export const requestLeave = (data) => API.post('/hr/leaves', data);
 export const getMyLeaves = () => API.get('/hr/leaves');
 export const approveLeave = (id) => API.put(`/hr/leaves/${id}/approve`);
 export const rejectLeave = (id, data) => API.put(`/hr/leaves/${id}/reject`, data);
-export const getEmployees = () => API.get('/hr/employees');
+export const getEmployees = (params) => API.get('/hr/employees', { params });
 export const addEmployee = (data) => API.post('/hr/employees', data);
 export const updateEmployee = (id, data) => API.put(`/hr/employees/${id}`, data);
 

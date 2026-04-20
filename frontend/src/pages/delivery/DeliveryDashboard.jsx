@@ -9,10 +9,10 @@ const navItems = [
   { path: '/delivery', label: 'Active Orders', icon: Truck },
 ];
 
-const statusFlow = ['confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
+const statusFlow = ['assigned_delivery', 'out_for_delivery', 'delivered'];
 const statusColors = {
-  confirmed: 'bg-blue-100 text-blue-700', packed: 'bg-indigo-100 text-indigo-700',
-  shipped: 'bg-cyan-100 text-cyan-700', out_for_delivery: 'bg-amber-100 text-amber-700',
+  assigned_delivery: 'bg-purple-100 text-purple-700',
+  out_for_delivery: 'bg-amber-100 text-amber-700',
   delivered: 'bg-emerald-100 text-emerald-700', cancelled: 'bg-red-100 text-red-700',
 };
 

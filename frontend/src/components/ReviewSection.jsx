@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Star, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StarRating from './StarRating';
@@ -6,13 +6,14 @@ import useAuthStore from '../store/authStore';
 import { getProductReviews, createReview } from '../services/api';
 import { toast } from 'react-toastify';
 
-const ReviewSection = ({ productId }) => {
+const ReviewSection = ({ productId, onReviewsChanged }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const latestFetchIdRef = useRef(0);
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -20,13 +21,18 @@ const ReviewSection = ({ productId }) => {
   }, [productId]);
 
   const fetchReviews = async () => {
+    const fetchId = ++latestFetchIdRef.current;
     try {
       const { data } = await getProductReviews(productId);
-      setReviews(data);
+      if (fetchId === latestFetchIdRef.current) {
+        setReviews(data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (fetchId === latestFetchIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -44,13 +50,26 @@ const ReviewSection = ({ productId }) => {
     setSubmitting(true);
     try {
       const { data } = await createReview(productId, { rating, comment });
-      setReviews([data, ...reviews]);
+      setReviews((prev) => {
+        const filtered = prev.filter((r) => r._id !== data._id);
+        return [data, ...filtered];
+      });
+      onReviewsChanged?.({
+        averageRating: data.productRating?.averageRating,
+        totalReviews: data.productRating?.totalReviews,
+      });
       setRating(0);
       setComment('');
       setShowForm(false);
       toast.success('Review submitted!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit review');
+      const message = err.response?.data?.message || 'Failed to submit review';
+      if (/already reviewed/i.test(message)) {
+        toast.info(message);
+        await fetchReviews();
+      } else {
+        toast.error(message);
+      }
     } finally {
       setSubmitting(false);
     }
