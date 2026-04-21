@@ -253,6 +253,166 @@ const AdminReports = () => {
             Use the export buttons (CSV / Excel / PDF) to download the currently filtered report.
           </div>
         </div>
+
+        <div className="bg-white rounded-2xl border border-card-border shadow-sm overflow-hidden mt-5">
+          <div className="px-5 py-3 border-b border-card-border">
+            <h3 className="text-sm font-semibold text-dark-navy m-0">Detailed Preview</h3>
+          </div>
+          <div className="overflow-x-auto">
+            {activeTab === 'users' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Name</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Email</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Role</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Phone</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Active</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {filteredUsers.map((u) => (
+                    <tr key={u._id}>
+                      <td className="px-4 py-2.5">{u.name}</td>
+                      <td className="px-4 py-2.5">{u.email}</td>
+                      <td className="px-4 py-2.5">{u.role}</td>
+                      <td className="px-4 py-2.5">{u.phone || '-'}</td>
+                      <td className="px-4 py-2.5">{u.isActive ? 'Yes' : 'No'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'products' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Name</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Category</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Price</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Stock</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {filteredProducts.map((p) => (
+                    <tr key={p._id}>
+                      <td className="px-4 py-2.5">{p.name}</td>
+                      <td className="px-4 py-2.5">{p.categoryId?.name || 'Uncategorized'}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(p.price || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2.5">{p.stock}</td>
+                      <td className="px-4 py-2.5">{p.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'orders' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Order</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Customer</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Status</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Payment</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {filteredOrders.map((o) => (
+                    <tr key={o._id}>
+                      <td className="px-4 py-2.5">#{String(o._id).slice(-8).toUpperCase()}</td>
+                      <td className="px-4 py-2.5">{o.userId?.name || 'N/A'}</td>
+                      <td className="px-4 py-2.5">{o.orderStatus}</td>
+                      <td className="px-4 py-2.5">{o.paymentStatus}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(o.totalAmount || 0).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'returns' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">RMA</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Order</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Customer</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {filteredReturns.map((r) => (
+                    <tr key={r._id}>
+                      <td className="px-4 py-2.5">{r.holdBillNo}</td>
+                      <td className="px-4 py-2.5">#{String(r.orderId?._id || r.orderId).slice(-8).toUpperCase()}</td>
+                      <td className="px-4 py-2.5">{r.customerId?.name || 'N/A'}</td>
+                      <td className="px-4 py-2.5">{r.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'expenses' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Title</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Category</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Amount</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {filteredExpenses.map((e) => (
+                    <tr key={e._id}>
+                      <td className="px-4 py-2.5">{e.title}</td>
+                      <td className="px-4 py-2.5">{e.category}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(e.amount || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2.5">{e.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {activeTab === 'incomes' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Title</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Source</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Amount</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {filteredIncomes.map((i) => (
+                    <tr key={i._id}>
+                      <td className="px-4 py-2.5">{i.title}</td>
+                      <td className="px-4 py-2.5">{i.source}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(i.amount || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2.5">{new Date(i.date).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {((activeTab === 'users' && filteredUsers.length === 0)
+              || (activeTab === 'products' && filteredProducts.length === 0)
+              || (activeTab === 'orders' && filteredOrders.length === 0)
+              || (activeTab === 'returns' && filteredReturns.length === 0)
+              || (activeTab === 'expenses' && filteredExpenses.length === 0)
+              || (activeTab === 'incomes' && filteredIncomes.length === 0)) && (
+              <div className="px-4 py-10 text-sm text-center text-muted-text">No records for selected filters.</div>
+            )}
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
