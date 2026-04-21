@@ -1,28 +1,29 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getFinancialDashboard, getAdditionalIncomes, addAdditionalIncome, deleteAdditionalIncome } from '../../services/api';
+import { getFinancialDashboard } from '../../services/api';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'react-toastify';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../utils/exportUtils';
 import navItems from './adminNavItems';
 
-const INCOME_SOURCES = ['Interest', 'Rent Income', 'Commission', 'Refund', 'Insurance Claim', 'Asset Sale', 'Sponsorship', 'Other'];
 const PIE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#a855f7', '#64748b', '#e11d48', '#0ea5e9', '#d946ef'];
 
 const AdminFinancials = () => {
   const [dashboard, setDashboard] = useState(null);
-  const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showIncomeModal, setShowIncomeModal] = useState(false);
-  const [incomeForm, setIncomeForm] = useState({ title: '', source: 'Other', amount: '', date: new Date().toISOString().split('T')[0], notes: '' });
-  const [saving, setSaving] = useState(false);
+  const [period, setPeriod] = useState('monthly'); // daily | monthly | yearly
+  const [range, setRange] = useState({ startDate: '', endDate: '' });
 
   const fetchData = async () => {
     try {
-      const [dashRes, incRes] = await Promise.all([getFinancialDashboard(), getAdditionalIncomes()]);
-      setDashboard(dashRes.data);
-      setIncomes(incRes.data);
+      const params = {
+        period,
+        ...(range.startDate ? { startDate: range.startDate } : {}),
+        ...(range.endDate ? { endDate: range.endDate } : {}),
+      };
+      const { data } = await getFinancialDashboard(params);
+      setDashboard(data);
     } catch (err) {
       toast.error('Failed to load financial data');
     } finally {
@@ -30,32 +31,7 @@ const AdminFinancials = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
-
-  const handleAddIncome = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await addAdditionalIncome({ ...incomeForm, amount: Number(incomeForm.amount) });
-      toast.success('Income added');
-      setShowIncomeModal(false);
-      setIncomeForm({ title: '', source: 'Other', amount: '', date: new Date().toISOString().split('T')[0], notes: '' });
-      fetchData();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add income');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteIncome = async (id) => {
-    if (!window.confirm('Delete this income record?')) return;
-    try {
-      await deleteAdditionalIncome(id);
-      toast.success('Income deleted');
-      fetchData();
-    } catch (err) { toast.error('Failed to delete'); }
-  };
+  useEffect(() => { fetchData(); }, [period, range.startDate, range.endDate]);
 
   if (loading) {
     return (
@@ -84,6 +60,13 @@ const AdminFinancials = () => {
             <p className="text-muted-text text-sm mt-1">Revenue, expenses, and net profit</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <select value={period} onChange={(e) => setPeriod(e.target.value)} className="border border-card-border rounded-xl py-2.5 px-3 text-sm bg-white">
+              <option value="daily">Daily</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+            <input type="date" value={range.startDate} onChange={(e) => setRange((r) => ({ ...r, startDate: e.target.value }))} className="border border-card-border rounded-xl py-2.5 px-3 text-sm bg-white" />
+            <input type="date" value={range.endDate} onChange={(e) => setRange((r) => ({ ...r, endDate: e.target.value }))} className="border border-card-border rounded-xl py-2.5 px-3 text-sm bg-white" />
             <button onClick={() => {
               const monthlyExportCols = [
                 { label: 'Month', accessor: 'month' },
@@ -91,7 +74,7 @@ const AdminFinancials = () => {
                 { label: 'Expenses (Rs.)', accessor: (r) => r.expenses?.toLocaleString() },
                 { label: 'Profit (Rs.)', accessor: (r) => r.profit?.toLocaleString() },
               ];
-              exportToPDF(d.monthlyData || [], monthlyExportCols, 'Financial Report');
+              exportToPDF(d.series || d.monthlyData || [], monthlyExportCols, 'Financial Report');
             }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">📄 PDF</button>
             <button onClick={() => {
               const monthlyExportCols = [
@@ -100,20 +83,8 @@ const AdminFinancials = () => {
                 { label: 'Expenses (Rs.)', accessor: (r) => r.expenses?.toLocaleString() },
                 { label: 'Profit (Rs.)', accessor: (r) => r.profit?.toLocaleString() },
               ];
-              exportToExcel(d.monthlyData || [], monthlyExportCols, 'financial-report');
+              exportToExcel(d.series || d.monthlyData || [], monthlyExportCols, 'financial-report');
             }} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">📊 Excel</button>
-            <button onClick={() => {
-              const incomeCols = [
-                { label: 'Title', accessor: 'title' },
-                { label: 'Source', accessor: 'source' },
-                { label: 'Amount (Rs.)', accessor: (r) => r.amount?.toLocaleString() },
-                { label: 'Date', accessor: (r) => new Date(r.date).toLocaleDateString() },
-              ];
-              exportToCSV(incomes, incomeCols, 'additional-income');
-            }} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">📋 Income CSV</button>
-            <button onClick={() => setShowIncomeModal(true)} className="flex items-center gap-2 bg-primary-green hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all text-sm">
-              <Plus size={18} /> Add Income
-            </button>
           </div>
         </div>
 
@@ -155,16 +126,31 @@ const AdminFinancials = () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-2xl border border-card-border p-5 shadow-sm">
+            <p className="text-xs text-muted-text">Items Sold</p>
+            <p className="text-2xl font-bold text-dark-navy mt-1">{(d.totalItemsSold || 0).toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-card-border p-5 shadow-sm">
+            <p className="text-xs text-muted-text">POS Revenue</p>
+            <p className="text-2xl font-bold text-dark-navy mt-1">Rs. {(d.posRevenue || 0).toLocaleString()}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-card-border p-5 shadow-sm">
+            <p className="text-xs text-muted-text">Online Revenue</p>
+            <p className="text-2xl font-bold text-dark-navy mt-1">Rs. {(d.onlineRevenue || 0).toLocaleString()}</p>
+          </div>
+        </div>
+
         {/* Charts Row */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           {/* Monthly Trend */}
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
-            <h2 className="font-semibold text-dark-navy mb-4">📈 Monthly Trend (12 months)</h2>
-            {d.monthlyData && (
+            <h2 className="font-semibold text-dark-navy mb-4">📈 Trend</h2>
+            {(d.series || d.monthlyData) && (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={d.monthlyData}>
+                <BarChart data={d.series || d.monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v) => `Rs. ${v.toLocaleString()}`} />
                   <Legend />
@@ -196,13 +182,13 @@ const AdminFinancials = () => {
         </div>
 
         {/* Profit/Loss Trend Line */}
-        {d.monthlyData && (
+        {(d.series || d.monthlyData) && (
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm mb-8">
             <h2 className="font-semibold text-dark-navy mb-4">📉 Profit Trend</h2>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={d.monthlyData}>
+              <LineChart data={d.series || d.monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(v) => `Rs. ${v.toLocaleString()}`} />
                 <Line type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} name="Net Profit" />
@@ -211,82 +197,7 @@ const AdminFinancials = () => {
           </div>
         )}
 
-        {/* Additional Income Table */}
-        <div className="bg-white rounded-2xl border border-card-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-card-border flex items-center justify-between">
-            <h2 className="font-semibold text-dark-navy">💵 Additional Income Records</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="text-left px-6 py-3 font-medium text-muted-text">Title</th>
-                  <th className="text-left px-6 py-3 font-medium text-muted-text">Source</th>
-                  <th className="text-left px-6 py-3 font-medium text-muted-text">Amount</th>
-                  <th className="text-left px-6 py-3 font-medium text-muted-text">Date</th>
-                  <th className="text-right px-6 py-3 font-medium text-muted-text">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-card-border">
-                {incomes.map(inc => (
-                  <tr key={inc._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3.5 font-medium text-dark-navy">{inc.title}</td>
-                    <td className="px-6 py-3.5"><span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">{inc.source}</span></td>
-                    <td className="px-6 py-3.5 font-semibold text-emerald-600">Rs. {inc.amount?.toLocaleString()}</td>
-                    <td className="px-6 py-3.5 text-muted-text">{new Date(inc.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-3.5 text-right">
-                      <button onClick={() => handleDeleteIncome(inc._id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500"><Trash2 size={15} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {incomes.length === 0 && <div className="text-center py-8 text-muted-text text-sm">No additional income records</div>}
-          </div>
-        </div>
       </div>
-
-      {/* Add Income Modal */}
-      {showIncomeModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowIncomeModal(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-card-border flex items-center justify-between">
-              <h2 className="text-lg font-bold text-dark-navy">Add Additional Income</h2>
-              <button onClick={() => setShowIncomeModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={20} /></button>
-            </div>
-            <form onSubmit={handleAddIncome} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-dark-navy mb-1">Title *</label>
-                <input required value={incomeForm.title} onChange={(e) => setIncomeForm({...incomeForm, title: e.target.value})}
-                  className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-dark-navy mb-1">Source</label>
-                  <select value={incomeForm.source} onChange={(e) => setIncomeForm({...incomeForm, source: e.target.value})}
-                    className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green">
-                    {INCOME_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-dark-navy mb-1">Amount (Rs.) *</label>
-                  <input type="number" required min="0" value={incomeForm.amount} onChange={(e) => setIncomeForm({...incomeForm, amount: e.target.value})}
-                    className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-dark-navy mb-1">Date</label>
-                <input type="date" value={incomeForm.date} onChange={(e) => setIncomeForm({...incomeForm, date: e.target.value})}
-                  className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
-              </div>
-              <div className="flex gap-3">
-                <button type="submit" disabled={saving} className="flex-1 bg-primary-green text-white py-2.5 rounded-xl font-semibold hover:bg-emerald-600 disabled:opacity-50 text-sm">{saving ? 'Adding...' : 'Add Income'}</button>
-                <button type="button" onClick={() => setShowIncomeModal(false)} className="flex-1 border border-card-border py-2.5 rounded-xl text-muted-text hover:bg-gray-50 text-sm">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 };

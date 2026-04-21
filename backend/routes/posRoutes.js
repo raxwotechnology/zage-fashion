@@ -6,6 +6,9 @@ const {
   posCheckout,
   getPosOrders,
   getPosOrderById,
+  getActiveSession,
+  startSession,
+  endSession,
 } = require('../controllers/posController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -17,5 +20,8 @@ router.get('/products/barcode/:code', getProductByBarcode);
 router.post('/checkout', posCheckout);
 router.get('/orders', getPosOrders);
 router.get('/orders/:id', getPosOrderById);
+router.get('/session/active', getActiveSession);
+router.post('/session/start', startSession);
+router.post('/session/end', endSession);
 
 module.exports = router;

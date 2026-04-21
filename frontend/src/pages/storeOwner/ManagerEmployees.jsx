@@ -5,6 +5,7 @@ import { getEmployees, addEmployee, updateEmployee } from '../../services/api';
 import { toast } from 'react-toastify';
 import managerNavItems from './managerNavItems';
 import useAuthStore from '../../store/authStore';
+import LeaveRequestsPanel from '../hr/LeaveRequestsPanel';
 
 
 
@@ -24,6 +25,7 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
   const user = useAuthStore((s) => s.user);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('employees'); // employees | leaveRequests
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -107,6 +109,30 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
   return (
     <DashboardLayout navItems={navItems} title={title}>
       <div>
+        {/* Sub-tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('employees')}
+            className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+              activeTab === 'employees' ? 'bg-primary-green text-white' : 'bg-white border border-card-border text-muted-text hover:bg-gray-50'
+            }`}
+          >
+            Employees
+          </button>
+          <button
+            onClick={() => setActiveTab('leaveRequests')}
+            className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+              activeTab === 'leaveRequests' ? 'bg-primary-green text-white' : 'bg-white border border-card-border text-muted-text hover:bg-gray-50'
+            }`}
+          >
+            Leave Requests
+          </button>
+        </div>
+
+        {activeTab === 'leaveRequests' ? (
+          <LeaveRequestsPanel />
+        ) : (
+          <div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-dark-navy">👥 Employees</h1>
@@ -216,7 +242,6 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
             </div>
           ))}
         </div>
-      </div>
 
       {/* Add Employee Modal */}
       {showAddModal && (
@@ -261,6 +286,7 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
                       <option value="cashier">Cashier</option>
                       <option value="deliveryGuy">Delivery Rider</option>
                       <option value="stockEmployee">Stock Employee</option>
+                      {user?.role === 'admin' && <option value="manager">Manager</option>}
                     </select>
                   </div>
                 </div>
@@ -324,6 +350,9 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
           </div>
         </div>
       )}
+          </div>
+        )}
+      </div>
     </DashboardLayout>
   );
 };

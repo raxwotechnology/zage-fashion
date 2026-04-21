@@ -5,7 +5,10 @@ import API from '../../services/api';
 import { toast } from 'react-toastify';
 import navItems from './adminNavItems';
 
-const emptyForm = { code: '', type: 'percentage', value: '', minOrderAmount: '', maxDiscountAmount: '', maxUses: '', description: '', expiresAt: '', source: 'admin' };
+const emptyForm = {
+  code: '', type: 'percentage', value: '', minOrderAmount: '', maxDiscountAmount: '', maxUses: '',
+  description: '', expiresAt: '', source: 'admin', applicableProductIds: '', applicableCategoryIds: '',
+};
 
 const AdminVouchers = () => {
   const [vouchers, setVouchers] = useState([]);
@@ -33,14 +36,39 @@ const AdminVouchers = () => {
 
   const openEdit = (v) => {
     setEditing(v._id);
-    setForm({ code: v.code, type: v.type, value: v.value, minOrderAmount: v.minOrderAmount || '', maxDiscountAmount: v.maxDiscountAmount || '', maxUses: v.maxUses || '', description: v.description || '', expiresAt: v.expiresAt ? v.expiresAt.split('T')[0] : '', source: v.source || 'admin' });
+    setForm({
+      code: v.code,
+      type: v.type,
+      value: v.value,
+      minOrderAmount: v.minOrderAmount || '',
+      maxDiscountAmount: v.maxDiscountAmount || '',
+      maxUses: v.maxUses || '',
+      description: v.description || '',
+      expiresAt: v.expiresAt ? v.expiresAt.split('T')[0] : '',
+      source: v.source || 'admin',
+      applicableProductIds: (v.applicableProductIds || []).map((id) => String(id)).join(','),
+      applicableCategoryIds: (v.applicableCategoryIds || []).map((id) => String(id)).join(','),
+    });
     setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...form, code: form.code.toUpperCase(), value: Number(form.value), minOrderAmount: Number(form.minOrderAmount) || 0, maxDiscountAmount: Number(form.maxDiscountAmount) || undefined, maxUses: Number(form.maxUses) || 9999 };
+      const payload = {
+        ...form,
+        code: form.code.toUpperCase(),
+        value: Number(form.value),
+        minOrderAmount: Number(form.minOrderAmount) || 0,
+        maxDiscountAmount: Number(form.maxDiscountAmount) || undefined,
+        maxUses: Number(form.maxUses) || 9999,
+        applicableProductIds: form.applicableProductIds
+          ? form.applicableProductIds.split(',').map((s) => s.trim()).filter(Boolean)
+          : [],
+        applicableCategoryIds: form.applicableCategoryIds
+          ? form.applicableCategoryIds.split(',').map((s) => s.trim()).filter(Boolean)
+          : [],
+      };
       if (editing) {
         await API.put(`/loyalty/vouchers/${editing}`, payload);
         toast.success('Voucher updated');
@@ -203,6 +231,24 @@ const AdminVouchers = () => {
               <div>
                 <label className="block text-sm font-medium text-dark-navy mb-1">Description</label>
                 <input value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} placeholder="e.g. 10% off for new users" className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">Applicable Product IDs (optional)</label>
+                <input
+                  value={form.applicableProductIds}
+                  onChange={(e) => setForm({ ...form, applicableProductIds: e.target.value })}
+                  placeholder="comma separated product ids"
+                  className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">Applicable Category IDs (optional)</label>
+                <input
+                  value={form.applicableCategoryIds}
+                  onChange={(e) => setForm({ ...form, applicableCategoryIds: e.target.value })}
+                  placeholder="comma separated category ids"
+                  className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
+                />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="flex-1 bg-primary-green text-white py-2.5 rounded-xl font-semibold hover:bg-emerald-600 transition-all text-sm">{editing ? 'Update' : 'Create'}</button>

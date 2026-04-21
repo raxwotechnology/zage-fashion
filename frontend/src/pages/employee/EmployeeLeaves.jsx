@@ -116,7 +116,9 @@ const EmployeeLeaves = () => {
                   <option value="casual">Casual Leave</option>
                   <option value="sick">Sick Leave</option>
                   <option value="annual">Annual Leave</option>
-                  <option value="personal">Personal Leave</option>
+                  <option value="maternity">Maternity Leave</option>
+                  <option value="paternity">Paternity Leave</option>
+                  <option value="unpaid">Unpaid Leave</option>
                 </select>
               </div>
               <div />

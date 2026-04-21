@@ -98,7 +98,17 @@ const toggleStore = async (req, res, next) => {
 // @route   GET /api/admin/orders
 const getAllOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({})
+    const { startDate, endDate, storeId, status } = req.query;
+    const filter = {};
+    if (storeId) filter.storeId = storeId;
+    if (status) filter.orderStatus = status;
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+
+    const orders = await Order.find(filter)
       .populate('userId', 'name email')
       .populate('storeId', 'name')
       .populate('deliveryGuyId', 'name email phone')

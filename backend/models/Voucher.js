@@ -59,6 +59,18 @@ const voucherSchema = mongoose.Schema(
     description: {
       type: String,
     },
+    applicableProductIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+      },
+    ],
+    applicableCategoryIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+      },
+    ],
   },
   {
     timestamps: true,

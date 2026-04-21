@@ -6,6 +6,22 @@ import { toast } from 'react-toastify';
 import navItems from './adminNavItems';
 import useSettingsStore from '../../store/settingsStore';
 
+const SettingsInputField = ({ label, value, onChange, type = 'text', placeholder = '', suffix = '' }) => (
+  <div>
+    <label className="text-xs font-medium text-muted-text block mb-1">{label}</label>
+    <div className="relative">
+      <input
+        type={type}
+        value={value || ''}
+        onChange={(e) => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
+        className="w-full border border-card-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
+        placeholder={placeholder}
+      />
+      {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-text">{suffix}</span>}
+    </div>
+  </div>
+);
+
 const AdminSettings = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,18 +85,6 @@ const AdminSettings = () => {
     { key: 'advanced', label: 'Advanced', icon: Shield },
   ];
 
-  const InputField = ({ label, value, onChange, type = 'text', placeholder = '', suffix = '' }) => (
-    <div>
-      <label className="text-xs font-medium text-muted-text block mb-1">{label}</label>
-      <div className="relative">
-        <input type={type} value={value || ''} onChange={(e) => onChange(type === 'number' ? Number(e.target.value) : e.target.value)}
-          className="w-full border border-card-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
-          placeholder={placeholder} />
-        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-text">{suffix}</span>}
-      </div>
-    </div>
-  );
-
   return (
     <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
@@ -128,15 +132,15 @@ const AdminSettings = () => {
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
-                <InputField label="Shop Name" value={settings.shopName} onChange={(v) => handleChange('shopName', v)} placeholder="FreshCart" />
-                <InputField label="Tagline" value={settings.tagline} onChange={(v) => handleChange('tagline', v)} placeholder="Fresh Groceries Delivered" />
+                <SettingsInputField label="Shop Name" value={settings.shopName} onChange={(v) => handleChange('shopName', v)} placeholder="FreshCart" />
+                <SettingsInputField label="Tagline" value={settings.tagline} onChange={(v) => handleChange('tagline', v)} placeholder="Fresh Groceries Delivered" />
               </div>
             </div>
 
             {/* Footer */}
             <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
               <h2 className="font-semibold text-dark-navy mb-4">Footer</h2>
-              <InputField label="Footer Text" value={settings.footerText} onChange={(v) => handleChange('footerText', v)} placeholder="© 2026 FreshCart. All rights reserved." />
+              <SettingsInputField label="Footer Text" value={settings.footerText} onChange={(v) => handleChange('footerText', v)} placeholder="© 2026 FreshCart. All rights reserved." />
             </div>
           </div>
         )}
@@ -146,13 +150,13 @@ const AdminSettings = () => {
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
             <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><Phone size={18} /> Contact Details</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <InputField label="Email" value={settings.email} onChange={(v) => handleChange('email', v)} placeholder="info@freshcart.lk" />
-              <InputField label="Primary Phone" value={settings.phone} onChange={(v) => handleChange('phone', v)} placeholder="+94 11 255 5000" />
-              <InputField label="Secondary Phone" value={settings.phone2} onChange={(v) => handleChange('phone2', v)} placeholder="Optional" />
-              <InputField label="Country" value={settings.country} onChange={(v) => handleChange('country', v)} placeholder="Sri Lanka" />
-              <InputField label="City" value={settings.city} onChange={(v) => handleChange('city', v)} placeholder="Colombo" />
+              <SettingsInputField label="Email" value={settings.email} onChange={(v) => handleChange('email', v)} placeholder="info@freshcart.lk" />
+              <SettingsInputField label="Primary Phone" value={settings.phone} onChange={(v) => handleChange('phone', v)} placeholder="+94 11 255 5000" />
+              <SettingsInputField label="Secondary Phone" value={settings.phone2} onChange={(v) => handleChange('phone2', v)} placeholder="Optional" />
+              <SettingsInputField label="Country" value={settings.country} onChange={(v) => handleChange('country', v)} placeholder="Sri Lanka" />
+              <SettingsInputField label="City" value={settings.city} onChange={(v) => handleChange('city', v)} placeholder="Colombo" />
               <div className="sm:col-span-2">
-                <InputField label="Full Address" value={settings.address} onChange={(v) => handleChange('address', v)} placeholder="123 Market Street, Colombo 03" />
+                <SettingsInputField label="Full Address" value={settings.address} onChange={(v) => handleChange('address', v)} placeholder="123 Market Street, Colombo 03" />
               </div>
             </div>
           </div>
@@ -164,16 +168,16 @@ const AdminSettings = () => {
             <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
               <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><DollarSign size={18} /> Currency & Pricing</h2>
               <div className="grid sm:grid-cols-3 gap-4">
-                <InputField label="Default Currency" value={settings.currency} onChange={(v) => handleChange('currency', v)} />
-                <InputField label="USD → LKR Rate" value={settings.exchangeRate} onChange={(v) => handleChange('exchangeRate', v)} type="number" suffix="LKR per USD" />
-                <InputField label="Tax Rate" value={settings.taxRate} onChange={(v) => handleChange('taxRate', v)} type="number" suffix="e.g. 0.08 = 8%" />
+                <SettingsInputField label="Default Currency" value={settings.currency} onChange={(v) => handleChange('currency', v)} />
+                <SettingsInputField label="USD → LKR Rate" value={settings.exchangeRate} onChange={(v) => handleChange('exchangeRate', v)} type="number" suffix="LKR per USD" />
+                <SettingsInputField label="Tax Rate" value={settings.taxRate} onChange={(v) => handleChange('taxRate', v)} type="number" suffix="e.g. 0.08 = 8%" />
               </div>
             </div>
             <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
               <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2">🚚 Delivery</h2>
               <div className="grid sm:grid-cols-2 gap-4">
-                <InputField label="Free Delivery Threshold" value={settings.deliveryFeeThreshold} onChange={(v) => handleChange('deliveryFeeThreshold', v)} type="number" suffix="Rs." />
-                <InputField label="Delivery Fee" value={settings.deliveryFee} onChange={(v) => handleChange('deliveryFee', v)} type="number" suffix="Rs." />
+                <SettingsInputField label="Free Delivery Threshold" value={settings.deliveryFeeThreshold} onChange={(v) => handleChange('deliveryFeeThreshold', v)} type="number" suffix="Rs." />
+                <SettingsInputField label="Delivery Fee" value={settings.deliveryFee} onChange={(v) => handleChange('deliveryFee', v)} type="number" suffix="Rs." />
               </div>
               <p className="text-xs text-muted-text mt-3">Orders above the threshold get free delivery. Otherwise delivery fee is charged.</p>
             </div>
@@ -185,8 +189,8 @@ const AdminSettings = () => {
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
             <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><Gift size={18} /> Loyalty Points Configuration</h2>
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
-              <InputField label="Points Per Unit Spent" value={settings.loyaltyPointsPerUnit} onChange={(v) => handleChange('loyaltyPointsPerUnit', v)} type="number" suffix="Rs. per 1 point" />
-              <InputField label="Point Redemption Value" value={settings.loyaltyPointValue} onChange={(v) => handleChange('loyaltyPointValue', v)} type="number" suffix="Rs. per point" />
+              <SettingsInputField label="Points Per Unit Spent" value={settings.loyaltyPointsPerUnit} onChange={(v) => handleChange('loyaltyPointsPerUnit', v)} type="number" suffix="Rs. per 1 point" />
+              <SettingsInputField label="Point Redemption Value" value={settings.loyaltyPointValue} onChange={(v) => handleChange('loyaltyPointValue', v)} type="number" suffix="Rs. per point" />
             </div>
             <div className="bg-emerald-50 rounded-xl p-4 text-sm text-emerald-800">
               <p className="font-medium mb-1">How it works:</p>
@@ -201,9 +205,9 @@ const AdminSettings = () => {
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
             <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><Palette size={18} /> Social Media Links</h2>
             <div className="space-y-4">
-              <InputField label="Facebook URL" value={settings.socialLinks?.facebook} onChange={(v) => handleSocialChange('facebook', v)} placeholder="https://facebook.com/freshcart" />
-              <InputField label="Instagram URL" value={settings.socialLinks?.instagram} onChange={(v) => handleSocialChange('instagram', v)} placeholder="https://instagram.com/freshcart" />
-              <InputField label="Twitter URL" value={settings.socialLinks?.twitter} onChange={(v) => handleSocialChange('twitter', v)} placeholder="https://twitter.com/freshcart" />
+              <SettingsInputField label="Facebook URL" value={settings.socialLinks?.facebook} onChange={(v) => handleSocialChange('facebook', v)} placeholder="https://facebook.com/freshcart" />
+              <SettingsInputField label="Instagram URL" value={settings.socialLinks?.instagram} onChange={(v) => handleSocialChange('instagram', v)} placeholder="https://instagram.com/freshcart" />
+              <SettingsInputField label="Twitter URL" value={settings.socialLinks?.twitter} onChange={(v) => handleSocialChange('twitter', v)} placeholder="https://twitter.com/freshcart" />
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Voucher = require('../models/Voucher');
 const PaymentOtp = require('../models/PaymentOtp');
 const crypto = require('crypto');
 const { sendEmail, paymentReceiptEmail, orderConfirmationEmail } = require('../utils/emailService');
@@ -40,6 +41,7 @@ const createOrder = async (req, res, next) => {
       tax,
       sendReceiptEmail = false,
       receiptEmail,
+      voucherCode,
     } = req.body;
 
     if (!items || items.length === 0) {
@@ -49,7 +51,7 @@ const createOrder = async (req, res, next) => {
 
     const productIds = items.map((item) => item.productId);
     const products = await Product.find({ _id: { $in: productIds } })
-      .select('_id allowKokoOnline storeId')
+      .select('_id allowKokoOnline storeId categoryId')
       .lean();
     const productMap = new Map(products.map((p) => [String(p._id), p]));
 
@@ -72,7 +74,56 @@ const createOrder = async (req, res, next) => {
     const storeId = items[0].storeId || productMap.get(String(items[0].productId))?.storeId || null;
 
     let order;
+    let appliedVoucher = null;
+    let voucherDiscount = 0;
     let splitOrders = null;
+    if (voucherCode) {
+      const voucher = await Voucher.findOne({ code: String(voucherCode).toUpperCase(), isActive: true });
+      if (!voucher) {
+        res.status(400);
+        return next(new Error('Invalid voucher code'));
+      }
+      if (voucher.expiresAt && new Date() > voucher.expiresAt) {
+        res.status(400);
+        return next(new Error('Voucher has expired'));
+      }
+      const user = await User.findById(req.user._id).select('vouchers').lean();
+      const userVoucher = (user?.vouchers || []).find((v) => v.code === voucher.code && v.isUsed !== true);
+      if (!userVoucher) {
+        res.status(400);
+        return next(new Error('Voucher must be claimed before checkout'));
+      }
+      const orderAmount = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+      if (voucher.minOrderAmount && orderAmount < voucher.minOrderAmount) {
+        res.status(400);
+        return next(new Error(`Minimum order amount is Rs.${voucher.minOrderAmount}`));
+      }
+      const productIdSet = new Set(items.map((it) => String(it.productId)));
+      if ((voucher.applicableProductIds || []).length > 0) {
+        const allowedProducts = new Set((voucher.applicableProductIds || []).map((id) => String(id)));
+        const hasMatchingProduct = [...productIdSet].some((id) => allowedProducts.has(id));
+        if (!hasMatchingProduct) {
+          res.status(400);
+          return next(new Error('Voucher does not match selected products'));
+        }
+      }
+      if ((voucher.applicableCategoryIds || []).length > 0) {
+        const allowedCategories = new Set((voucher.applicableCategoryIds || []).map((id) => String(id)));
+        const hasMatchingCategory = products.some((p) => allowedCategories.has(String(p.categoryId)));
+        if (!hasMatchingCategory) {
+          res.status(400);
+          return next(new Error('Voucher does not match selected product categories'));
+        }
+      }
+      if (voucher.type === 'percentage') {
+        voucherDiscount = Math.round((orderAmount * voucher.value) / 100);
+        if (voucher.maxDiscountAmount) voucherDiscount = Math.min(voucherDiscount, voucher.maxDiscountAmount);
+      } else {
+        voucherDiscount = Number(voucher.value || 0);
+      }
+      appliedVoucher = voucher;
+    }
+
     if (paymentMethod === 'koko' && nonKokoItems.length > 0) {
       const kokoTotal = calculateTotal(kokoEligibleItems, 0, 0);
       const nonKokoTotal = calculateTotal(nonKokoItems, deliveryFee || 0, tax || 0);
@@ -121,7 +172,7 @@ const createOrder = async (req, res, next) => {
         fallbackOrderId: fallbackOrder._id,
       };
     } else {
-      const totalAmount = calculateTotal(items, deliveryFee, tax);
+      const totalAmount = Math.max(0, calculateTotal(items, deliveryFee, tax) - voucherDiscount);
       order = await Order.create({
         userId: req.user._id,
         storeId,
@@ -137,7 +188,20 @@ const createOrder = async (req, res, next) => {
         paymentOtpRequired: paymentMethod === 'payhere',
         sendReceiptEmail: !!sendReceiptEmail,
         receiptEmail: receiptEmail || undefined,
+        voucherCode: appliedVoucher?.code,
+        discountAmount: voucherDiscount,
       });
+    }
+
+    if (appliedVoucher) {
+      appliedVoucher.usedCount = Number(appliedVoucher.usedCount || 0) + 1;
+      if (!Array.isArray(appliedVoucher.usedBy)) appliedVoucher.usedBy = [];
+      appliedVoucher.usedBy.push(req.user._id);
+      await appliedVoucher.save();
+      await User.updateOne(
+        { _id: req.user._id, 'vouchers.code': appliedVoucher.code },
+        { $set: { 'vouchers.$.isUsed': true } }
+      );
     }
 
     // Update product stock
@@ -219,10 +283,29 @@ const updateOrderStatus = async (req, res, next) => {
       return next(new Error('Order not found'));
     }
 
-    order.orderStatus = req.body.orderStatus || order.orderStatus;
-    order.paymentStatus = req.body.paymentStatus || order.paymentStatus;
+    const nextOrderStatus = req.body.orderStatus || order.orderStatus;
+    const nextPaymentStatus = req.body.paymentStatus || order.paymentStatus;
+
+    const shouldRestoreStock =
+      nextOrderStatus === 'cancelled' &&
+      order.orderStatus !== 'cancelled' &&
+      order.isPosOrder !== true;
+
+    order.orderStatus = nextOrderStatus;
+    order.paymentStatus = nextPaymentStatus;
 
     const updated = await order.save();
+
+    // If a store owner cancels an order via /orders/:id/status, ensure stock is restored
+    if (shouldRestoreStock) {
+      for (const item of order.items || []) {
+        if (!item?.productId || !item?.quantity) continue;
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: item.quantity },
+        });
+      }
+    }
+
     res.json(updated);
   } catch (error) {
     next(error);
@@ -503,7 +586,16 @@ const getStoreOrders = async (req, res, next) => {
       res.status(404);
       return next(new Error('No store found for this user'));
     }
-    const orders = await Order.find({ storeId: store._id })
+    const { startDate, endDate, status } = req.query;
+    const filter = { storeId: store._id };
+    if (status) filter.orderStatus = status;
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+
+    const orders = await Order.find(filter)
       .populate('userId', 'name email phone')
       .populate('deliveryGuyId', 'name email phone')
       .sort({ createdAt: -1 });

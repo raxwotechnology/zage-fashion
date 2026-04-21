@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import useCurrencyStore from '../store/currencyStore';
-import { createOrder, getPayHereHash, requestOrderPaymentOtp, verifyOrderPaymentOtp } from '../services/api';
+import { applyVoucher, createOrder, getMyLoyaltyPoints, getPayHereHash, requestOrderPaymentOtp, verifyOrderPaymentOtp } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Checkout = () => {
@@ -26,11 +26,15 @@ const Checkout = () => {
   const [otpOrderId, setOtpOrderId] = useState('');
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
+  const [claimedVouchers, setClaimedVouchers] = useState([]);
+  const [selectedVoucherCode, setSelectedVoucherCode] = useState('');
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const [applyingVoucher, setApplyingVoucher] = useState(false);
 
   const subtotal = getSubtotal();
   const deliveryFee = subtotal > 50 ? 0 : 4.99;
   const tax = Math.round(subtotal * 0.08 * 100) / 100;
-  const total = subtotal + deliveryFee + tax;
+  const total = Math.max(0, subtotal - voucherDiscount) + deliveryFee + tax;
 
   // Pre-fill address from user profile
   useEffect(() => {
@@ -44,6 +48,19 @@ const Checkout = () => {
         country: def.country || 'USA',
       });
     }
+  }, [user]);
+
+  useEffect(() => {
+    const loadClaimedVouchers = async () => {
+      if (!user) return;
+      try {
+        const { data } = await getMyLoyaltyPoints();
+        setClaimedVouchers((data?.vouchers || []).filter((v) => !v.isUsed));
+      } catch {
+        setClaimedVouchers([]);
+      }
+    };
+    loadClaimedVouchers();
   }, [user]);
 
   // Generate delivery date options (next 7 days)
@@ -82,6 +99,7 @@ const Checkout = () => {
         paymentMethod,
         deliveryFee,
         tax,
+        voucherCode: selectedVoucherCode || undefined,
         sendReceiptEmail,
         receiptEmail: sendReceiptEmail ? (receiptEmail || user?.email || '') : undefined,
       };
@@ -110,6 +128,32 @@ const Checkout = () => {
       toast.error(err.response?.data?.message || 'Failed to place order');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApplyVoucher = async () => {
+    if (!selectedVoucherCode) {
+      toast.error('Select a voucher first');
+      return;
+    }
+    try {
+      setApplyingVoucher(true);
+      const applyPayload = {
+        code: selectedVoucherCode,
+        orderAmount: subtotal,
+        items: items.map((item) => ({
+          productId: item.productId?._id || item.productId,
+          quantity: item.quantity,
+        })),
+      };
+      const { data } = await applyVoucher(applyPayload);
+      setVoucherDiscount(Number(data?.discount || 0));
+      toast.success(`Voucher applied: Rs. ${Number(data?.discount || 0).toFixed(2)} off`);
+    } catch (err) {
+      setVoucherDiscount(0);
+      toast.error(err.response?.data?.message || 'Failed to apply voucher');
+    } finally {
+      setApplyingVoucher(false);
     }
   };
 
@@ -284,10 +328,43 @@ const Checkout = () => {
             </div>
           </motion.div>
 
-          {/* Payment Method */}
+          {/* Voucher */}
           <motion.div
             className="bg-white border border-card-border rounded-2xl p-6"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <h3 className="font-bold text-dark-navy mt-0 mb-4">Voucher</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select
+                value={selectedVoucherCode}
+                onChange={(e) => { setSelectedVoucherCode(e.target.value); setVoucherDiscount(0); }}
+                className="flex-1 border border-card-border rounded-xl px-4 py-3 text-sm bg-white"
+              >
+                <option value="">Select claimed voucher</option>
+                {claimedVouchers.map((v, idx) => (
+                  <option key={`${v.code}-${idx}`} value={v.code}>
+                    {v.code} ({v.type === 'percentage' ? `${v.value}%` : `Rs. ${v.value}`})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleApplyVoucher}
+                disabled={applyingVoucher || !selectedVoucherCode}
+                className="bg-violet-600 text-white font-semibold px-5 py-3 rounded-xl hover:bg-violet-700 disabled:opacity-60"
+              >
+                {applyingVoucher ? 'Applying...' : 'Apply'}
+              </button>
+            </div>
+            {voucherDiscount > 0 && (
+              <p className="text-sm text-emerald-700 mt-3 mb-0">Voucher discount applied: Rs. {voucherDiscount.toFixed(2)}</p>
+            )}
+          </motion.div>
+
+          {/* Payment Method */}
+          <motion.div
+            className="bg-white border border-card-border rounded-2xl p-6"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.22 }}
           >
             <h3 className="font-bold text-dark-navy mt-0 mb-4 flex items-center gap-2">
               <CreditCard size={20} className="text-primary-green" /> Payment Method
@@ -382,6 +459,12 @@ const Checkout = () => {
                 <span className="text-muted-text">Tax</span>
                 <span className="font-medium">{formatPrice(convertPrice(tax))}</span>
               </div>
+              {voucherDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-text">Voucher Discount</span>
+                  <span className="font-medium text-emerald-700">- {formatPrice(convertPrice(voucherDiscount))}</span>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-card-border pt-4 mb-6">

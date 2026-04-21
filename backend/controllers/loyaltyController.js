@@ -1,6 +1,7 @@
 const LoyaltyTransaction = require('../models/LoyaltyTransaction');
 const Voucher = require('../models/Voucher');
 const User = require('../models/User');
+const Product = require('../models/Product');
 
 // @desc    Get my loyalty points
 // @route   GET /api/loyalty/points
@@ -98,7 +99,7 @@ const issueBonusPoints = async (req, res, next) => {
 // @access  Private
 const applyVoucher = async (req, res, next) => {
   try {
-    const { code, orderAmount } = req.body;
+    const { code, orderAmount, items = [] } = req.body;
     const voucher = await Voucher.findOne({ code: code.toUpperCase(), isActive: true });
 
     if (!voucher) { res.status(404); return next(new Error('Invalid or expired voucher code')); }
@@ -111,6 +112,25 @@ const applyVoucher = async (req, res, next) => {
     if (voucher.minOrderAmount && orderAmount < voucher.minOrderAmount) {
       res.status(400);
       return next(new Error(`Minimum order amount is Rs.${voucher.minOrderAmount}`));
+    }
+
+    // Optional product/category constraints
+    if ((voucher.applicableProductIds?.length || voucher.applicableCategoryIds?.length) && Array.isArray(items) && items.length > 0) {
+      const itemProductIds = items.map((it) => String(it.productId)).filter(Boolean);
+      const allowedProductIds = new Set((voucher.applicableProductIds || []).map((id) => String(id)));
+      if (allowedProductIds.size > 0 && !itemProductIds.some((id) => allowedProductIds.has(id))) {
+        res.status(400);
+        return next(new Error('Voucher does not match selected products'));
+      }
+      if ((voucher.applicableCategoryIds || []).length > 0) {
+        const products = await Product.find({ _id: { $in: itemProductIds } }).select('_id categoryId').lean();
+        const allowedCategoryIds = new Set((voucher.applicableCategoryIds || []).map((id) => String(id)));
+        const hasMatchingCategory = products.some((p) => allowedCategoryIds.has(String(p.categoryId)));
+        if (!hasMatchingCategory) {
+          res.status(400);
+          return next(new Error('Voucher does not match selected product categories'));
+        }
+      }
     }
 
     // Check if user already used this voucher
@@ -147,6 +167,47 @@ const applyPromoCode = async (req, res, next) => {
   return applyVoucher(req, res, next);
 };
 
+// @desc    Claim a voucher to user account
+// @route   POST /api/loyalty/vouchers/:code/claim
+// @access  Private
+const claimVoucher = async (req, res, next) => {
+  try {
+    const code = String(req.params.code || '').toUpperCase();
+    if (!code) {
+      res.status(400);
+      return next(new Error('Voucher code is required'));
+    }
+
+    const voucher = await Voucher.findOne({ code, isActive: true });
+    if (!voucher) {
+      res.status(404);
+      return next(new Error('Voucher not found'));
+    }
+    if (voucher.expiresAt && new Date() > voucher.expiresAt) {
+      res.status(400);
+      return next(new Error('Voucher has expired'));
+    }
+
+    const user = await User.findById(req.user._id);
+    const alreadyClaimed = (user.vouchers || []).some((v) => v.code === voucher.code);
+    if (alreadyClaimed) {
+      return res.json({ message: 'Voucher already claimed' });
+    }
+
+    user.vouchers.push({
+      code: voucher.code,
+      type: voucher.type,
+      value: voucher.value,
+      minOrderAmount: voucher.minOrderAmount || 0,
+      expiresAt: voucher.expiresAt,
+      isUsed: false,
+    });
+    await user.save();
+
+    res.json({ message: 'Voucher claimed successfully' });
+  } catch (error) { next(error); }
+};
+
 // @desc    Get available vouchers for user
 // @route   GET /api/loyalty/vouchers
 // @access  Private
@@ -167,10 +228,27 @@ const getAvailableVouchers = async (req, res, next) => {
 // @access  Private/Admin/Manager
 const createVoucher = async (req, res, next) => {
   try {
-    const { code, type, value, minOrderAmount, maxDiscountAmount, maxUses, description, expiresAt, source } = req.body;
+    const {
+      code, type, value, minOrderAmount, maxDiscountAmount, maxUses, description, expiresAt, source,
+      applicableProductIds = [], applicableCategoryIds = [],
+    } = req.body;
     const exists = await Voucher.findOne({ code: code.toUpperCase() });
     if (exists) { res.status(400); return next(new Error('Voucher code already exists')); }
-    const voucher = await Voucher.create({ code: code.toUpperCase(), type, value, minOrderAmount: minOrderAmount || 0, maxDiscountAmount, maxUses: maxUses || 9999, description, expiresAt: expiresAt || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), source: source || 'admin', isActive: true, usedCount: 0 });
+    const voucher = await Voucher.create({
+      code: code.toUpperCase(),
+      type,
+      value,
+      minOrderAmount: minOrderAmount || 0,
+      maxDiscountAmount,
+      maxUses: maxUses || 9999,
+      description,
+      expiresAt: expiresAt || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      source: source || 'admin',
+      isActive: true,
+      usedCount: 0,
+      applicableProductIds,
+      applicableCategoryIds,
+    });
     res.status(201).json(voucher);
   } catch (error) { next(error); }
 };
@@ -224,6 +302,7 @@ const awardOrderPoints = async (userId, orderTotal, currency = 'LKR') => {
 module.exports = {
   getMyPoints, getLoyaltyHistory, redeemPoints, issueBonusPoints,
   applyVoucher, applyPromoCode, getAvailableVouchers,
+  claimVoucher,
   createVoucher, updateVoucher, deleteVoucher,
   awardOrderPoints,
 };

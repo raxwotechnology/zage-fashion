@@ -5,12 +5,15 @@ import { getMyStoreProducts, createProduct, updateProduct, deleteProduct, getCat
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
 import managerNavItems from './managerNavItems';
+import SuppliersPanel from '../inventory/SuppliersPanel';
+import StockReceivingPanel from '../inventory/StockReceivingPanel';
+import SupplierReturnsPanel from '../inventory/SupplierReturnsPanel';
 
 
 
 const emptyForm = {
   name: '', categoryId: '', description: '', price: '', mrp: '', discount: '', unit: 'kg',
-  stock: '', images: '', isFeatured: false, isOnSale: false, allowKokoOnline: true, allowKokoPos: true, status: 'active', storeId: '',
+  stock: '', purchasePrice: '', images: '', isFeatured: false, isOnSale: false, allowKokoOnline: true, allowKokoPos: true, status: 'active', storeId: '',
 };
 
 const StoreProducts = () => {
@@ -19,6 +22,7 @@ const StoreProducts = () => {
   const [allStores, setAllStores] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('products'); // products | suppliers | receiving | supplierReturns
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -31,10 +35,10 @@ const StoreProducts = () => {
       setError('');
       setLoading(true);
       const [prodRes, catRes, storesRes] = await Promise.all([getMyStoreProducts(), getCategories(), getStores()]);
-      setProducts(prodRes.data.products);
-      setStoreInfo(prodRes.data.store);
-      setCategories(catRes.data);
-      setAllStores(storesRes.data || []);
+      setProducts(prodRes?.data?.products || []);
+      setStoreInfo(prodRes?.data?.store || null);
+      setCategories(catRes?.data || []);
+      setAllStores(storesRes?.data || []);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to load products';
       setError(msg);
@@ -63,6 +67,7 @@ const StoreProducts = () => {
       discount: product.discount || '',
       unit: product.unit || 'kg',
       stock: product.stock,
+      purchasePrice: product.avgCost || product.lastCost || '',
       images: (product.images || []).join(', '),
       isFeatured: product.isFeatured || false,
       isOnSale: product.isOnSale || false,
@@ -83,6 +88,7 @@ const StoreProducts = () => {
         mrp: Number(form.mrp) || Number(form.price),
         discount: Number(form.discount) || 0,
         stock: Number(form.stock),
+        purchasePrice: Number(form.purchasePrice) || 0,
         images: form.images ? form.images.split(',').map((s) => s.trim()).filter(Boolean) : [],
         storeId: storeInfo?._id || form.storeId,
       };
@@ -115,7 +121,7 @@ const StoreProducts = () => {
   };
 
   const filtered = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    (p?.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
@@ -131,6 +137,37 @@ const StoreProducts = () => {
   return (
     <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
       <div>
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {[
+            { id: 'products', label: 'Products' },
+            { id: 'suppliers', label: 'Suppliers' },
+            { id: 'receiving', label: 'Stock Receiving' },
+            { id: 'supplierReturns', label: 'Supplier Returns' },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                activeTab === t.id ? 'bg-primary-green text-white' : 'bg-white border border-card-border text-muted-text hover:bg-gray-50'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'suppliers' && storeInfo?._id && (
+          <SuppliersPanel storeId={storeInfo._id} />
+        )}
+        {activeTab === 'receiving' && storeInfo?._id && (
+          <StockReceivingPanel storeId={storeInfo._id} products={products} />
+        )}
+        {activeTab === 'supplierReturns' && storeInfo?._id && (
+          <SupplierReturnsPanel storeId={storeInfo._id} products={products} />
+        )}
+
+        {activeTab === 'products' && (
+          <div>
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex items-center justify-between">
             <span>{error}</span>
@@ -260,7 +297,6 @@ const StoreProducts = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Modal */}
       {showModal && (
@@ -309,6 +345,10 @@ const StoreProducts = () => {
                 <div>
                   <label className="block text-sm font-medium text-dark-navy mb-1">Stock *</label>
                   <input type="number" required value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-dark-navy mb-1">Purchase Price</label>
+                  <input type="number" min="0" step="0.01" value={form.purchasePrice} onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-dark-navy mb-1">Discount %</label>
@@ -377,6 +417,9 @@ const StoreProducts = () => {
           </div>
         </div>
       )}
+          </div>
+        )}
+      </div>
     </DashboardLayout>
   );
 };

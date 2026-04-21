@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const User = require('../models/User');
 const Store = require('../models/Store');
+const PosSession = require('../models/PosSession');
 const { isValidSLPhone, formatSLPhone, isStrictSLE164Phone, isValidEmail } = require('../utils/validators');
 const { sendSms, buildPosReceiptMessage } = require('../utils/smsService');
 const { sendEmail, posReceiptEmail } = require('../utils/emailService');
@@ -24,6 +25,102 @@ const resolveStoreId = async (user) => {
   }
 
   return null;
+};
+
+const ALLOWED_DENOMS_LKR = [5000, 1000, 500, 100, 50, 20];
+const calcDenomsTotal = (lines = []) =>
+  (lines || []).reduce((s, l) => s + (Number(l.denom || 0) * Number(l.qty || 0)), 0);
+
+// @desc    Get active POS session
+// @route   GET /api/pos/session/active
+// @access  Private/Cashier/Manager/Admin
+const getActiveSession = async (req, res, next) => {
+  try {
+    const storeId = await resolveStoreId(req.user);
+    if (!storeId) { res.status(400); return next(new Error('No store found for your account')); }
+    const session = await PosSession.findOne({ storeId, cashierId: req.user._id, status: 'open' }).sort({ startedAt: -1 });
+    res.json(session || null);
+  } catch (error) { next(error); }
+};
+
+// @desc    Start POS session (opening cash + denominations)
+// @route   POST /api/pos/session/start
+// @access  Private/Cashier/Manager/Admin
+const startSession = async (req, res, next) => {
+  try {
+    const storeId = await resolveStoreId(req.user);
+    if (!storeId) { res.status(400); return next(new Error('No store found for your account')); }
+
+    const existing = await PosSession.findOne({ storeId, cashierId: req.user._id, status: 'open' });
+    if (existing) return res.status(200).json(existing);
+
+    const openingDenoms = Array.isArray(req.body.openingDenoms) ? req.body.openingDenoms : [];
+    for (const l of openingDenoms) {
+      if (!ALLOWED_DENOMS_LKR.includes(Number(l.denom))) { res.status(400); return next(new Error('Invalid denomination')); }
+      if (Number(l.qty) < 0) { res.status(400); return next(new Error('Invalid denomination qty')); }
+    }
+    const openingCashAmount = req.body.openingCashAmount !== undefined
+      ? Number(req.body.openingCashAmount || 0)
+      : calcDenomsTotal(openingDenoms);
+
+    const session = await PosSession.create({
+      storeId,
+      cashierId: req.user._id,
+      startedAt: new Date(),
+      status: 'open',
+      openingCashAmount,
+      openingDenoms,
+    });
+
+    res.status(201).json(session);
+  } catch (error) { next(error); }
+};
+
+// @desc    End POS session (closing cash count + reconciliation)
+// @route   POST /api/pos/session/end
+// @access  Private/Cashier/Manager/Admin
+const endSession = async (req, res, next) => {
+  try {
+    const storeId = await resolveStoreId(req.user);
+    if (!storeId) { res.status(400); return next(new Error('No store found for your account')); }
+
+    const session = await PosSession.findOne({ storeId, cashierId: req.user._id, status: 'open' });
+    if (!session) { res.status(404); return next(new Error('No open POS session found')); }
+
+    const closingDenoms = Array.isArray(req.body.closingDenoms) ? req.body.closingDenoms : [];
+    for (const l of closingDenoms) {
+      if (!ALLOWED_DENOMS_LKR.includes(Number(l.denom))) { res.status(400); return next(new Error('Invalid denomination')); }
+      if (Number(l.qty) < 0) { res.status(400); return next(new Error('Invalid denomination qty')); }
+    }
+
+    const closingCashCountedAmount = req.body.closingCashCountedAmount !== undefined
+      ? Number(req.body.closingCashCountedAmount || 0)
+      : calcDenomsTotal(closingDenoms);
+
+    const orders = await Order.find({ posSessionId: session._id, isPosOrder: true });
+    const cashSales = orders.filter((o) => o.paymentMethod === 'cash').reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const nonCashSales = orders.filter((o) => o.paymentMethod !== 'cash').reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const totalSales = cashSales + nonCashSales;
+    const totalItemsSold = orders.reduce((s, o) => s + (o.items || []).reduce((x, it) => x + (it.quantity || 0), 0), 0);
+
+    const expectedCash = Number(session.openingCashAmount || 0) + Number(cashSales || 0);
+    const variance = Number(closingCashCountedAmount || 0) - expectedCash;
+
+    session.closingDenoms = closingDenoms;
+    session.closingCashCountedAmount = closingCashCountedAmount;
+    session.expectedCash = Number(expectedCash.toFixed(2));
+    session.expectedNonCash = Number(nonCashSales.toFixed(2));
+    session.totalSales = Number(totalSales.toFixed(2));
+    session.totalItemsSold = totalItemsSold;
+    session.variance = Number(variance.toFixed(2));
+    session.varianceFlagged = Math.abs(session.variance) > 0.01;
+    session.varianceNote = req.body.varianceNote || session.varianceNote;
+    session.status = 'closed';
+    session.endedAt = new Date();
+
+    await session.save();
+    res.json(session);
+  } catch (error) { next(error); }
 };
 
 // @desc    Get products for POS
@@ -150,6 +247,12 @@ const posCheckout = async (req, res, next) => {
       return next(new Error('No store found for your account'));
     }
 
+    const activeSession = await PosSession.findOne({ storeId, cashierId: req.user._id, status: 'open' });
+    if (!activeSession) {
+      res.status(400);
+      return next(new Error('No open POS session. Please start the day (opening cash) before checkout.'));
+    }
+
     const store = await Store.findById(storeId);
     if (!store) {
       res.status(404);
@@ -186,6 +289,7 @@ const posCheckout = async (req, res, next) => {
         image: product.images?.[0] || '',
         quantity: item.quantity,
         price: item.price,
+        unitCostAtSale: Number(product.avgCost || product.lastCost || 0),
       });
     }
 
@@ -273,6 +377,7 @@ const posCheckout = async (req, res, next) => {
       orderStatus: 'completed',
       isPosOrder: true,
       cashierId: req.user._id,
+      posSessionId: activeSession._id,
       tenderedAmount: tenderedAmount || totalAmount,
       changeGiven,
       customerName: customerName || undefined,
@@ -363,6 +468,22 @@ const getPosOrders = async (req, res, next) => {
       .populate('storeId', 'name')
       .lean();
 
+    const productIds = [
+      ...new Set(
+        orders
+          .flatMap((o) => (o.items || [])
+            .filter((it) => it.unitCostAtSale === undefined || it.unitCostAtSale === null)
+            .map((it) => String(it.productId || ''))
+            .filter(Boolean))
+      ),
+    ];
+    const products = productIds.length > 0
+      ? await Product.find({ _id: { $in: productIds } }).select('_id avgCost lastCost').lean()
+      : [];
+    const productCostMap = new Map(
+      products.map((p) => [String(p._id), Number(p.avgCost || p.lastCost || 0)])
+    );
+
     // Calculate shift summary
     const totalSales = orders.reduce((sum, o) => sum + o.totalAmount, 0);
     const totalOrders = orders.length;
@@ -375,15 +496,48 @@ const getPosOrders = async (req, res, next) => {
     const kokoSales = orders
       .filter((o) => o.paymentMethod === 'koko')
       .reduce((sum, o) => sum + o.totalAmount, 0);
+    const totalItemsSold = orders.reduce(
+      (sum, o) => sum + (o.items || []).reduce((line, item) => line + Number(item.quantity || 0), 0),
+      0
+    );
+    const enrichedOrders = orders.map((order) => {
+      const itemDetails = (order.items || []).map((it) => {
+        const qty = Number(it.quantity || 0);
+        const unitPrice = Number(it.price || 0);
+        const lineTotal = qty * unitPrice;
+        const unitCost = it.unitCostAtSale !== undefined && it.unitCostAtSale !== null
+          ? Number(it.unitCostAtSale || 0)
+          : (productCostMap.get(String(it.productId || '')) || 0);
+        const lineProfit = lineTotal - (unitCost * qty);
+        return {
+          name: it.name || 'Item',
+          quantity: qty,
+          unitPrice: Number(unitPrice.toFixed(2)),
+          lineTotal: Number(lineTotal.toFixed(2)),
+          estimatedUnitCost: Number(unitCost.toFixed(2)),
+          estimatedProfit: Number(lineProfit.toFixed(2)),
+        };
+      });
+      const estimatedProfit = itemDetails.reduce((sum, it) => sum + Number(it.estimatedProfit || 0), 0);
+      return {
+        ...order,
+        itemDetails,
+        estimatedProfit: Number(estimatedProfit.toFixed(2)),
+      };
+    });
+    const profitOfDay = enrichedOrders.reduce((sum, o) => sum + Number(o.estimatedProfit || 0), 0);
 
     res.json({
-      orders,
+      orders: enrichedOrders,
       summary: {
         totalSales: parseFloat(totalSales.toFixed(2)),
         totalOrders,
         cashSales: parseFloat(cashSales.toFixed(2)),
         cardSales: parseFloat(cardSales.toFixed(2)),
         kokoSales: parseFloat(kokoSales.toFixed(2)),
+        totalItemsSold,
+        systemRevenue: parseFloat(totalSales.toFixed(2)),
+        profitOfDay: parseFloat(profitOfDay.toFixed(2)),
       },
     });
   } catch (error) {
@@ -423,4 +577,7 @@ module.exports = {
   posCheckout,
   getPosOrders,
   getPosOrderById,
+  getActiveSession,
+  startSession,
+  endSession,
 };

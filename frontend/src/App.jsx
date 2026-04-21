@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -24,6 +24,7 @@ import StoreOrders from './pages/storeOwner/StoreOrders';
 import ManagerEmployees from './pages/storeOwner/ManagerEmployees';
 import ManagerAttendance from './pages/storeOwner/ManagerAttendance';
 import ManagerLeaves from './pages/storeOwner/ManagerLeaves';
+import ManagerReturns from './pages/storeOwner/ManagerReturns';
 import ManagerTargets from './pages/storeOwner/ManagerTargets';
 import ManagerPerformance from './pages/storeOwner/ManagerPerformance';
 import ManagerInventory from './pages/storeOwner/ManagerInventory';
@@ -42,6 +43,7 @@ import AdminPromotions from './pages/admin/AdminPromotions';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminPayroll from './pages/admin/AdminPayroll';
 import AdminEmployees from './pages/admin/AdminEmployees';
+import AdminReturns from './pages/admin/AdminReturns';
 import CashierLogin from './pages/cashier/CashierLogin';
 import POSScreen from './pages/cashier/POSScreen';
 import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
@@ -49,6 +51,7 @@ import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeeProfile from './pages/employee/EmployeeProfile';
 import EmployeeAttendance from './pages/employee/EmployeeAttendance';
 import EmployeeLeaves from './pages/employee/EmployeeLeaves';
+import EmployeeReturns from './pages/employee/EmployeeReturns';
 import EmployeeSalary from './pages/employee/EmployeeSalary';
 import CashierStock from './pages/employee/CashierStock';
 import { ToastContainer } from 'react-toastify';
@@ -100,12 +103,13 @@ function App() {
           <Route path="/manager" element={<ProtectedRoute roles={['manager']}><StoreOverview /></ProtectedRoute>} />
           <Route path="/manager/products" element={<ProtectedRoute roles={['manager']}><StoreProducts /></ProtectedRoute>} />
           <Route path="/manager/orders" element={<ProtectedRoute roles={['manager']}><StoreOrders /></ProtectedRoute>} />
+          <Route path="/manager/returns" element={<ProtectedRoute roles={['manager']}><ManagerReturns /></ProtectedRoute>} />
           <Route path="/manager/employees" element={<ProtectedRoute roles={['manager']}><ManagerEmployees /></ProtectedRoute>} />
           <Route path="/manager/attendance" element={<ProtectedRoute roles={['manager']}><ManagerAttendance /></ProtectedRoute>} />
           <Route path="/manager/leaves" element={<ProtectedRoute roles={['manager']}><ManagerLeaves /></ProtectedRoute>} />
           <Route path="/manager/targets" element={<ProtectedRoute roles={['manager']}><ManagerTargets /></ProtectedRoute>} />
           <Route path="/manager/performance" element={<ProtectedRoute roles={['manager']}><ManagerPerformance /></ProtectedRoute>} />
-          <Route path="/manager/inventory" element={<ProtectedRoute roles={['manager']}><ManagerInventory /></ProtectedRoute>} />
+          <Route path="/manager/inventory" element={<ProtectedRoute roles={['manager']}><Navigate to="/manager/products" replace /></ProtectedRoute>} />
 
           {/* Admin */}
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminOverview /></ProtectedRoute>} />
@@ -115,13 +119,14 @@ function App() {
           <Route path="/admin/categories" element={<ProtectedRoute roles={['admin']}><AdminCategories /></ProtectedRoute>} />
           <Route path="/admin/products" element={<ProtectedRoute roles={['admin']}><AdminProducts /></ProtectedRoute>} />
           <Route path="/admin/orders" element={<ProtectedRoute roles={['admin']}><AdminOrders /></ProtectedRoute>} />
+          <Route path="/admin/returns" element={<ProtectedRoute roles={['admin']}><AdminReturns /></ProtectedRoute>} />
           <Route path="/admin/vouchers" element={<ProtectedRoute roles={['admin']}><AdminVouchers /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute roles={['admin']}><AdminReports /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><AdminSettings /></ProtectedRoute>} />
           <Route path="/admin/expenses" element={<ProtectedRoute roles={['admin']}><AdminExpenses /></ProtectedRoute>} />
           <Route path="/admin/financials" element={<ProtectedRoute roles={['admin']}><AdminFinancials /></ProtectedRoute>} />
           <Route path="/admin/payroll" element={<ProtectedRoute roles={['admin']}><AdminPayroll /></ProtectedRoute>} />
-          <Route path="/admin/inventory" element={<ProtectedRoute roles={['admin']}><AdminInventory /></ProtectedRoute>} />
+          <Route path="/admin/inventory" element={<ProtectedRoute roles={['admin']}><Navigate to="/admin/products" replace /></ProtectedRoute>} />
           <Route path="/admin/promotions" element={<ProtectedRoute roles={['admin']}><AdminPromotions /></ProtectedRoute>} />
 
           {/* Cashier */}
@@ -136,6 +141,7 @@ function App() {
           <Route path="/employee/profile" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeProfile /></ProtectedRoute>} />
           <Route path="/employee/attendance" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeAttendance /></ProtectedRoute>} />
           <Route path="/employee/leaves" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeLeaves /></ProtectedRoute>} />
+          <Route path="/employee/returns" element={<ProtectedRoute roles={['cashier']}><EmployeeReturns /></ProtectedRoute>} />
           <Route path="/employee/salary" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeSalary /></ProtectedRoute>} />
           <Route path="/employee/stock" element={<ProtectedRoute roles={['cashier', 'stockEmployee']}><CashierStock /></ProtectedRoute>} />
         </Routes>

@@ -129,6 +129,9 @@ export const getProductByBarcode = (code) => API.get(`/pos/products/barcode/${co
 export const posCheckout = (data) => API.post('/pos/checkout', data);
 export const getPosOrders = () => API.get('/pos/orders');
 export const getPosOrderById = (id) => API.get(`/pos/orders/${id}`);
+export const getActivePosSession = () => API.get('/pos/session/active');
+export const startPosSession = (data) => API.post('/pos/session/start', data);
+export const endPosSession = (data) => API.post('/pos/session/end', data);
 
 // Notifications
 export const getNotifications = (params) => API.get('/notifications', { params });
@@ -147,6 +150,7 @@ export const issueBonusPoints = (data) => API.post('/loyalty/bonus', data);
 export const applyVoucher = (data) => API.post('/loyalty/voucher/apply', data);
 export const applyPromoCode = (data) => API.post('/loyalty/promo/apply', data);
 export const getAvailableVouchers = () => API.get('/loyalty/vouchers');
+export const claimVoucher = (code) => API.post(`/loyalty/vouchers/${code}/claim`);
 
 // Delivery (Phase 4)
 export const getDeliveryOrders = () => API.get('/delivery/orders');
@@ -155,6 +159,7 @@ export const getDeliveryHistory = () => API.get('/delivery/history');
 export const getDeliveryEarnings = () => API.get('/delivery/earnings');
 export const assignDeliveryGuy = (orderId, data) => API.post(`/delivery/assign/${orderId}`, data);
 export const getAvailableDeliveryGuys = (params) => API.get('/delivery/available', { params });
+export const markDeliveryPaymentSuccess = (id) => API.put(`/delivery/orders/${id}/payment-success`);
 
 // HR (Phase 5)
 export const checkIn = () => API.post('/hr/attendance/check-in');
@@ -205,7 +210,28 @@ export const deleteExpense = (id) => API.delete(`/expenses/${id}`);
 export const getFinancialDashboard = (params) => API.get('/finance/dashboard', { params });
 export const getAdditionalIncomes = (params) => API.get('/finance/income', { params });
 export const addAdditionalIncome = (data) => API.post('/finance/income', data);
+export const updateAdditionalIncome = (id, data) => API.put(`/finance/income/${id}`, data);
 export const deleteAdditionalIncome = (id) => API.delete(`/finance/income/${id}`);
+
+// Suppliers + Stock
+export const getSuppliers = (params) => API.get('/suppliers', { params });
+export const createSupplier = (data) => API.post('/suppliers', data);
+export const updateSupplier = (id, data) => API.put(`/suppliers/${id}`, data);
+export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`);
+
+export const getStockReceipts = (params) => API.get('/stock/receipts', { params });
+export const createStockReceipt = (data) => API.post('/stock/receipts', data);
+export const getSupplierReturns = (params) => API.get('/stock/supplier-returns', { params });
+export const createSupplierReturn = (data) => API.post('/stock/supplier-returns', data);
+
+// Customer Returns
+export const createCustomerReturn = (data) => API.post('/returns/customer', data);
+export const getCustomerReturns = (params) => API.get('/returns/customer', { params });
+export const approveCustomerReturn = (id, data) => API.put(`/returns/customer/${id}/approve`, data);
+export const rejectCustomerReturn = (id, data) => API.put(`/returns/customer/${id}/reject`, data);
+export const getReturnOrder = (id) => API.get(`/returns/orders/${id}`);
+export const managerApproveCustomerReturn = (id, data) => API.put(`/returns/customer/${id}/manager-approve`, data);
+export const managerRejectCustomerReturn = (id, data) => API.put(`/returns/customer/${id}/manager-reject`, data);
 
 // Promotions
 export const getPromotions = (params) => API.get('/promotions', { params });

@@ -4,6 +4,40 @@ const User = require('../models/User');
 const Store = require('../models/Store');
 const { sendNotification } = require('../utils/notificationService');
 
+const notifyAdmins = async ({ type, title, message, link, metadata }) => {
+  const admins = await User.find({ role: 'admin', isActive: true }).select('_id email').lean();
+  await Promise.all(
+    (admins || []).map((a) =>
+      sendNotification({
+        userId: a._id,
+        userEmail: a.email,
+        type,
+        title,
+        message,
+        link,
+        metadata,
+      })
+    )
+  );
+};
+
+const notifyStoreManager = async ({ storeId, type, title, message, link, metadata }) => {
+  if (!storeId) return;
+  const store = await Store.findById(storeId).select('managerId').lean();
+  if (!store?.managerId) return;
+  const manager = await User.findById(store.managerId).select('_id email isActive').lean();
+  if (!manager?.isActive) return;
+  await sendNotification({
+    userId: manager._id,
+    userEmail: manager.email,
+    type,
+    title,
+    message,
+    link,
+    metadata,
+  });
+};
+
 // =================== ATTENDANCE ===================
 
 // @desc    Check in
@@ -138,6 +172,36 @@ const requestLeave = async (req, res, next) => {
       status: 'pending',
     });
 
+    const metadata = {
+      leaveId: leave._id,
+      storeId: leave.storeId,
+      employeeId: leave.employeeId,
+      status: leave.status,
+    };
+    const title = 'New Leave Request';
+    const message = `${req.user.name} requested ${leave.leaveType} leave (${leave.totalDays} day${leave.totalDays > 1 ? 's' : ''}).`;
+
+    // Always notify Admin(s)
+    await notifyAdmins({
+      type: 'leave_request',
+      title,
+      message,
+      link: '/admin/employees',
+      metadata,
+    });
+
+    // Notify Manager only if requester is not the manager
+    if (req.user.role !== 'manager') {
+      await notifyStoreManager({
+        storeId: leave.storeId,
+        type: 'leave_request',
+        title,
+        message,
+        link: '/manager/employees',
+        metadata,
+      });
+    }
+
     res.status(201).json(leave);
   } catch (error) { next(error); }
 };
@@ -202,8 +266,29 @@ const approveLeave = async (req, res, next) => {
       userId: leave.employeeId,
       type: 'leave_update',
       title: 'Leave Approved ✅',
-      message: `Your ${leave.type} leave from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()} has been approved.`,
+      message: `Your ${leave.leaveType} leave from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()} has been approved.`,
     });
+
+    const meta = { leaveId: leave._id, storeId: leave.storeId, employeeId: leave.employeeId, status: leave.status, approvedBy: req.user._id };
+    if (req.user.role === 'manager') {
+      await notifyAdmins({
+        type: 'leave_decision',
+        title: 'Leave Approved',
+        message: `Manager approved a ${leave.leaveType} leave request.`,
+        link: '/admin/employees',
+        metadata: meta,
+      });
+    }
+    if (req.user.role === 'admin') {
+      await notifyStoreManager({
+        storeId: leave.storeId,
+        type: 'leave_decision',
+        title: 'Leave Approved',
+        message: `Admin approved ${leave.leaveType} leave.`,
+        link: '/manager/employees',
+        metadata: meta,
+      });
+    }
 
     res.json(leave);
   } catch (error) { next(error); }
@@ -226,8 +311,29 @@ const rejectLeave = async (req, res, next) => {
       userId: leave.employeeId,
       type: 'leave_update',
       title: 'Leave Rejected ❌',
-      message: `Your ${leave.type} leave request was rejected. Reason: ${leave.rejectionReason}`,
+      message: `Your ${leave.leaveType} leave request was rejected. Reason: ${leave.rejectionReason}`,
     });
+
+    const meta = { leaveId: leave._id, storeId: leave.storeId, employeeId: leave.employeeId, status: leave.status, approvedBy: req.user._id };
+    if (req.user.role === 'manager') {
+      await notifyAdmins({
+        type: 'leave_decision',
+        title: 'Leave Rejected',
+        message: `Manager rejected ${leave.leaveType} leave. Reason: ${leave.rejectionReason}`,
+        link: '/admin/employees',
+        metadata: meta,
+      });
+    }
+    if (req.user.role === 'admin') {
+      await notifyStoreManager({
+        storeId: leave.storeId,
+        type: 'leave_decision',
+        title: 'Leave Rejected',
+        message: `Admin rejected ${leave.leaveType} leave. Reason: ${leave.rejectionReason}`,
+        link: '/manager/employees',
+        metadata: meta,
+      });
+    }
 
     res.json(leave);
   } catch (error) { next(error); }
@@ -295,9 +401,12 @@ const addEmployee = async (req, res, next) => {
       return next(new Error('Name, email and password are required'));
     }
 
-    if (!['cashier', 'deliveryGuy', 'stockEmployee'].includes(role)) {
+    const allowedRoles = req.user.role === 'admin'
+      ? ['cashier', 'deliveryGuy', 'stockEmployee', 'manager']
+      : ['cashier', 'deliveryGuy', 'stockEmployee'];
+    if (!allowedRoles.includes(role)) {
       res.status(400);
-      return next(new Error('Employee role must be cashier, deliveryGuy or stockEmployee'));
+      return next(new Error('Employee role is not allowed for your account'));
     }
 
     // Check if email exists

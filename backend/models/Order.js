@@ -23,6 +23,7 @@ const orderSchema = mongoose.Schema(
         image: String,
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
+        unitCostAtSale: { type: Number, default: 0 },
       },
     ],
     deliveryAddress: {
@@ -86,6 +87,10 @@ const orderSchema = mongoose.Schema(
     cashierId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    posSessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PosSession',
     },
     // Delivery Guy assignment
     deliveryGuyId: {
@@ -154,6 +159,25 @@ const orderSchema = mongoose.Schema(
     printReceipt: {
       type: Boolean,
       default: true,
+    },
+    // Returns (customer)
+    returnStatus: {
+      type: String,
+      enum: ['none', 'requested', 'approved', 'on_hold', 'rejected', 'resolved'],
+      default: 'none',
+    },
+    customerReturnId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CustomerReturn',
+    },
+    returnedAt: {
+      type: Date,
+    },
+    deliveredAt: {
+      type: Date,
+    },
+    completedAt: {
+      type: Date,
     },
   },
   {

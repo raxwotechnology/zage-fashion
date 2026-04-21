@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getMyPoints, getLoyaltyHistory, redeemPoints, issueBonusPoints,
-  applyVoucher, applyPromoCode, getAvailableVouchers,
+  applyVoucher, applyPromoCode, getAvailableVouchers, claimVoucher,
   createVoucher, updateVoucher, deleteVoucher,
 } = require('../controllers/loyaltyController');
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -12,6 +12,7 @@ router.use(protect);
 router.get('/points', getMyPoints);
 router.get('/history', getLoyaltyHistory);
 router.get('/vouchers', getAvailableVouchers);
+router.post('/vouchers/:code/claim', claimVoucher);
 router.post('/redeem', redeemPoints);
 router.post('/voucher/apply', applyVoucher);
 router.post('/promo/apply', applyPromoCode);

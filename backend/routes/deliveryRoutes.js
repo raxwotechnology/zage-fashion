@@ -7,6 +7,7 @@ const {
   getDeliveryEarnings,
   assignDeliveryGuy,
   getAvailableDeliveryGuys,
+  markCodPaymentSuccessful,
 } = require('../controllers/deliveryController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -17,6 +18,7 @@ router.get('/orders', authorize('deliveryGuy'), getMyDeliveries);
 router.get('/history', authorize('deliveryGuy'), getDeliveryHistory);
 router.get('/earnings', authorize('deliveryGuy'), getDeliveryEarnings);
 router.put('/orders/:id/status', authorize('deliveryGuy'), updateDeliveryStatus);
+router.put('/orders/:id/payment-success', authorize('deliveryGuy'), markCodPaymentSuccessful);
 
 // Manager/Admin routes
 router.post('/assign/:orderId', authorize('manager', 'admin'), assignDeliveryGuy);

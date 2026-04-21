@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Truck, Clock, DollarSign, CheckCircle, MapPin, Phone, Package, ArrowRight, Download } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getDeliveryOrders, getDeliveryHistory, getDeliveryEarnings, updateDeliveryStatus } from '../../services/api';
+import { getDeliveryOrders, getDeliveryHistory, getDeliveryEarnings, markDeliveryPaymentSuccess, updateDeliveryStatus } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-toastify';
 
@@ -13,7 +13,9 @@ const statusFlow = ['assigned_delivery', 'out_for_delivery', 'delivered'];
 const statusColors = {
   assigned_delivery: 'bg-purple-100 text-purple-700',
   out_for_delivery: 'bg-amber-100 text-amber-700',
-  delivered: 'bg-emerald-100 text-emerald-700', cancelled: 'bg-red-100 text-red-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
+  completed: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
 };
 
 const DeliveryDashboard = () => {
@@ -42,6 +44,16 @@ const DeliveryDashboard = () => {
       toast.success(`Status updated to ${newStatus.replace(/_/g, ' ')}`);
       fetchData();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to update'); }
+  };
+
+  const handlePaymentSuccess = async (orderId) => {
+    try {
+      await markDeliveryPaymentSuccess(orderId);
+      toast.success('COD payment marked successful. Order completed.');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to mark payment successful');
+    }
   };
 
   const getNextStatus = (s) => { const i = statusFlow.indexOf(s); return i >= 0 && i < statusFlow.length - 1 ? statusFlow[i + 1] : null; };
@@ -137,11 +149,21 @@ const DeliveryDashboard = () => {
                             ))}
                           </div>
                         </div>
-                        {next && (
-                          <button onClick={() => handleStatusUpdate(order._id, next)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md flex-shrink-0">
-                            {next === 'delivered' ? 'Mark Delivered ✓' : `→ ${next.replace(/_/g, ' ')}`} <ArrowRight size={16} />
-                          </button>
-                        )}
+                        <div className="flex gap-2">
+                          {next && (
+                            <button onClick={() => handleStatusUpdate(order._id, next)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md flex-shrink-0">
+                              {next === 'delivered' ? 'Mark Delivered ✓' : `→ ${next.replace(/_/g, ' ')}`} <ArrowRight size={16} />
+                            </button>
+                          )}
+                          {order.paymentMethod === 'cod' && order.orderStatus === 'delivered' && order.paymentStatus !== 'completed' && (
+                            <button
+                              onClick={() => handlePaymentSuccess(order._id)}
+                              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md flex-shrink-0"
+                            >
+                              Mark as Payment Successful
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

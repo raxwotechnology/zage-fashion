@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getProducts, getCategories } from '../services/api';
+import { getProducts, getCategories, searchProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const q = (searchParams.get('q') || '').trim();
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -25,6 +26,8 @@ const Shop = () => {
   const [onlyFeatured, setOnlyFeatured] = useState(searchParams.get('featured') === 'true');
   const [onlyDeals, setOnlyDeals] = useState(searchParams.get('onSale') === 'true');
 
+  useEffect(() => { setPage(1); }, [q]);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -41,6 +44,15 @@ const Shop = () => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
+        if (q) {
+          const res = await searchProducts(q);
+          const list = res.data?.products || [];
+          setProducts(list);
+          setTotalPages(1);
+          setTotal(list.length);
+          return;
+        }
+
         const params = { page, limit: 12, sort: sortBy };
         if (selectedCategory) params.category = selectedCategory;
         if (minPrice) params.minPrice = minPrice;
@@ -60,7 +72,7 @@ const Shop = () => {
       }
     };
     fetchProducts();
-  }, [page, selectedCategory, sortBy, minPrice, maxPrice, ratingFilter, onlyFeatured, onlyDeals]);
+  }, [q, page, selectedCategory, sortBy, minPrice, maxPrice, ratingFilter, onlyFeatured, onlyDeals]);
 
   const clearFilters = () => {
     setSelectedCategory('');
@@ -87,7 +99,7 @@ const Shop = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-1">All Products</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-1">{q ? `Search results for "${q}"` : 'All Products'}</h1>
           <p className="text-muted-text m-0">{total} products found</p>
         </div>
         <div className="flex items-center gap-3">
@@ -101,6 +113,7 @@ const Shop = () => {
             <select
               value={sortBy}
               onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+              disabled={!!q}
               className="appearance-none bg-white border border-card-border rounded-lg px-4 py-2 pr-10 text-sm font-medium focus:ring-primary-green focus:border-primary-green outline-none cursor-pointer"
             >
               {sortOptions.map((opt) => (

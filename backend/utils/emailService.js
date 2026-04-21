@@ -306,6 +306,68 @@ const posReceiptEmail = (order, customer = {}) => {
   };
 };
 
+const customerReturnUpdateEmail = ({ order, returnDoc }) => {
+  const orderId = order?._id?.toString()?.slice(-8)?.toUpperCase?.() || '—';
+  const rma = returnDoc?.holdBillNo || `RET-${returnDoc?._id?.toString?.().slice(-8).toUpperCase?.()}`;
+  const status = (returnDoc?.status || 'requested').replaceAll('_', ' ');
+  const resolution = (returnDoc?.resolution || '—').replaceAll('_', ' ');
+  const orderTotal = order?.totalAmount != null ? Number(order.totalAmount).toFixed(2) : '—';
+  const itemsHtml = (returnDoc?.items || [])
+    .map((i) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${i.orderItemName || ''}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${i.qty}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${i.condition}</td>
+      </tr>
+    `)
+    .join('');
+
+  const nextSteps = returnDoc?.status === 'rejected'
+    ? `Reason: ${returnDoc?.rejectionReason || '—'}`
+    : returnDoc?.status === 'resolved'
+      ? 'Your return has been resolved.'
+      : 'Your return is on hold while we complete the exchange/upgrade process.';
+
+  return {
+    subject: `FreshCart — Return Update ${rma}`,
+    html: `
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:650px;margin:0 auto;background:#ffffff;">
+        <div style="background:linear-gradient(135deg,#059669,#10b981);padding:28px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:26px;">📦 Return Update</h1>
+          <p style="color:#d1fae5;margin:6px 0 0;font-size:13px;">Reference: <strong>${rma}</strong></p>
+        </div>
+        <div style="padding:24px;">
+          <p style="color:#334155;margin:0 0 10px;">Order: <strong>#${orderId}</strong></p>
+          <p style="color:#334155;margin:0 0 10px;">Order total: <strong>LKR ${orderTotal}</strong></p>
+          <p style="color:#334155;margin:0 0 10px;">Status: <strong>${status}</strong></p>
+          <p style="color:#334155;margin:0 0 16px;">Resolution: <strong>${resolution}</strong></p>
+
+          <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+            <div style="background:#f0fdf4;padding:10px 14px;font-weight:700;color:#059669;">Returned items</div>
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f8fafc;">
+                  <th style="padding:8px 12px;text-align:left;color:#64748b;font-size:12px;">Item</th>
+                  <th style="padding:8px 12px;text-align:center;color:#64748b;font-size:12px;">Qty</th>
+                  <th style="padding:8px 12px;text-align:center;color:#64748b;font-size:12px;">Condition</th>
+                </tr>
+              </thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:16px;background:#f8fafc;border-radius:12px;padding:14px;">
+            <p style="margin:0;color:#334155;font-weight:600;">Next steps</p>
+            <p style="margin:6px 0 0;color:#64748b;">${nextSteps}</p>
+          </div>
+
+          <p style="color:#94a3b8;font-size:12px;margin-top:18px;">If you have questions, reply to this email.</p>
+        </div>
+      </div>
+    `,
+  };
+};
+
 module.exports = {
   sendEmail,
   orderConfirmationEmail,
@@ -314,4 +376,5 @@ module.exports = {
   welcomeEmail,
   paymentReceiptEmail,
   posReceiptEmail,
+  customerReturnUpdateEmail,
 };

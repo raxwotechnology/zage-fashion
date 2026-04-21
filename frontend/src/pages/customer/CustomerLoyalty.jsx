@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Gift, Trophy, Star, ArrowUpCircle, ArrowDownCircle, Clock, Ticket } from 'lucide-react';
-import { getMyLoyaltyPoints, getLoyaltyHistory, getAvailableVouchers, redeemPoints } from '../../services/api';
+import { getMyLoyaltyPoints, getLoyaltyHistory, getAvailableVouchers, redeemPoints, claimVoucher } from '../../services/api';
 import { toast } from 'react-toastify';
 
 const CustomerLoyalty = () => {
@@ -10,6 +10,7 @@ const CustomerLoyalty = () => {
   const [loading, setLoading] = useState(true);
   const [redeemAmount, setRedeemAmount] = useState('');
   const [tab, setTab] = useState('overview');
+  const [claimingCode, setClaimingCode] = useState('');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -114,7 +115,28 @@ const CustomerLoyalty = () => {
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center"><Ticket size={22} className="text-white" /></div>
                 <div><p className="font-mono font-bold text-lg text-dark-navy">{v.code}</p><p className="text-xs text-muted-text">{v.description}</p></div>
               </div>
-              <span className="bg-emerald-50 text-emerald-700 font-bold px-4 py-2 rounded-xl text-sm">{v.type === 'percentage' ? `${v.value}% OFF` : `Rs. ${v.value} OFF`}</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-50 text-emerald-700 font-bold px-4 py-2 rounded-xl text-sm">{v.type === 'percentage' ? `${v.value}% OFF` : `Rs. ${v.value} OFF`}</span>
+                <button
+                  type="button"
+                  disabled={claimingCode === v.code}
+                  onClick={async () => {
+                    try {
+                      setClaimingCode(v.code);
+                      await claimVoucher(v.code);
+                      toast.success(`Voucher ${v.code} claimed`);
+                      fetchData();
+                    } catch (err) {
+                      toast.error(err.response?.data?.message || 'Failed to claim voucher');
+                    } finally {
+                      setClaimingCode('');
+                    }
+                  }}
+                  className="bg-violet-600 text-white font-semibold px-4 py-2 rounded-xl text-sm hover:bg-violet-700 disabled:opacity-60"
+                >
+                  {claimingCode === v.code ? 'Claiming...' : 'Claim'}
+                </button>
+              </div>
             </div>
           ))}
         </div>

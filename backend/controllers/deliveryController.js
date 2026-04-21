@@ -11,7 +11,10 @@ const getMyDeliveries = async (req, res, next) => {
   try {
     const orders = await Order.find({
       deliveryGuyId: req.user._id,
-      orderStatus: { $in: ['assigned_delivery', 'packed', 'shipped', 'out_for_delivery'] },
+      $or: [
+        { orderStatus: { $in: ['assigned_delivery', 'packed', 'shipped', 'out_for_delivery'] } },
+        { orderStatus: 'delivered', paymentMethod: 'cod', paymentStatus: 'pending' },
+      ],
     })
       .populate('userId', 'name phone email addresses')
       .populate('storeId', 'name address phone')
@@ -28,7 +31,7 @@ const getDeliveryHistory = async (req, res, next) => {
   try {
     const orders = await Order.find({
       deliveryGuyId: req.user._id,
-      orderStatus: { $in: ['delivered', 'cancelled'] },
+      orderStatus: { $in: ['delivered', 'completed', 'cancelled'] },
     })
       .populate('userId', 'name phone')
       .populate('storeId', 'name')
@@ -59,9 +62,7 @@ const updateDeliveryStatus = async (req, res, next) => {
     }
 
     order.orderStatus = status;
-    if (status === 'delivered') {
-      order.paymentStatus = order.paymentMethod === 'cod' ? 'completed' : order.paymentStatus;
-    }
+    if (status === 'delivered') order.deliveredAt = new Date();
 
     const updated = await order.save();
 
@@ -91,6 +92,32 @@ const updateDeliveryStatus = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// @desc    Mark COD payment as successful and complete order
+// @route   PUT /api/delivery/orders/:id/payment-success
+// @access  Private/DeliveryGuy
+const markCodPaymentSuccessful = async (req, res, next) => {
+  try {
+    const order = await Order.findOne({
+      _id: req.params.id,
+      deliveryGuyId: req.user._id,
+    });
+
+    if (!order) { res.status(404); return next(new Error('Order not found or not assigned to you')); }
+    if (order.paymentMethod !== 'cod') { res.status(400); return next(new Error('Only COD orders can be marked as payment successful')); }
+    if (!['delivered', 'completed'].includes(order.orderStatus)) {
+      res.status(400);
+      return next(new Error('Order must be delivered before payment can be confirmed'));
+    }
+
+    order.paymentStatus = 'completed';
+    order.orderStatus = 'completed';
+    order.completedAt = new Date();
+
+    const updated = await order.save();
+    res.json(updated);
+  } catch (error) { next(error); }
+};
+
 // @desc    Get delivery earnings
 // @route   GET /api/delivery/earnings
 // @access  Private/DeliveryGuy
@@ -98,7 +125,7 @@ const getDeliveryEarnings = async (req, res, next) => {
   try {
     const deliveredOrders = await Order.find({
       deliveryGuyId: req.user._id,
-      orderStatus: 'delivered',
+      orderStatus: { $in: ['delivered', 'completed'] },
     });
 
     const totalDeliveries = deliveredOrders.length;
@@ -177,4 +204,5 @@ module.exports = {
   getDeliveryEarnings,
   assignDeliveryGuy,
   getAvailableDeliveryGuys,
+  markCodPaymentSuccessful,
 };

@@ -5,6 +5,7 @@ const {
   addAdditionalIncome,
   getAdditionalIncomes,
   deleteAdditionalIncome,
+  updateAdditionalIncome,
 } = require('../controllers/financeController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -13,6 +14,7 @@ router.use(authorize('admin', 'manager'));
 
 router.get('/dashboard', getFinancialDashboard);
 router.route('/income').get(getAdditionalIncomes).post(addAdditionalIncome);
+router.put('/income/:id', updateAdditionalIncome);
 router.delete('/income/:id', deleteAdditionalIncome);
 
 module.exports = router;

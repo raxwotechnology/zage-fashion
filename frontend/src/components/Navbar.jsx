@@ -1,12 +1,58 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, MapPin, Menu, X, ChevronDown, RefreshCw, Home, ShoppingBag, Heart, Package, LayoutDashboard, Tag } from 'lucide-react';
+import { ShoppingCart, User, Search, MapPin, Menu, X, ChevronDown, RefreshCw, Home, ShoppingBag, Heart, Package, LayoutDashboard, Tag, Settings } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useCartStore from '../store/cartStore';
 import useCurrencyStore from '../store/currencyStore';
 import { searchProducts } from '../services/api';
 import NotificationBell from './NotificationBell';
 import useSettingsStore from '../store/settingsStore';
+
+const buildFeatureIndex = (role) => {
+  const items = [
+    // Customer
+    { label: 'Shop', path: '/shop', roles: ['customer', 'guest'], keywords: ['products', 'buy', 'items'] },
+    { label: 'Deals', path: '/deals', roles: ['customer', 'guest'], keywords: ['offers', 'discounts', 'sale'] },
+    { label: 'Stores', path: '/stores', roles: ['customer', 'guest'], keywords: ['shops', 'branches'] },
+    { label: 'Orders', path: '/orders', roles: ['customer'], keywords: ['my orders', 'history', 'tracking'] },
+    { label: 'Wishlist', path: '/wishlist', roles: ['customer'], keywords: ['favorites', 'saved'] },
+    { label: 'Loyalty & Rewards', path: '/loyalty', roles: ['customer'], keywords: ['points', 'rewards', 'store credit'] },
+
+    // Admin
+    { label: 'Admin Overview', path: '/admin', roles: ['admin'], keywords: ['dashboard'] },
+    { label: 'Users', path: '/admin/users', roles: ['admin'], keywords: ['customers', 'accounts'] },
+    { label: 'Employees', path: '/admin/employees', roles: ['admin'], keywords: ['staff', 'leave requests'] },
+    { label: 'Products', path: '/admin/products', roles: ['admin'], keywords: ['inventory', 'stock', 'suppliers', 'receiving', 'returns'] },
+    { label: 'Orders', path: '/admin/orders', roles: ['admin'], keywords: ['sales', 'deliveries'] },
+    { label: 'Returns', path: '/admin/returns', roles: ['admin'], keywords: ['refund', 'exchange', 'store credit'] },
+    { label: 'Expenses', path: '/admin/expenses', roles: ['admin'], keywords: ['costs'] },
+    { label: 'Financials', path: '/admin/financials', roles: ['admin'], keywords: ['revenue', 'profit', 'report'] },
+    { label: 'Reports', path: '/admin/reports', roles: ['admin'], keywords: ['analytics'] },
+    { label: 'POS Terminal', path: '/pos', roles: ['admin', 'manager', 'cashier'], keywords: ['pos', 'checkout', 'billing'] },
+
+    // Manager
+    { label: 'Manager Overview', path: '/manager', roles: ['manager'], keywords: ['dashboard'] },
+    { label: 'Products', path: '/manager/products', roles: ['manager'], keywords: ['inventory', 'stock', 'suppliers', 'receiving', 'returns'] },
+    { label: 'Orders', path: '/manager/orders', roles: ['manager'], keywords: ['sales', 'deliveries'] },
+    { label: 'Returns', path: '/manager/returns', roles: ['manager'], keywords: ['exchange', 'upgrade', 'return requests'] },
+    { label: 'Employees', path: '/manager/employees', roles: ['manager'], keywords: ['staff', 'leave requests'] },
+    { label: 'Attendance', path: '/manager/attendance', roles: ['manager'], keywords: ['check-in', 'check out'] },
+    { label: 'Leaves', path: '/manager/leaves', roles: ['manager'], keywords: ['leave', 'leave requests'] },
+
+    // Employee (cashier/staff)
+    { label: 'My Portal', path: '/employee', roles: ['cashier', 'stockEmployee', 'deliveryGuy'], keywords: ['employee'] },
+    { label: 'Attendance', path: '/employee/attendance', roles: ['cashier', 'stockEmployee', 'deliveryGuy'], keywords: ['check-in', 'check out'] },
+    { label: 'Leaves', path: '/employee/leaves', roles: ['cashier', 'stockEmployee', 'deliveryGuy'], keywords: ['leave request'] },
+    { label: 'Returns', path: '/employee/returns', roles: ['cashier'], keywords: ['customer return', 'exchange', 'store credit'] },
+    { label: 'Stock View', path: '/employee/stock', roles: ['cashier', 'stockEmployee'], keywords: ['inventory', 'products'] },
+
+    // Delivery
+    { label: 'Deliveries', path: '/delivery', roles: ['deliveryGuy'], keywords: ['orders', 'assigned'] },
+  ];
+
+  const normalizedRole = role || 'guest';
+  return items.filter((i) => i.roles.includes(normalizedRole) || (normalizedRole !== 'guest' && i.roles.includes('customer') && normalizedRole === 'customer'));
+};
 
 const Navbar = () => {
   const { user, logout } = useAuthStore();
@@ -29,6 +75,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [featureResults, setFeatureResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchRef = useRef(null);
   const searchTimeout = useRef(null);
@@ -40,12 +87,23 @@ const Navbar = () => {
 
     if (value.length < 2) {
       setSearchResults([]);
+      setFeatureResults([]);
       setShowSearchResults(false);
       return;
     }
 
     searchTimeout.current = setTimeout(async () => {
       try {
+        const q = value.trim().toLowerCase();
+        const index = buildFeatureIndex(user?.role);
+        const featureMatches = index
+          .filter((i) => {
+            const hay = [i.label, ...(i.keywords || [])].join(' ').toLowerCase();
+            return hay.includes(q);
+          })
+          .slice(0, 6);
+        setFeatureResults(featureMatches);
+
         const res = await searchProducts(value);
         setSearchResults(res.data.products.slice(0, 6));
         setShowSearchResults(true);
@@ -90,7 +148,16 @@ const Navbar = () => {
   };
 
   // Navigation links with role visibility
-  const shouldHidePublicTabs = !!user && ['admin', 'manager', 'cashier'].includes(user.role);
+  const shouldHidePublicTabs = !!user && ['admin', 'manager', 'cashier', 'deliveryGuy', 'stockEmployee'].includes(user.role);
+  const isCustomer = !user || user.role === 'customer';
+  const getSettingsLink = () => {
+    if (!user) return null;
+    if (user.role === 'admin') return '/admin/settings';
+    if (user.role === 'manager') return '/manager';
+    if (['cashier', 'deliveryGuy', 'stockEmployee'].includes(user.role)) return '/employee/profile';
+    return '/profile';
+  };
+  const settingsLink = getSettingsLink();
   const navLinks = [
     { path: '/', label: 'Home', icon: Home, show: !shouldHidePublicTabs },
     { path: '/shop', label: 'Shop', icon: ShoppingBag, show: !shouldHidePublicTabs },
@@ -190,8 +257,37 @@ const Navbar = () => {
             </button>
 
             {/* Search Dropdown Results */}
-            {showSearchResults && searchResults.length > 0 && (
+            {showSearchResults && (featureResults.length > 0 || searchResults.length > 0) && (
               <div className="absolute top-full mt-2 w-full bg-white border border-card-border rounded-xl shadow-xl z-50 overflow-hidden">
+                {featureResults.length > 0 && (
+                  <div className="px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-muted-text bg-gray-50 border-b border-card-border">
+                    Pages & Features
+                  </div>
+                )}
+                {featureResults.map((f) => (
+                  <button
+                    key={f.path}
+                    type="button"
+                    onClick={() => {
+                      navigate(f.path);
+                      setShowSearchResults(false);
+                      setSearchQuery('');
+                    }}
+                    className="w-full text-left flex items-center justify-between gap-3 px-4 py-3 hover:bg-emerald-50 transition-colors border-b border-card-border"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-dark-navy m-0 truncate">{f.label}</p>
+                      <p className="text-xs text-muted-text m-0 truncate">{f.path}</p>
+                    </div>
+                    <span className="text-xs text-primary-green font-semibold">Open</span>
+                  </button>
+                ))}
+
+                {searchResults.length > 0 && (
+                  <div className="px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-muted-text bg-gray-50 border-b border-card-border">
+                    Products
+                  </div>
+                )}
                 {searchResults.map((product) => (
                   <Link
                     key={product._id}
@@ -230,21 +326,23 @@ const Navbar = () => {
           {user && <NotificationBell />}
 
           {/* Wishlist */}
-          {user && (
+          {user && isCustomer && (
             <Link to="/wishlist" className="hidden sm:flex relative text-muted-text hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50" title="Wishlist">
               <Heart size={20} />
             </Link>
           )}
 
           {/* Cart */}
-          <Link to="/cart" className="relative text-dark-navy hover:text-primary-green transition-colors p-1.5 rounded-lg hover:bg-emerald-50" title="Cart">
-            <ShoppingCart size={20} />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-accent-orange text-white text-[10px] font-bold rounded-full h-4.5 w-4.5 min-w-[18px] h-[18px] flex items-center justify-center">
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
-          </Link>
+          {isCustomer && (
+            <Link to="/cart" className="relative text-dark-navy hover:text-primary-green transition-colors p-1.5 rounded-lg hover:bg-emerald-50" title="Cart">
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent-orange text-white text-[10px] font-bold rounded-full h-4.5 w-4.5 min-w-[18px] h-[18px] flex items-center justify-center">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           {/* User Menu */}
           {user ? (
@@ -269,14 +367,21 @@ const Navbar = () => {
                 <Link to="/profile" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
                   <User size={14} /> My Profile
                 </Link>
-                <Link to="/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
-                  <Package size={14} /> Orders
-                </Link>
-                <Link to="/wishlist" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
-                  <Heart size={14} /> Wishlist
-                </Link>
-                <Link to="/loyalty" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-amber-50 hover:text-amber-600 transition-colors">
-                  🎁 <span>Loyalty & Rewards</span>
+                {isCustomer && (
+                  <>
+                    <Link to="/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
+                      <Package size={14} /> Orders
+                    </Link>
+                    <Link to="/wishlist" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
+                      <Heart size={14} /> Wishlist
+                    </Link>
+                    <Link to="/loyalty" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-amber-50 hover:text-amber-600 transition-colors">
+                      🎁 <span>Loyalty & Rewards</span>
+                    </Link>
+                  </>
+                )}
+                <Link to={settingsLink} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-gray-50 transition-colors">
+                  <Settings size={14} /> Settings
                 </Link>
                 {dashLink && (
                   <>
@@ -328,7 +433,7 @@ const Navbar = () => {
                   type="text"
                   placeholder="Search groceries..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="w-full border border-card-border rounded-xl py-2.5 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
                 />
                 <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-primary-green">
@@ -368,15 +473,19 @@ const Navbar = () => {
             {user && (
               <>
                 <hr className="my-2 border-card-border" />
-                <Link to="/orders" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50">
-                  <Package size={18} /> My Orders
-                </Link>
-                <Link to="/wishlist" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50">
-                  <Heart size={18} /> Wishlist
-                </Link>
-                <Link to="/loyalty" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50">
-                  🎁 Loyalty & Rewards
-                </Link>
+                {isCustomer && (
+                  <>
+                    <Link to="/orders" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50">
+                      <Package size={18} /> My Orders
+                    </Link>
+                    <Link to="/wishlist" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50">
+                      <Heart size={18} /> Wishlist
+                    </Link>
+                    <Link to="/loyalty" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50">
+                      🎁 Loyalty & Rewards
+                    </Link>
+                  </>
+                )}
               </>
             )}
 
@@ -400,6 +509,9 @@ const Navbar = () => {
                 </div>
                 <Link to="/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50 transition-colors">
                   <User size={18} /> My Profile
+                </Link>
+                <Link to={settingsLink} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-dark-navy hover:bg-gray-50 transition-colors">
+                  <Settings size={18} /> Settings
                 </Link>
                 <button
                   onClick={handleLogout}

@@ -56,7 +56,7 @@ const DashboardLayout = ({ children, navItems, title }) => {
         <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
           <p className="text-[10px] uppercase tracking-widest text-muted-text font-semibold px-3 mb-3">{title}</p>
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
             return (
               <Link
                 key={item.path}

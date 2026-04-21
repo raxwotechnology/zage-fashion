@@ -4,10 +4,13 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminProducts, getCategories, getStores, createProduct, updateProduct, deleteProduct } from '../../services/api';
 import { toast } from 'react-toastify';
 import navItems from './adminNavItems';
+import SuppliersPanel from '../inventory/SuppliersPanel';
+import StockReceivingPanel from '../inventory/StockReceivingPanel';
+import SupplierReturnsPanel from '../inventory/SupplierReturnsPanel';
 
 const emptyForm = {
   name: '', categoryId: '', description: '', price: '', mrp: '', discount: '', unit: 'kg',
-  stock: '', images: '', isFeatured: false, isOnSale: false, allowKokoOnline: true, allowKokoPos: true, status: 'active', storeId: '',
+  stock: '', purchasePrice: '', images: '', isFeatured: false, isOnSale: false, allowKokoOnline: true, allowKokoPos: true, status: 'active', storeId: '',
 };
 
 const AdminProducts = () => {
@@ -16,6 +19,8 @@ const AdminProducts = () => {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('products'); // products | suppliers | receiving | supplierReturns
+  const [selectedStoreId, setSelectedStoreId] = useState('');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -29,7 +34,9 @@ const AdminProducts = () => {
       const [prodRes, catRes, storesRes] = await Promise.all([getAdminProducts(), getCategories(), getStores()]);
       setProducts(prodRes.data || []);
       setCategories(catRes.data || []);
-      setStores(storesRes.data || []);
+      const loadedStores = storesRes.data || [];
+      setStores(loadedStores);
+      setSelectedStoreId((prev) => prev || loadedStores[0]?._id || '');
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to load products';
       setError(msg);
@@ -40,6 +47,12 @@ const AdminProducts = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    if (!selectedStoreId && stores.length > 0) {
+      setSelectedStoreId(stores[0]._id);
+    }
+  }, [selectedStoreId, stores]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -58,6 +71,7 @@ const AdminProducts = () => {
       discount: product.discount || '',
       unit: product.unit || 'kg',
       stock: product.stock || 0,
+      purchasePrice: product.avgCost || product.lastCost || '',
       images: (product.images || []).join(', '),
       isFeatured: !!product.isFeatured,
       isOnSale: !!product.isOnSale,
@@ -79,6 +93,7 @@ const AdminProducts = () => {
         mrp: Number(form.mrp) || Number(form.price),
         discount: Number(form.discount) || 0,
         stock: Number(form.stock),
+        purchasePrice: Number(form.purchasePrice) || 0,
         images: form.images ? form.images.split(',').map((s) => s.trim()).filter(Boolean) : [],
       };
       if (!payload.storeId) {
@@ -112,7 +127,7 @@ const AdminProducts = () => {
     }
   };
 
-  const filtered = products.filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = products.filter((p) => (p?.name || '').toLowerCase().includes(search.toLowerCase()));
 
   if (loading) {
     return (
@@ -127,6 +142,55 @@ const AdminProducts = () => {
   return (
     <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { id: 'products', label: 'Products' },
+              { id: 'suppliers', label: 'Suppliers' },
+              { id: 'receiving', label: 'Stock Receiving' },
+              { id: 'supplierReturns', label: 'Supplier Returns' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                  activeTab === t.id ? 'bg-primary-green text-white' : 'bg-white border border-card-border text-muted-text hover:bg-gray-50'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {(activeTab === 'suppliers' || activeTab === 'receiving' || activeTab === 'supplierReturns') && (
+            <select
+              value={selectedStoreId}
+              onChange={(e) => setSelectedStoreId(e.target.value)}
+              className="border border-card-border rounded-xl py-2.5 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-green"
+            >
+              <option value="">Select store</option>
+              {stores.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
+            </select>
+          )}
+        </div>
+
+        {activeTab === 'suppliers' && (
+          <SuppliersPanel storeId={selectedStoreId} stores={stores} onStoreChange={setSelectedStoreId} />
+        )}
+        {activeTab === 'receiving' && (
+          <StockReceivingPanel
+            storeId={selectedStoreId}
+            products={products.filter((p) => p && (!selectedStoreId || p?.storeId?._id === selectedStoreId))}
+          />
+        )}
+        {activeTab === 'supplierReturns' && (
+          <SupplierReturnsPanel
+            storeId={selectedStoreId}
+            products={products.filter((p) => p && (!selectedStoreId || p?.storeId?._id === selectedStoreId))}
+          />
+        )}
+
+        {activeTab === 'products' && (
+          <>
         {error && <div className="mb-4 bg-red-50 text-red-700 border border-red-200 rounded-xl px-4 py-3 text-sm">{error}</div>}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -220,13 +284,77 @@ const AdminProducts = () => {
                     <input type="number" step="0.01" required value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm" />
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-dark-navy mb-1">MRP</label>
+                    <input type="number" step="0.01" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm" />
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-dark-navy mb-1">Stock *</label>
                     <input type="number" required value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-dark-navy mb-1">Purchase Price</label>
+                    <input type="number" min="0" step="0.01" value={form.purchasePrice} onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-dark-navy mb-1">Discount %</label>
+                    <input type="number" min="0" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-dark-navy mb-1">Unit</label>
+                    <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm bg-white">
+                      {['kg', 'g', 'L', 'ml', 'pcs', 'pack', 'dozen', 'bunch'].map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-dark-navy mb-1">Description</label>
                     <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm resize-none" />
                   </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-dark-navy mb-1">Image URLs <span className="text-muted-text font-normal">(comma separated)</span></label>
+                    <input value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm" />
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} className="w-4 h-4 rounded text-primary-green focus:ring-primary-green" />
+                      Featured
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={form.isOnSale} onChange={(e) => setForm({ ...form, isOnSale: e.target.checked })} className="w-4 h-4 rounded text-primary-green focus:ring-primary-green" />
+                      On Sale
+                    </label>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-dark-navy mb-1">Koko Pay Availability</label>
+                    <div className="flex flex-wrap gap-6 border border-card-border rounded-xl px-4 py-3">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.allowKokoOnline}
+                          onChange={(e) => setForm({ ...form, allowKokoOnline: e.target.checked })}
+                          className="w-4 h-4 rounded text-primary-green focus:ring-primary-green"
+                        />
+                        Allow Koko on Online Checkout
+                      </label>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.allowKokoPos}
+                          onChange={(e) => setForm({ ...form, allowKokoPos: e.target.checked })}
+                          className="w-4 h-4 rounded text-primary-green focus:ring-primary-green"
+                        />
+                        Allow Koko on POS
+                      </label>
+                    </div>
+                  </div>
+                  {editingId && (
+                    <div>
+                      <label className="block text-sm font-medium text-dark-navy mb-1">Status</label>
+                      <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm bg-white">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="submit" disabled={saving} className="flex-1 bg-primary-green text-white py-2.5 rounded-xl font-semibold hover:bg-emerald-600 disabled:opacity-50">
@@ -239,6 +367,8 @@ const AdminProducts = () => {
               </form>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </DashboardLayout>

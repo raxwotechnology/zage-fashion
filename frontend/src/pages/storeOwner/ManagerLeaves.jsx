@@ -17,6 +17,13 @@ const ManagerLeaves = () => {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [requesting, setRequesting] = useState(false);
+  const [requestForm, setRequestForm] = useState({
+    leaveType: 'annual',
+    startDate: '',
+    endDate: '',
+    reason: '',
+  });
 
   useEffect(() => { fetchLeaves(); }, []);
 
@@ -55,6 +62,30 @@ const ManagerLeaves = () => {
 
   const filtered = filter === 'all' ? leaves : leaves.filter((l) => l.status === filter);
 
+  const handleCreateLeaveRequest = async (e) => {
+    e.preventDefault();
+    if (!requestForm.startDate || !requestForm.endDate || !requestForm.reason.trim()) {
+      toast.error('Please fill all leave request fields');
+      return;
+    }
+    try {
+      setRequesting(true);
+      await API.post('/hr/leaves', {
+        leaveType: requestForm.leaveType,
+        startDate: requestForm.startDate,
+        endDate: requestForm.endDate,
+        reason: requestForm.reason.trim(),
+      });
+      toast.success('Leave request sent to admin');
+      setRequestForm({ leaveType: 'annual', startDate: '', endDate: '', reason: '' });
+      fetchLeaves();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit leave request');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
@@ -74,12 +105,53 @@ const ManagerLeaves = () => {
             <p className="text-muted-text text-sm">{leaves.filter((l) => l.status === 'pending').length} pending requests</p>
           </div>
           <button onClick={() => {
-            const rows = [['Employee', 'Role', 'Type', 'Start', 'End', 'Days', 'Status', 'Reason'].join(','), ...leaves.map(l => [l.employeeId?.name, l.employeeId?.role, l.type, new Date(l.startDate).toLocaleDateString(), new Date(l.endDate).toLocaleDateString(), l.totalDays, l.status, `"${l.reason || ''}"`].join(','))].join('\n');
+            const rows = [['Employee', 'Role', 'Type', 'Start', 'End', 'Days', 'Status', 'Reason'].join(','), ...leaves.map(l => [l.employeeId?.name, l.employeeId?.role, l.leaveType, new Date(l.startDate).toLocaleDateString(), new Date(l.endDate).toLocaleDateString(), l.totalDays, l.status, `"${String(l.reason || '').replaceAll('"', '""')}"`].join(','))].join('\n');
             const blob = new Blob([rows], { type: 'text/csv' });
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'leave_report.csv'; a.click();
             toast.success('Report downloaded');
           }} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">📥 Export CSV</button>
         </div>
+
+        <form onSubmit={handleCreateLeaveRequest} className="bg-white rounded-2xl border border-card-border p-4 shadow-sm mb-6">
+          <h2 className="text-sm font-semibold text-dark-navy mb-3">Request My Leave (to Admin)</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <select
+              value={requestForm.leaveType}
+              onChange={(e) => setRequestForm((prev) => ({ ...prev, leaveType: e.target.value }))}
+              className="px-3 py-2.5 rounded-xl border border-card-border text-sm"
+            >
+              {['annual', 'sick', 'casual', 'maternity', 'paternity', 'unpaid'].map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={requestForm.startDate}
+              onChange={(e) => setRequestForm((prev) => ({ ...prev, startDate: e.target.value }))}
+              className="px-3 py-2.5 rounded-xl border border-card-border text-sm"
+            />
+            <input
+              type="date"
+              value={requestForm.endDate}
+              onChange={(e) => setRequestForm((prev) => ({ ...prev, endDate: e.target.value }))}
+              className="px-3 py-2.5 rounded-xl border border-card-border text-sm"
+            />
+            <button
+              type="submit"
+              disabled={requesting}
+              className="px-4 py-2.5 rounded-xl bg-primary-green text-white text-sm font-semibold disabled:opacity-60"
+            >
+              {requesting ? 'Submitting...' : 'Submit Leave'}
+            </button>
+          </div>
+          <textarea
+            value={requestForm.reason}
+            onChange={(e) => setRequestForm((prev) => ({ ...prev, reason: e.target.value }))}
+            rows={2}
+            placeholder="Reason"
+            className="mt-3 w-full px-3 py-2.5 rounded-xl border border-card-border text-sm"
+          />
+        </form>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -132,7 +204,7 @@ const ManagerLeaves = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-dark-navy text-sm">{leave.employeeId?.name}</h3>
-                      <p className="text-xs text-muted-text">{leave.employeeId?.role} • {leave.type} leave</p>
+                      <p className="text-xs text-muted-text">{leave.employeeId?.role} • {leave.leaveType} leave</p>
                     </div>
                   </div>
 

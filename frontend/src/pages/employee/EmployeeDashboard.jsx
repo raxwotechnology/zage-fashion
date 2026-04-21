@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Clock, Calendar, CheckCircle, AlertCircle, TrendingUp, Coffee, Target, Award } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import useAuthStore from '../../store/authStore';
@@ -282,11 +283,11 @@ const EmployeeDashboard = () => {
             { label: 'Leave Requests', desc: 'Apply & track leaves', path: '/employee/leaves', icon: '📅', color: 'bg-amber-50 hover:bg-amber-100' },
             { label: 'Salary & EPF/ETF', desc: 'View pay & contributions', path: '/employee/salary', icon: '💰', color: 'bg-emerald-50 hover:bg-emerald-100' },
           ].map((item) => (
-            <a key={item.path} href={item.path} className={`${item.color} rounded-2xl p-5 border border-card-border transition-colors block`}>
+            <Link key={item.path} to={item.path} className={`${item.color} rounded-2xl p-5 border border-card-border transition-colors block`}>
               <span className="text-2xl">{item.icon}</span>
               <h3 className="font-semibold text-dark-navy mt-2">{item.label}</h3>
               <p className="text-xs text-muted-text mt-1">{item.desc}</p>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

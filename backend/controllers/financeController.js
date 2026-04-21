@@ -8,7 +8,7 @@ const Store = require('../models/Store');
 // @access  Private/Admin/Manager
 const getFinancialDashboard = async (req, res, next) => {
   try {
-    const { startDate, endDate, storeId } = req.query;
+    const { startDate, endDate, storeId, period } = req.query;
     const dateFilter = {};
     if (startDate) dateFilter.$gte = new Date(startDate);
     if (endDate) dateFilter.$lte = new Date(endDate);
@@ -28,6 +28,9 @@ const getFinancialDashboard = async (req, res, next) => {
     const orders = await Order.find(orderFilter);
     const totalRevenue = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
     const orderCount = orders.length;
+    const totalItemsSold = orders.reduce((s, o) => s + (o.items || []).reduce((x, it) => x + (it.quantity || 0), 0), 0);
+    const posRevenue = orders.filter((o) => o.isPosOrder).reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const onlineRevenue = totalRevenue - posRevenue;
 
     // Expenses
     const expenseFilter = { ...storeFilter };
@@ -46,33 +49,66 @@ const getFinancialDashboard = async (req, res, next) => {
     // Net profit
     const netProfit = totalRevenue + totalAdditionalIncome - totalExpenses;
 
-    // Monthly breakdown (last 12 months)
-    const monthlyData = [];
+    // Period series (daily/monthly/yearly). Defaults to monthly (last 12 points).
+    const p = ['daily', 'monthly', 'yearly'].includes(String(period)) ? String(period) : 'monthly';
     const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    const makeKey = (d) => {
+      if (p === 'daily') return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (p === 'yearly') return `${d.getFullYear()}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    };
+    const formatLabel = (key) => {
+      if (p === 'daily') return key;
+      if (p === 'yearly') return key;
+      const [yy, mm] = key.split('-');
+      const dt = new Date(Number(yy), Number(mm) - 1, 1);
+      return dt.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+    };
 
-      const monthRevenue = orders
-        .filter(o => new Date(o.createdAt) >= monthStart && new Date(o.createdAt) <= monthEnd)
-        .reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const seriesMap = new Map();
+    const push = (key, patch) => {
+      const cur = seriesMap.get(key) || { key, label: formatLabel(key), revenue: 0, expenses: 0, additionalIncome: 0, profit: 0 };
+      const next = { ...cur, ...patch };
+      next.profit = (next.revenue || 0) + (next.additionalIncome || 0) - (next.expenses || 0);
+      seriesMap.set(key, next);
+    };
 
-      const monthExpenses = expenses
-        .filter(e => new Date(e.date) >= monthStart && new Date(e.date) <= monthEnd)
-        .reduce((s, e) => s + e.amount, 0);
-
-      const monthIncome = additionalIncomes
-        .filter(i => new Date(i.date) >= monthStart && new Date(i.date) <= monthEnd)
-        .reduce((s, i) => s + i.amount, 0);
-
-      monthlyData.push({
-        month: monthStart.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
-        revenue: monthRevenue,
-        expenses: monthExpenses,
-        additionalIncome: monthIncome,
-        profit: monthRevenue + monthIncome - monthExpenses,
-      });
+    for (const o of orders) {
+      const key = makeKey(new Date(o.createdAt));
+      push(key, { revenue: (seriesMap.get(key)?.revenue || 0) + (o.totalAmount || 0) });
     }
+    for (const e of expenses) {
+      const key = makeKey(new Date(e.date || e.createdAt));
+      push(key, { expenses: (seriesMap.get(key)?.expenses || 0) + (e.amount || 0) });
+    }
+    for (const i of additionalIncomes) {
+      const key = makeKey(new Date(i.date || i.createdAt));
+      push(key, { additionalIncome: (seriesMap.get(key)?.additionalIncome || 0) + (i.amount || 0) });
+    }
+
+    // ensure at least N points even without date filter
+    const targetPoints = p === 'daily' ? 30 : p === 'yearly' ? 5 : 12;
+    const startAnchor = (() => {
+      if (Object.keys(dateFilter).length && dateFilter.$gte) return new Date(dateFilter.$gte);
+      const d = new Date(now);
+      if (p === 'daily') d.setDate(d.getDate() - (targetPoints - 1));
+      if (p === 'monthly') d.setMonth(d.getMonth() - (targetPoints - 1), 1);
+      if (p === 'yearly') d.setFullYear(d.getFullYear() - (targetPoints - 1), 0, 1);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
+
+    for (let n = 0; n < targetPoints; n++) {
+      const d = new Date(startAnchor);
+      if (p === 'daily') d.setDate(startAnchor.getDate() + n);
+      if (p === 'monthly') d.setMonth(startAnchor.getMonth() + n, 1);
+      if (p === 'yearly') d.setFullYear(startAnchor.getFullYear() + n, 0, 1);
+      const key = makeKey(d);
+      if (!seriesMap.has(key)) push(key, {});
+    }
+
+    const series = Array.from(seriesMap.values()).sort((a, b) => a.key.localeCompare(b.key));
+    const monthlyData = series; // backward compat for UI
 
     // Expense breakdown by category
     const expenseByCategory = {};
@@ -83,14 +119,19 @@ const getFinancialDashboard = async (req, res, next) => {
 
     res.json({
       totalRevenue,
+      posRevenue,
+      onlineRevenue,
       totalExpenses,
       paidExpenses,
       pendingExpenses,
       totalAdditionalIncome,
       netProfit,
       orderCount,
+      totalItemsSold,
       expenseCount: expenses.length,
       monthlyData,
+      period: p,
+      series,
       expenseByCategory,
     });
   } catch (error) { next(error); }
@@ -162,9 +203,35 @@ const deleteAdditionalIncome = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// @desc    Update additional income
+// @route   PUT /api/finance/income/:id
+// @access  Private/Admin/Manager
+const updateAdditionalIncome = async (req, res, next) => {
+  try {
+    const income = await AdditionalIncome.findById(req.params.id);
+    if (!income) { res.status(404); return next(new Error('Income record not found')); }
+
+    if (req.user.role === 'manager') {
+      const store = await Store.findOne({ managerId: req.user._id });
+      if (!store || String(income.storeId) !== String(store._id)) {
+        res.status(403);
+        return next(new Error('Not authorized to update this income record'));
+      }
+    }
+
+    const fields = ['title', 'source', 'amount', 'date', 'notes'];
+    fields.forEach((f) => {
+      if (req.body[f] !== undefined) income[f] = req.body[f];
+    });
+    await income.save();
+    res.json(income);
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   getFinancialDashboard,
   addAdditionalIncome,
   getAdditionalIncomes,
   deleteAdditionalIncome,
+  updateAdditionalIncome,
 };

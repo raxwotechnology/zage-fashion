@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
+  ArrowLeft,
   Camera,
   Plus,
   Minus,
@@ -23,7 +24,7 @@ import {
   Phone,
   Smartphone,
 } from 'lucide-react';
-import { getPosProducts, getProductByBarcode, posCheckout, getPosOrders, applyVoucher, getSettings } from '../../services/api';
+import { getPosProducts, getProductByBarcode, posCheckout, getPosOrders, applyVoucher, getSettings, getActivePosSession, startPosSession, endPosSession } from '../../services/api';
 import usePosStore from '../../store/posStore';
 import useAuthStore from '../../store/authStore';
 import useSettingsStore from '../../store/settingsStore';
@@ -53,6 +54,17 @@ const POSScreen = () => {
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [discountTypeInput, setDiscountTypeInput] = useState('percentage');
+  const [posSession, setPosSession] = useState(null);
+  const [showStartSession, setShowStartSession] = useState(false);
+  const [showEndSession, setShowEndSession] = useState(false);
+  const [dailyFinancials, setDailyFinancials] = useState(null);
+  const [balanceOrders, setBalanceOrders] = useState([]);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [sessionForm, setSessionForm] = useState({
+    opening: { 5000: 0, 1000: 0, 500: 0, 100: 0, 50: 0, 20: 0 },
+    closing: { 5000: 0, 1000: 0, 500: 0, 100: 0, 50: 0, 20: 0 },
+  });
 
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
@@ -61,7 +73,70 @@ const POSScreen = () => {
   useEffect(() => {
     loadProducts();
     loadTaxRate();
+    loadSession();
   }, []);
+
+  const loadSession = async () => {
+    try {
+      const { data } = await getActivePosSession();
+      setPosSession(data || null);
+      if (!data) setShowStartSession(true);
+    } catch {
+      // ignore
+    }
+  };
+
+  const denomsToLines = (obj) =>
+    Object.entries(obj).map(([denom, qty]) => ({ denom: Number(denom), qty: Number(qty || 0) }));
+  const calcTotal = (obj) =>
+    Object.entries(obj).reduce((s, [d, q]) => s + Number(d) * Number(q || 0), 0);
+
+  const handleStartSession = async () => {
+    try {
+      const openingDenoms = denomsToLines(sessionForm.opening);
+      const openingCashAmount = calcTotal(sessionForm.opening);
+      const { data } = await startPosSession({ openingDenoms, openingCashAmount });
+      setPosSession(data);
+      setShowStartSession(false);
+      toast.success('POS session started');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to start session');
+    }
+  };
+
+  const handleEndSession = async () => {
+    try {
+      const closingDenoms = denomsToLines(sessionForm.closing);
+      const closingCashCountedAmount = calcTotal(sessionForm.closing);
+      const { data } = await endPosSession({ closingDenoms, closingCashCountedAmount });
+      setPosSession(null);
+      setShowEndSession(false);
+      toast.success(data.varianceFlagged ? `Session closed (variance Rs. ${data.variance})` : 'Session closed');
+      setShowStartSession(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to close session');
+    }
+  };
+
+  const openEndSessionModal = async () => {
+    setShowEndSession(true);
+  };
+
+  const openBalanceModal = async () => {
+    try {
+      setBalanceLoading(true);
+      const { data } = await getPosOrders();
+      setDailyFinancials(data?.summary || null);
+      setBalanceOrders(data?.orders || []);
+      setShowBalanceModal(true);
+    } catch {
+      setDailyFinancials(null);
+      setBalanceOrders([]);
+      setShowBalanceModal(true);
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
 
   const loadTaxRate = async () => {
     try {
@@ -247,6 +322,18 @@ const POSScreen = () => {
     navigate('/cashier-login');
   };
 
+  const handleBack = () => {
+    if (user?.role === 'admin') {
+      navigate('/admin');
+      return;
+    }
+    if (user?.role === 'manager') {
+      navigate('/manager');
+      return;
+    }
+    navigate('/employee');
+  };
+
   const subtotal = pos.getSubtotal();
   const discountAmount = pos.getDiscountAmount();
   const couponDiscount = pos.getCouponDiscount();
@@ -268,6 +355,18 @@ const POSScreen = () => {
           <span className="pos-topbar-store">{user?.assignedStoreName || 'Store'}</span>
         </div>
         <div className="pos-topbar-right">
+          <button className="pos-topbar-btn" onClick={handleBack} title="Back to Dashboard">
+            <ArrowLeft size={18} />
+            <span className="pos-topbar-btn-text">Back</span>
+          </button>
+          <button className="pos-topbar-btn" onClick={openEndSessionModal} title="Close POS Session">
+            <Clock size={18} />
+            <span className="pos-topbar-btn-text">Close</span>
+          </button>
+          <button className="pos-topbar-btn" onClick={openBalanceModal} title="View Daily Balance">
+            <DollarSign size={18} />
+            <span className="pos-topbar-btn-text">Balance</span>
+          </button>
           <button className="pos-topbar-btn" onClick={handleShiftSummary} title="Shift Summary">
             <TrendingUp size={18} />
             <span className="pos-topbar-btn-text">Shift</span>
@@ -764,6 +863,181 @@ const POSScreen = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Start Session Modal */}
+      {showStartSession && (
+        <div className="pos-modal-overlay" onClick={() => {}}>
+          <div className="pos-shift-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pos-shift-header">
+              <Clock size={22} />
+              <h3>Start Day (Opening Cash)</h3>
+            </div>
+            <div style={{ padding: '16px' }}>
+              <p style={{ marginTop: 0, color: '#64748b', fontSize: '13px' }}>Enter opening cash denominations. Total is calculated automatically.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                {[5000, 1000, 500, 100, 50, 20].map((d) => (
+                  <div key={d}>
+                    <label style={{ fontSize: '12px', color: '#374151' }}>{d} LKR</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={sessionForm.opening[d]}
+                      onChange={(e) => setSessionForm((s) => ({ ...s, opening: { ...s.opening, [d]: Number(e.target.value || 0) } }))}
+                      className="pos-input"
+                      style={{ fontSize: '12px' }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '12px', fontWeight: 700 }}>Total: Rs. {calcTotal(sessionForm.opening).toFixed(2)}</div>
+              <button className="pos-btn-green pos-btn-lg" style={{ marginTop: '14px' }} onClick={handleStartSession}>
+                Start Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* End Session Modal */}
+      {showEndSession && (
+        <div className="pos-modal-overlay" onClick={() => setShowEndSession(false)}>
+          <div className="pos-shift-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pos-shift-header">
+              <Clock size={22} />
+              <h3>Close Day (Closing Cash)</h3>
+              <button onClick={() => setShowEndSession(false)}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '16px' }}>
+              <p style={{ marginTop: 0, color: '#64748b', fontSize: '13px' }}>Count physical cash by denomination. Variance will be flagged automatically.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                {[5000, 1000, 500, 100, 50, 20].map((d) => (
+                  <div key={d}>
+                    <label style={{ fontSize: '12px', color: '#374151' }}>{d} LKR</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={sessionForm.closing[d]}
+                      onChange={(e) => setSessionForm((s) => ({ ...s, closing: { ...s.closing, [d]: Number(e.target.value || 0) } }))}
+                      className="pos-input"
+                      style={{ fontSize: '12px' }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '12px', fontWeight: 700 }}>Total: Rs. {calcTotal(sessionForm.closing).toFixed(2)}</div>
+              <button className="pos-btn-green pos-btn-lg" style={{ marginTop: '14px' }} onClick={handleEndSession}>
+                Close Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBalanceModal && (
+        <div className="pos-modal-overlay" onClick={() => setShowBalanceModal(false)}>
+          <div
+            className="pos-shift-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#0b1220', border: '1px solid #1f2937', color: '#e2e8f0', width: 'min(1200px, 96vw)', maxHeight: '92vh' }}
+          >
+            <div className="pos-shift-header">
+              <DollarSign size={22} />
+              <h3>Daily Cash Balance</h3>
+              <button onClick={() => setShowBalanceModal(false)}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '16px', color: '#e2e8f0' }}>
+              {balanceLoading ? (
+                <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8' }}>Loading balance...</p>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', fontSize: '13px' }}>
+                    {[
+                      ['Opening Cash', `Rs. ${Number(posSession?.openingCashAmount || 0).toFixed(2)}`],
+                      ['Total Sales', `Rs. ${Number(dailyFinancials?.totalSales || 0).toFixed(2)}`],
+                      ['Cash Sales', `Rs. ${Number(dailyFinancials?.cashSales || 0).toFixed(2)}`],
+                      ['Card Sales', `Rs. ${Number(dailyFinancials?.cardSales || 0).toFixed(2)}`],
+                      ['Koko Sales', `Rs. ${Number(dailyFinancials?.kokoSales || 0).toFixed(2)}`],
+                      ['Items Sold', `${Number(dailyFinancials?.totalItemsSold || 0)}`],
+                      ['System Revenue', `Rs. ${Number(dailyFinancials?.systemRevenue || 0).toFixed(2)}`],
+                      ['Profit of Day', `Rs. ${Number(dailyFinancials?.profitOfDay || 0).toFixed(2)}`],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        style={{
+                          background: '#111827',
+                          border: '1px solid #374151',
+                          borderRadius: '10px',
+                          padding: '10px',
+                        }}
+                      >
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>{label}</div>
+                        <div style={{ fontWeight: 700, color: '#f8fafc' }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '10px', background: '#0f172a', border: '1px solid #334155' }}>
+                    <div style={{ fontSize: '13px', color: '#cbd5e1' }}>
+                      Expected Physical Cash: <strong>Rs. {(Number(posSession?.openingCashAmount || 0) + Number(dailyFinancials?.cashSales || 0)).toFixed(2)}</strong>
+                    </div>
+                    <div style={{ marginTop: '4px', fontSize: '12px', color: '#94a3b8' }}>
+                      Formula: Opening cash + Cash sales
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '14px' }}>
+                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#cbd5e1' }}>Sales History</h4>
+                    <div style={{ maxHeight: '420px', overflow: 'auto', border: '1px solid #334155', borderRadius: '10px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <thead style={{ background: '#111827', position: 'sticky', top: 0 }}>
+                          <tr>
+                            <th style={{ textAlign: 'left', padding: '8px', color: '#94a3b8' }}>Time</th>
+                            <th style={{ textAlign: 'left', padding: '8px', color: '#94a3b8' }}>Customer</th>
+                            <th style={{ textAlign: 'left', padding: '8px', color: '#94a3b8' }}>Items</th>
+                            <th style={{ textAlign: 'left', padding: '8px', color: '#94a3b8' }}>Payment</th>
+                            <th style={{ textAlign: 'right', padding: '8px', color: '#94a3b8' }}>Total</th>
+                            <th style={{ textAlign: 'right', padding: '8px', color: '#94a3b8' }}>Profit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {balanceOrders.map((order) => (
+                            <tr key={order._id} style={{ borderTop: '1px solid #1f2937' }}>
+                              <td style={{ padding: '8px', color: '#e2e8f0', verticalAlign: 'top' }}>
+                                {new Date(order.createdAt).toLocaleTimeString()}
+                              </td>
+                              <td style={{ padding: '8px', color: '#cbd5e1', verticalAlign: 'top' }}>
+                                <div style={{ fontWeight: 600, color: '#f8fafc' }}>{order.customerName || 'Walk-in Customer'}</div>
+                                <div style={{ color: '#94a3b8', marginTop: '2px' }}>{order.customerPhone || '-'}</div>
+                              </td>
+                              <td style={{ padding: '8px', color: '#cbd5e1' }}>
+                                {(order.itemDetails || []).map((it) => `${it.name} x${it.quantity} @ Rs.${Number(it.unitPrice || 0).toFixed(2)}`).join(', ')}
+                              </td>
+                              <td style={{ padding: '8px', color: '#e2e8f0', textTransform: 'uppercase' }}>
+                                {order.paymentMethod}
+                              </td>
+                              <td style={{ padding: '8px', color: '#f8fafc', textAlign: 'right' }}>
+                                Rs. {Number(order.totalAmount || 0).toFixed(2)}
+                              </td>
+                              <td style={{ padding: '8px', color: Number(order.estimatedProfit || 0) < 0 ? '#fca5a5' : '#86efac', textAlign: 'right', fontWeight: 700 }}>
+                                Rs. {Number(order.estimatedProfit || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                          {balanceOrders.length === 0 && (
+                            <tr>
+                              <td colSpan={6} style={{ padding: '10px', color: '#94a3b8', textAlign: 'center' }}>
+                                No sales history for today.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

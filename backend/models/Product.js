@@ -108,6 +108,19 @@ const productSchema = mongoose.Schema(
     sku: {
       type: String,
     },
+    // Inventory valuation (for supplier receiving/returns)
+    lastCost: {
+      type: Number,
+      default: 0,
+    },
+    avgCost: {
+      type: Number,
+      default: 0,
+    },
+    defaultSupplierId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Supplier',
+    },
   },
   {
     timestamps: true,

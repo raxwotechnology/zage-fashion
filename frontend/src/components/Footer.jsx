@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Globe, MessageCircle, Camera, Play } from 'lucide-react';
 import useSettingsStore from '../store/settingsStore';
+import useAuthStore from '../store/authStore';
 
 const Footer = () => {
+  const user = useAuthStore((s) => s.user);
   const settings = useSettingsStore((s) => s.settings);
   const brandName = settings?.shopName || 'FreshCart';
   const footerText = settings?.footerText || `© ${new Date().getFullYear()} FreshCart. All rights reserved.`;
@@ -10,6 +12,57 @@ const Footer = () => {
   const brandPhone = settings?.phone || '+94 11 255 5000';
   const brandAddress = settings?.address || '456 Market Street, New York, NY 10001';
   const brandLogoUrl = settings?.logoUrl;
+
+  const roleFooterLinks = {
+    admin: [
+      { to: '/admin', label: 'Overview' },
+      { to: '/admin/orders', label: 'Orders' },
+      { to: '/admin/returns', label: 'Returns' },
+      { to: '/admin/financials', label: 'Financials' },
+    ],
+    manager: [
+      { to: '/manager', label: 'Overview' },
+      { to: '/manager/orders', label: 'Orders' },
+      { to: '/manager/returns', label: 'Returns' },
+      { to: '/manager/employees', label: 'Employees' },
+    ],
+    cashier: [
+      { to: '/employee', label: 'Dashboard' },
+      { to: '/pos', label: 'POS' },
+      { to: '/employee/returns', label: 'Returns' },
+      { to: '/employee/stock', label: 'Stock' },
+    ],
+    deliveryGuy: [
+      { to: '/delivery', label: 'Deliveries' },
+      { to: '/employee/attendance', label: 'Attendance' },
+      { to: '/employee/leaves', label: 'Leaves' },
+      { to: '/employee/profile', label: 'Profile' },
+    ],
+    stockEmployee: [
+      { to: '/employee', label: 'Dashboard' },
+      { to: '/employee/stock', label: 'Stock' },
+      { to: '/employee/attendance', label: 'Attendance' },
+      { to: '/employee/profile', label: 'Profile' },
+    ],
+  };
+  const staffRole = user?.role && roleFooterLinks[user.role] ? user.role : null;
+
+  if (staffRole) {
+    return (
+      <footer className="bg-dark-navy text-white border-t border-white/10">
+        <div className="base-container py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-gray-400 m-0">{brandName} • {staffRole}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            {roleFooterLinks[staffRole].map((l) => (
+              <Link key={l.to} to={l.to} className="text-xs text-gray-300 hover:text-primary-green transition-colors">
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </footer>
+    );
+  }
   return (
     <footer className="bg-dark-navy text-white">
       {/* Main Footer */}

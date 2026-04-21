@@ -12,17 +12,24 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS: explicitly allow frontend origins
+// CORS: allow production frontend + any local dev port
 const allowedOrigins = [
   'https://freshcartss.netlify.app',
-  'http://localhost:5173',
+  'https://www.freshcartss.netlify.app',
   'http://localhost:3000',
 ];
 app.use(cors({
   origin: function (origin, callback) {
+    // In local/dev, allow all origins to prevent port mismatch blocks.
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    const isLocalhost =
+      /^http:\/\/localhost:\d+$/.test(origin) ||
+      /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+    if (allowedOrigins.includes(origin) || isLocalhost) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -53,6 +60,9 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/finance', require('./routes/financeRoutes'));
 app.use('/api/promotions', require('./routes/promotionRoutes'));
+app.use('/api/suppliers', require('./routes/supplierRoutes'));
+app.use('/api/stock', require('./routes/stockRoutes'));
+app.use('/api/returns', require('./routes/returnRoutes'));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

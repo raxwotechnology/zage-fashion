@@ -169,6 +169,7 @@ const createProduct = async (req, res, next) => {
       isOnSale,
       allowKokoOnline,
       allowKokoPos,
+      purchasePrice,
     } = req.body;
 
     const slug = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
@@ -191,6 +192,8 @@ const createProduct = async (req, res, next) => {
       isOnSale: isOnSale || false,
       allowKokoOnline: allowKokoOnline !== undefined ? !!allowKokoOnline : true,
       allowKokoPos: allowKokoPos !== undefined ? !!allowKokoPos : true,
+      lastCost: Number(purchasePrice || 0),
+      avgCost: Number(purchasePrice || 0),
     });
 
     res.status(201).json(product);
@@ -224,6 +227,12 @@ const updateProduct = async (req, res, next) => {
 
     if (req.body.name) {
       product.slug = req.body.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+    }
+
+    if (req.body.purchasePrice !== undefined) {
+      const parsedPurchasePrice = Number(req.body.purchasePrice || 0);
+      product.lastCost = parsedPurchasePrice;
+      product.avgCost = parsedPurchasePrice;
     }
 
     const updated = await product.save();
