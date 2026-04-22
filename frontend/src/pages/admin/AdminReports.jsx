@@ -3,6 +3,7 @@ import { FileDown } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import {
   getAdminOrders, getAdminProducts, getAdminUsers, getCustomerReturns, getExpenses, getAdditionalIncomes,
+  getPayrollReport,
 } from '../../services/api';
 import { toast } from 'react-toastify';
 import navItems from './adminNavItems';
@@ -23,6 +24,11 @@ const AdminReports = () => {
   const [returnStatusFilter, setReturnStatusFilter] = useState('all');
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('all');
   const [incomeSourceFilter, setIncomeSourceFilter] = useState('all');
+  const [salaryMonth, setSalaryMonth] = useState(new Date().getMonth() + 1);
+  const [salaryYear, setSalaryYear] = useState(new Date().getFullYear());
+  const [salaryRoleFilter, setSalaryRoleFilter] = useState('all');
+  const [salaryEmployeeSearch, setSalaryEmployeeSearch] = useState('');
+  const [payrollData, setPayrollData] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -55,6 +61,23 @@ const AdminReports = () => {
     fetchAll();
   }, []);
 
+  useEffect(() => {
+    const fetchPayroll = async () => {
+      try {
+        const { data } = await getPayrollReport({
+          month: salaryMonth,
+          year: salaryYear,
+          role: salaryRoleFilter,
+          employeeName: salaryEmployeeSearch || undefined,
+        });
+        setPayrollData(data?.payrolls || []);
+      } catch {
+        setPayrollData([]);
+      }
+    };
+    if (activeTab === 'salary') fetchPayroll();
+  }, [activeTab, salaryMonth, salaryYear, salaryRoleFilter, salaryEmployeeSearch]);
+
   const filteredUsers = useMemo(
     () => (roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter)),
     [users, roleFilter]
@@ -85,6 +108,7 @@ const AdminReports = () => {
   const returnStatuses = [...new Set(returnsData.map((r) => r.status))];
   const expenseCategories = [...new Set(expenses.map((e) => e.category))];
   const incomeSources = [...new Set(incomes.map((i) => i.source))];
+  const payrollNames = [...new Set(payrollData.map((p) => p.employeeId?.name).filter(Boolean))];
 
   const exportCurrent = (type) => {
     const cfg = {
@@ -137,6 +161,19 @@ const AdminReports = () => {
         ],
         title: 'Incomes Report',
       },
+      salary: {
+        rows: payrollData,
+        cols: [
+          { label: 'Employee', accessor: (r) => r.employeeId?.name || 'N/A' },
+          { label: 'Role Category', accessor: (r) => r.employeeId?.role || 'N/A' },
+          { label: 'Period', accessor: (r) => `${r.month}/${r.year}` },
+          { label: 'Basic', accessor: (r) => Number(r.basicSalary || 0).toFixed(2) },
+          { label: 'Bonus', accessor: (r) => Number(r.bonuses || 0).toFixed(2) },
+          { label: 'Deductions', accessor: (r) => Number(r.otherDeductions || 0).toFixed(2) },
+          { label: 'Net Salary', accessor: (r) => Number(r.netSalary || 0).toFixed(2) },
+        ],
+        title: 'Salary Category Report',
+      },
     }[activeTab];
     if (!cfg) return;
     if (type === 'csv') exportToCSV(cfg.rows, cfg.cols, cfg.title.toLowerCase().replace(/\s+/g, '-'));
@@ -166,6 +203,7 @@ const AdminReports = () => {
             ['returns', 'Returns'],
             ['expenses', 'Expenses'],
             ['incomes', 'Incomes'],
+            ['salary', 'Salary Reports'],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -247,6 +285,32 @@ const AdminReports = () => {
                 </select>
               </div>
               <p className="text-sm text-muted-text">Total: {filteredIncomes.length}</p>
+            </>
+          )}
+          {activeTab === 'salary' && (
+            <>
+              <div className="mb-3 flex flex-wrap gap-2 items-center">
+                <label className="text-xs text-muted-text">Month</label>
+                <input type="number" min="1" max="12" value={salaryMonth} onChange={(e) => setSalaryMonth(Number(e.target.value || 1))} className="border border-card-border rounded-lg px-2 py-1.5 text-sm w-20" />
+                <label className="text-xs text-muted-text">Year</label>
+                <input type="number" value={salaryYear} onChange={(e) => setSalaryYear(Number(e.target.value || new Date().getFullYear()))} className="border border-card-border rounded-lg px-2 py-1.5 text-sm w-24" />
+                <label className="text-xs text-muted-text">Role Category</label>
+                <select value={salaryRoleFilter} onChange={(e) => setSalaryRoleFilter(e.target.value)} className="border border-card-border rounded-lg px-3 py-2 text-sm">
+                  {['all', 'cashier', 'manager', 'deliveryGuy', 'stockEmployee'].map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <label className="text-xs text-muted-text">Search Employee</label>
+                <input
+                  list="salary-employee-list"
+                  value={salaryEmployeeSearch}
+                  onChange={(e) => setSalaryEmployeeSearch(e.target.value)}
+                  placeholder="Type name to search/select"
+                  className="border border-card-border rounded-lg px-3 py-2 text-sm"
+                />
+                <datalist id="salary-employee-list">
+                  {payrollNames.map((name) => <option key={name} value={name} />)}
+                </datalist>
+              </div>
+              <p className="text-sm text-muted-text">Total: {payrollData.length}</p>
             </>
           )}
           <div className="mt-4 text-xs text-muted-text">
@@ -403,12 +467,42 @@ const AdminReports = () => {
               </table>
             )}
 
+            {activeTab === 'salary' && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Employee</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Role Category</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Period</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Basic</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Bonus</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Deductions</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-text">Net</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-card-border">
+                  {payrollData.map((p) => (
+                    <tr key={p._id}>
+                      <td className="px-4 py-2.5">{p.employeeId?.name || 'N/A'}</td>
+                      <td className="px-4 py-2.5">{p.employeeId?.role || 'N/A'}</td>
+                      <td className="px-4 py-2.5">{p.month}/{p.year}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(p.basicSalary || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(p.bonuses || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(p.otherDeductions || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2.5">Rs. {Number(p.netSalary || 0).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
             {((activeTab === 'users' && filteredUsers.length === 0)
               || (activeTab === 'products' && filteredProducts.length === 0)
               || (activeTab === 'orders' && filteredOrders.length === 0)
               || (activeTab === 'returns' && filteredReturns.length === 0)
               || (activeTab === 'expenses' && filteredExpenses.length === 0)
-              || (activeTab === 'incomes' && filteredIncomes.length === 0)) && (
+              || (activeTab === 'incomes' && filteredIncomes.length === 0)
+              || (activeTab === 'salary' && payrollData.length === 0)) && (
               <div className="px-4 py-10 text-sm text-center text-muted-text">No records for selected filters.</div>
             )}
           </div>

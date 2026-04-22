@@ -12,8 +12,8 @@ const ProductCard = ({ product }) => {
   const { user } = useAuthStore();
   const { getProductPrice, getProductPriceRaw, formatPrice, exchangeRate, currency } = useCurrencyStore();
 
-  const imageUrl = product.images?.[0] || 'https://via.placeholder.com/400x400?text=No+Image';
-  const storeName = product.storeId?.name || 'Unknown Store';
+  const imageUrl = product.images?.[0] || 'https://via.placeholder.com/400x400?text=Beauty+Product';
+  const storeName = product.storeId?.name || 'Zage Boutique';
   const wishlisted = user && isInWishlist(product._id);
 
   const handleAddToCart = async (e) => {
@@ -49,14 +49,14 @@ const ProductCard = ({ product }) => {
 
   return (
     <Link to={`/product/${product._id}`} className="block group">
-      <div className="bg-white border border-card-border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-        <div className="relative overflow-hidden bg-gray-50 aspect-square">
+      <div className="bg-white border border-card-border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-300">
+        <div className="relative overflow-hidden bg-rose-50/40 aspect-square">
           <img src={imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
           {product.discount > 0 && (
-            <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">-{product.discount}%</span>
+            <span className="absolute top-3 left-3 bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">-{product.discount}%</span>
           )}
           {product.isFeatured && (
-            <span className="absolute top-3 right-12 bg-accent-orange text-white text-xs font-bold px-2.5 py-1 rounded-full">Featured</span>
+            <span className="absolute top-3 right-12 bg-zinc-900 text-white text-xs font-bold px-2.5 py-1 rounded-full">Featured</span>
           )}
           <button onClick={handleToggleWishlist}
             className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
@@ -85,7 +85,7 @@ const ProductCard = ({ product }) => {
               <span className="text-xs text-muted-text ml-1">/ {product.unit}</span>
             </div>
             <button onClick={handleAddToCart}
-              className="w-9 h-9 bg-primary-green hover:bg-emerald-600 text-white rounded-full flex items-center justify-center transition-colors shadow-md shadow-emerald-200"
+              className="w-9 h-9 bg-primary-green hover:bg-fuchsia-700 text-white rounded-full flex items-center justify-center transition-colors shadow-md shadow-rose-200"
             >
               <ShoppingCart size={16} />
             </button>

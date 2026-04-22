@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star, ArrowRight, Truck, Shield, Clock, Leaf } from 'lucide-react';
+import { Sparkles, Star, ArrowRight, Truck, ShieldCheck, Clock3, Gem } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getCategories, getFeaturedProducts, getDeals } from '../services/api';
 import ProductCard from '../components/ProductCard';
@@ -39,10 +39,10 @@ const Home = () => {
   return (
     <div>
       {/* ===== HERO SECTION ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-orange-50">
+      <section className="relative overflow-hidden bg-gradient-to-br from-rose-50 via-[#fff9f5] to-stone-100">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-400 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-300 rounded-full blur-3xl"></div>
+          <div className="absolute top-10 left-10 w-72 h-72 bg-rose-300 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-neutral-300 rounded-full blur-3xl"></div>
         </div>
         <div className="base-container py-16 md:py-24 flex flex-col md:flex-row items-center justify-between relative z-10">
           <motion.div
@@ -51,23 +51,23 @@ const Home = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
-              <Leaf size={14} /> Farm Fresh Groceries
+            <span className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
+              <Sparkles size={14} /> New Season Beauty Edit
             </span>
             <h1 className="text-4xl md:text-6xl font-bold text-dark-navy leading-tight mb-6 mt-0">
-              Fresh groceries,
+              Signature style
               <br />
-              <span className="bg-gradient-to-r from-emerald-500 to-emerald-700 bg-clip-text text-transparent">
-                delivered fast.
+              <span className="bg-gradient-to-r from-rose-500 to-fuchsia-700 bg-clip-text text-transparent">
+                and beauty essentials.
               </span>
             </h1>
             <p className="text-muted-text text-lg mb-8 max-w-lg leading-relaxed">
-              Get fresh produce, dairy, bakery, and more from your favorite local stores — delivered to your doorstep in under an hour.
+              Discover premium clothing, skincare, cosmetics, and accessories curated for modern lifestyles. Shop trend-led collections with smooth and secure checkout.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
                 to="/shop"
-                className="bg-primary-green hover:bg-emerald-600 text-white font-semibold py-3.5 px-8 rounded-full transition-all shadow-lg shadow-emerald-200 hover:shadow-emerald-300 inline-flex items-center gap-2"
+                className="bg-primary-green hover:bg-fuchsia-700 text-white font-semibold py-3.5 px-8 rounded-full transition-all shadow-lg shadow-rose-200 hover:shadow-rose-300 inline-flex items-center gap-2"
               >
                 Shop Now <ArrowRight size={18} />
               </Link>
@@ -75,7 +75,7 @@ const Home = () => {
                 to="/deals"
                 className="border-2 border-accent-orange text-accent-orange hover:bg-accent-orange hover:text-white font-semibold py-3.5 px-8 rounded-full transition-all inline-flex items-center gap-2"
               >
-                Today's Deals
+                Beauty Deals
               </Link>
             </div>
           </motion.div>
@@ -87,8 +87,8 @@ const Home = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
           >
             <div className="relative">
-              <div className="w-80 h-80 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center shadow-2xl">
-                <span className="text-8xl">🛒</span>
+              <div className="w-80 h-80 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-rose-100 to-stone-200 flex items-center justify-center shadow-2xl">
+                <span className="text-8xl">💄</span>
               </div>
               {/* Floating badges */}
               <motion.div
@@ -96,10 +96,10 @@ const Home = () => {
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
               >
-                <span className="text-2xl">🍎</span>
+                <span className="text-2xl">👜</span>
                 <div>
-                  <p className="text-xs font-bold text-dark-navy m-0">Organic Apples</p>
-                  <p className="text-xs text-primary-green m-0 font-semibold">$4.99/kg</p>
+                  <p className="text-xs font-bold text-dark-navy m-0">Luxe Tote Bag</p>
+                  <p className="text-xs text-primary-green m-0 font-semibold">$49.99</p>
                 </div>
               </motion.div>
               <motion.div
@@ -107,10 +107,10 @@ const Home = () => {
                 animate={{ y: [0, 8, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity }}
               >
-                <span className="text-2xl">🥦</span>
+                <span className="text-2xl">✨</span>
                 <div>
-                  <p className="text-xs font-bold text-dark-navy m-0">Fresh Broccoli</p>
-                  <p className="text-xs text-primary-green m-0 font-semibold">$2.99/pc</p>
+                  <p className="text-xs font-bold text-dark-navy m-0">Radiance Serum</p>
+                  <p className="text-xs text-primary-green m-0 font-semibold">$34.00</p>
                 </div>
               </motion.div>
             </div>
@@ -123,10 +123,10 @@ const Home = () => {
         <div className="base-container py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: <Truck size={24} />, title: 'Free Delivery', desc: 'On orders over $50' },
-              { icon: <Clock size={24} />, title: 'Fast Delivery', desc: 'Under 60 minutes' },
-              { icon: <Shield size={24} />, title: 'Secure Payment', desc: '100% protected' },
-              { icon: <Leaf size={24} />, title: 'Fresh Guaranteed', desc: 'Quality produce' },
+              { icon: <Truck size={24} />, title: 'Free Shipping', desc: 'On premium orders' },
+              { icon: <Clock3 size={24} />, title: 'Fast Dispatch', desc: 'Packed in 24 hours' },
+              { icon: <ShieldCheck size={24} />, title: 'Secure Checkout', desc: 'Encrypted payments' },
+              { icon: <Gem size={24} />, title: 'Premium Selection', desc: 'Designer-inspired picks' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -137,7 +137,7 @@ const Home = () => {
                 variants={fadeUp}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
               >
-                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-primary-green flex-shrink-0">
+                <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-primary-green flex-shrink-0">
                   {item.icon}
                 </div>
                 <div>
@@ -159,7 +159,7 @@ const Home = () => {
         >
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-1">Explore Categories</h2>
-            <p className="text-muted-text m-0">Browse from our wide range of categories</p>
+            <p className="text-muted-text m-0">Discover curated fashion and beauty collections</p>
           </div>
           <Link to="/categories" className="text-primary-green hover:underline font-medium flex items-center gap-1">
             View All <ArrowRight size={16} />
@@ -176,7 +176,7 @@ const Home = () => {
                 to={`/shop?category=${cat._id}`}
                 className="bg-white border border-card-border rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-primary-green transition-all group block"
               >
-                <div className="w-14 h-14 bg-emerald-50 group-hover:bg-emerald-100 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl transition-colors">
+                <div className="w-14 h-14 bg-rose-50 group-hover:bg-rose-100 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl transition-colors">
                   {cat.icon}
                 </div>
                 <h3 className="font-semibold text-xs text-dark-navy mt-0 mb-0 group-hover:text-primary-green transition-colors">
@@ -190,7 +190,7 @@ const Home = () => {
 
       {/* ===== DEALS OF THE DAY ===== */}
       {deals.length > 0 && (
-        <section className="bg-gradient-to-r from-orange-50 to-amber-50 py-12">
+        <section className="bg-gradient-to-r from-rose-50 to-stone-100 py-12">
           <div className="base-container">
             <motion.div
               className="flex items-center justify-between mb-8"
@@ -202,7 +202,7 @@ const Home = () => {
                   <span className="text-2xl">🔥</span>
                   <h2 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-0">Deals of the Day</h2>
                 </div>
-                <p className="text-muted-text m-0">Grab these offers before they're gone!</p>
+                <p className="text-muted-text m-0">Grab these trend picks before they are gone.</p>
               </div>
               <Link to="/deals" className="text-accent-orange hover:underline font-medium flex items-center gap-1">
                 View All <ArrowRight size={16} />
@@ -255,21 +255,21 @@ const Home = () => {
 
       {/* ===== PROMOTIONAL BANNER ===== */}
       <section className="base-container py-6">
-        <motion.div
-          className="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative"
+          <motion.div
+          className="bg-gradient-to-r from-black to-zinc-800 rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative"
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={fadeUp} transition={{ duration: 0.6 }}
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
           <div className="z-10 mb-6 md:mb-0">
-            <h3 className="text-2xl md:text-3xl font-bold mt-0 mb-2">Download FreshCart App</h3>
-            <p className="text-emerald-100 m-0 max-w-md">
-              Get exclusive app-only deals, real-time order tracking, and faster checkout. Available on iOS and Android.
+            <h3 className="text-2xl md:text-3xl font-bold mt-0 mb-2">Download Zage Fashion Corner App</h3>
+            <p className="text-rose-100 m-0 max-w-md">
+              Unlock exclusive drops, beauty tutorials, personalized wishlists, and faster checkout from your phone.
             </p>
           </div>
           <div className="z-10 flex gap-4">
-            <button className="bg-white text-emerald-700 font-semibold py-3 px-6 rounded-full hover:bg-emerald-50 transition-colors">
+            <button className="bg-white text-zinc-900 font-semibold py-3 px-6 rounded-full hover:bg-rose-50 transition-colors">
               App Store
             </button>
             <button className="bg-white/20 text-white border border-white/30 font-semibold py-3 px-6 rounded-full hover:bg-white/30 transition-colors">
@@ -286,14 +286,14 @@ const Home = () => {
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={fadeUp} transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-1">What Our Customers Say</h2>
-          <p className="text-muted-text m-0">Trusted by thousands of happy shoppers</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-1">What Our Clients Say</h2>
+          <p className="text-muted-text m-0">Loved by fashion and skincare enthusiasts</p>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { name: 'Emily R.', text: "FreshCart has completely changed how I grocery shop. Everything arrives fresh, and the deals are amazing!", avatar: '👩', rating: 5 },
-            { name: 'Marcus T.', text: "The delivery is incredibly fast and I love being able to shop from multiple local stores in one order.", avatar: '👨', rating: 5 },
-            { name: 'Sarah K.', text: "Best grocery delivery service! The organic selection from Organic Mart is wonderful and always top quality.", avatar: '👩‍🦰', rating: 4 },
+            { name: 'Emily R.', text: "The quality is stunning. My skincare routine and wardrobe both got a serious upgrade from one place.", avatar: '👩', rating: 5 },
+            { name: 'Marcus T.', text: "I shop menswear and grooming products here every month. Fast delivery and premium packaging every time.", avatar: '👨', rating: 5 },
+            { name: 'Sarah K.', text: "The cosmetic collection feels luxury but still affordable. Product photos match exactly what arrives.", avatar: '👩‍🦰', rating: 4 },
           ].map((testimonial, i) => (
             <motion.div
               key={i}

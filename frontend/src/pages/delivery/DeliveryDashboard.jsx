@@ -115,7 +115,7 @@ const DeliveryDashboard = () => {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           {[{key: 'active', label: `Active (${orders.length})`}, {key: 'earnings', label: 'Earnings'}, {key: 'history', label: 'History'}].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${tab === t.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-muted-text hover:bg-gray-200'}`}>{t.label}</button>
+            <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${tab === t.key ? 'bg-rose-600 text-white' : 'bg-gray-100 text-muted-text hover:bg-gray-200'}`}>{t.label}</button>
           ))}
         </div>
 
@@ -143,15 +143,15 @@ const DeliveryDashboard = () => {
                           <div className="flex items-center gap-1 mt-3">
                             {statusFlow.map((s, i) => (
                               <div key={s} className="flex items-center">
-                                <div className={`w-2.5 h-2.5 rounded-full ${statusFlow.indexOf(order.orderStatus) >= i ? 'bg-blue-600' : 'bg-gray-200'}`} />
-                                {i < statusFlow.length - 1 && <div className={`w-6 h-0.5 ${statusFlow.indexOf(order.orderStatus) > i ? 'bg-blue-600' : 'bg-gray-200'}`} />}
+                                <div className={`w-2.5 h-2.5 rounded-full ${statusFlow.indexOf(order.orderStatus) >= i ? 'bg-rose-600' : 'bg-gray-200'}`} />
+                                {i < statusFlow.length - 1 && <div className={`w-6 h-0.5 ${statusFlow.indexOf(order.orderStatus) > i ? 'bg-rose-600' : 'bg-gray-200'}`} />}
                               </div>
                             ))}
                           </div>
                         </div>
                         <div className="flex gap-2">
                           {next && (
-                            <button onClick={() => handleStatusUpdate(order._id, next)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md flex-shrink-0">
+                            <button onClick={() => handleStatusUpdate(order._id, next)} className="flex items-center gap-2 bg-rose-600 hover:bg-fuchsia-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md flex-shrink-0">
                               {next === 'delivered' ? 'Mark Delivered ✓' : `→ ${next.replace(/_/g, ' ')}`} <ArrowRight size={16} />
                             </button>
                           )}
@@ -217,7 +217,7 @@ const DeliveryDashboard = () => {
           <div className="bg-white rounded-2xl border border-card-border shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-card-border flex items-center justify-between">
               <h2 className="font-semibold text-dark-navy">Delivery History ({history.length})</h2>
-              {history.length > 0 && <button onClick={exportCSV} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-xl"><Download size={14} /> CSV</button>}
+              {history.length > 0 && <button onClick={exportCSV} className="flex items-center gap-2 bg-rose-600 hover:bg-fuchsia-700 text-white text-xs font-medium px-3 py-2 rounded-xl"><Download size={14} /> CSV</button>}
             </div>
             {history.length === 0 ? (
               <div className="text-center py-12 text-muted-text"><Clock size={40} className="mx-auto mb-3 text-gray-300" /><p>No delivery history</p></div>

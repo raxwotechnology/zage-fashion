@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingBag, Users, Clock, Calendar, Target, BarChart3, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Users, Clock, Calendar, Target, BarChart3, RotateCcw, Barcode } from 'lucide-react';
 
 const managerNavItems = [
   { path: '/manager', label: 'Overview', icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const managerNavItems = [
   { path: '/manager/leaves', label: 'Leaves', icon: Calendar },
   { path: '/manager/targets', label: 'Targets', icon: Target },
   { path: '/manager/performance', label: 'Performance', icon: BarChart3 },
+  { path: '/barcode-generator', label: 'Barcode Generator', icon: Barcode },
   { path: '/pos', label: 'POS Terminal', icon: LayoutDashboard },
 ];
 

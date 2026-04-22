@@ -6,11 +6,11 @@ import useAuthStore from '../store/authStore';
 const Footer = () => {
   const user = useAuthStore((s) => s.user);
   const settings = useSettingsStore((s) => s.settings);
-  const brandName = settings?.shopName || 'FreshCart';
-  const footerText = settings?.footerText || `© ${new Date().getFullYear()} FreshCart. All rights reserved.`;
-  const brandEmail = settings?.email || 'support@freshcart.com';
+  const brandName = settings?.shopName || 'Zage Fashion Corner';
+  const footerText = settings?.footerText || `© ${new Date().getFullYear()} Zage Fashion Corner. All rights reserved.`;
+  const brandEmail = settings?.email || 'support@zagebeauty.com';
   const brandPhone = settings?.phone || '+94 11 255 5000';
-  const brandAddress = settings?.address || '456 Market Street, New York, NY 10001';
+  const brandAddress = settings?.address || '88 Fashion Avenue, Colombo 03';
   const brandLogoUrl = settings?.logoUrl;
 
   const roleFooterLinks = {
@@ -49,7 +49,7 @@ const Footer = () => {
 
   if (staffRole) {
     return (
-      <footer className="bg-dark-navy text-white border-t border-white/10">
+      <footer className="bg-zinc-950 text-white border-t border-white/10">
         <div className="base-container py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-gray-400 m-0">{brandName} • {staffRole}</p>
           <div className="flex flex-wrap items-center gap-3">
@@ -64,7 +64,7 @@ const Footer = () => {
     );
   }
   return (
-    <footer className="bg-dark-navy text-white">
+    <footer className="bg-zinc-950 text-white">
       {/* Main Footer */}
       <div className="base-container py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -75,7 +75,7 @@ const Footer = () => {
               <span>{brandName}</span>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-4">
-              Your one-stop destination for farm-fresh groceries delivered to your doorstep. Shop from multiple local stores with ease.
+              Elevate your wardrobe and beauty routine with curated fashion, cosmetics, and skincare essentials in one premium destination.
             </p>
             <div className="flex gap-3">
               {[Globe, MessageCircle, Camera, Play].map((Icon, i) => (
@@ -95,9 +95,9 @@ const Footer = () => {
             <h4 className="font-semibold text-white mb-4 mt-0">Quick Links</h4>
             <ul className="space-y-2.5 list-none p-0 m-0">
               {[
-                { to: '/shop', label: 'All Products' },
-                { to: '/deals', label: 'Deals & Offers' },
-                { to: '/stores', label: 'Our Stores' },
+                { to: '/shop', label: 'New Arrivals' },
+                { to: '/deals', label: 'Style Deals' },
+                { to: '/stores', label: 'Our Boutiques' },
                 { to: '/categories', label: 'Categories' },
               ].map((link) => (
                 <li key={link.to}>
@@ -113,7 +113,7 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-white mb-4 mt-0">Customer Service</h4>
             <ul className="space-y-2.5 list-none p-0 m-0">
-              {['Help Center', 'Track Order', 'Shipping Info', 'Returns & Refunds', 'Privacy Policy'].map((item) => (
+              {['Help Center', 'Track Order', 'Shipping Info', 'Returns & Exchange', 'Privacy Policy'].map((item) => (
                 <li key={item}>
                   <a href="#" className="text-gray-400 hover:text-primary-green transition-colors text-sm">
                     {item}

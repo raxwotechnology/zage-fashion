@@ -14,8 +14,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS: allow production frontend + any local dev port
 const allowedOrigins = [
-  'https://freshcartss.netlify.app',
-  'https://www.freshcartss.netlify.app',
+  'https://zagefashion.netlify.app',
+  'https://www.zagefashion.netlify.app',
   'http://localhost:3000',
 ];
 app.use(cors({
@@ -63,11 +63,12 @@ app.use('/api/promotions', require('./routes/promotionRoutes'));
 app.use('/api/suppliers', require('./routes/supplierRoutes'));
 app.use('/api/stock', require('./routes/stockRoutes'));
 app.use('/api/returns', require('./routes/returnRoutes'));
+app.use('/api/barcodes', require('./routes/barcodeRoutes'));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
-  res.send('FreshCart API is running...');
+  res.send('Zage Fashion Corner API is running...');
 });
 
 app.use((err, req, res, next) => {

@@ -141,11 +141,11 @@ const EmployeeDashboard = () => {
     <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
       <div className="space-y-6">
         {/* Welcome Card */}
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-rose-500 to-fuchsia-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Welcome, {user?.name?.split(' ')[0]}! 👋</h1>
-              <p className="text-emerald-100 mt-1">{roleLabel} • {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="text-rose-100 mt-1">{roleLabel} • {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl font-bold backdrop-blur-sm">
               {user?.name?.charAt(0)?.toUpperCase()}
@@ -155,7 +155,7 @@ const EmployeeDashboard = () => {
           {/* Quick Check-in/out + Break */}
           <div className="mt-4 flex flex-wrap gap-3">
             {!stats.todayCheckedIn ? (
-              <button onClick={handleCheckIn} className="bg-white text-emerald-600 font-semibold px-6 py-2.5 rounded-xl hover:bg-emerald-50 transition-colors shadow-md flex items-center gap-2">
+              <button onClick={handleCheckIn} className="bg-white text-rose-600 font-semibold px-6 py-2.5 rounded-xl hover:bg-rose-50 transition-colors shadow-md flex items-center gap-2">
                 <Clock size={16} /> Check In
               </button>
             ) : !stats.todayCheckedOut ? (

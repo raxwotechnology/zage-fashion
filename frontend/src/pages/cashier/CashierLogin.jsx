@@ -15,7 +15,7 @@ const CashierLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const settings = useSettingsStore((s) => s.settings);
-  const brandName = settings?.shopName || 'FreshCart';
+  const brandName = settings?.shopName || 'Zage Fashion Corner';
   const brandLogoUrl = settings?.logoUrl;
 
   const handleSubmit = async (e) => {
@@ -53,7 +53,7 @@ const CashierLogin = () => {
               {brandLogoUrl ? <img src={brandLogoUrl} alt={brandName} className="w-12 h-12 rounded-xl object-cover" /> : <ShoppingCart size={40} />}
             </div>
             <h1>{brandName}</h1>
-            <p className="pos-login-tagline">Point of Sale System</p>
+            <p className="pos-login-tagline">Fashion & Beauty POS</p>
             <div className="pos-login-features">
               <div className="pos-login-feature">
                 <span className="pos-feature-icon">⚡</span>

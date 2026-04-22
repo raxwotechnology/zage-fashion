@@ -1,25 +1,25 @@
 import { create } from 'zustand';
 
 const useCurrencyStore = create((set, get) => ({
-  currency: localStorage.getItem('freshcart_currency') || 'LKR',
-  exchangeRate: parseFloat(localStorage.getItem('freshcart_rate')) || 320,
-  lastFetched: parseInt(localStorage.getItem('freshcart_rate_ts')) || 0,
+  currency: localStorage.getItem('zage_currency') || 'LKR',
+  exchangeRate: parseFloat(localStorage.getItem('zage_rate')) || 320,
+  lastFetched: parseInt(localStorage.getItem('zage_rate_ts')) || 0,
 
   setCurrency: (currency) => {
-    localStorage.setItem('freshcart_currency', currency);
+    localStorage.setItem('zage_currency', currency);
     set({ currency });
   },
 
   toggleCurrency: () => {
     const newCurrency = get().currency === 'LKR' ? 'USD' : 'LKR';
-    localStorage.setItem('freshcart_currency', newCurrency);
+    localStorage.setItem('zage_currency', newCurrency);
     set({ currency: newCurrency });
   },
 
   setExchangeRate: (rate) => {
     const now = Date.now();
-    localStorage.setItem('freshcart_rate', rate.toString());
-    localStorage.setItem('freshcart_rate_ts', now.toString());
+    localStorage.setItem('zage_rate', rate.toString());
+    localStorage.setItem('zage_rate_ts', now.toString());
     set({ exchangeRate: rate, lastFetched: now });
   },
 

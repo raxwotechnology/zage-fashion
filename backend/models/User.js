@@ -48,12 +48,18 @@ const userSchema = mongoose.Schema(
     },
     vouchers: [
       {
+        voucherId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Voucher',
+        },
         code: String,
         type: { type: String, enum: ['percentage', 'fixed'] },
         value: Number,
         minOrderAmount: Number,
         expiresAt: Date,
         isUsed: { type: Boolean, default: false },
+        claimedAt: { type: Date, default: Date.now },
+        usedAt: Date,
       },
     ],
     // Employee Info (for cashier, deliveryGuy, and other staff)

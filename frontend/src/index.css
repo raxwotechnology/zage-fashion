@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-green: #10B981;
-  --color-accent-orange: #F59E0B;
-  --color-dark-navy: #1E2937;
-  --color-light-bg: #F8FAFC;
-  --color-card-border: #E5E7EB;
-  --color-muted-text: #6B7280;
+  --color-primary-green: #d946a0;
+  --color-accent-orange: #1f1f1f;
+  --color-dark-navy: #1f1f1f;
+  --color-light-bg: #fff9f5;
+  --color-card-border: #eaded6;
+  --color-muted-text: #7b6f69;
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }

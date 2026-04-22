@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const bcrypt = require('bcrypt');
 
 dotenv.config();
 
@@ -16,355 +15,187 @@ const seedData = async () => {
   try {
     await connectDB();
 
-    // Clear existing data
-    await User.deleteMany({});
+    // Clear existing catalog/business data only (keep auth users intact)
     await Store.deleteMany({});
     await Category.deleteMany({});
     await Product.deleteMany({});
     await Voucher.deleteMany({});
 
-    console.log('Data cleared...');
+    console.log('Catalog data cleared (users preserved)...');
 
-    // Create Users
-    const adminUser = await User.create({
-      name: 'Admin User',
-      email: 'admin@freshcart.com',
-      password: 'admin123',
-      phone: '+94771234567',
-      role: 'admin',
-    });
+    // Keep existing users/accounts and attach seeded stores to available managers
+    const adminUser = await User.findOne({ role: 'admin' });
+    const managers = await User.find({ role: 'manager' }).sort({ createdAt: 1 }).limit(2);
+    const manager1 = managers[0] || adminUser;
+    const manager2 = managers[1] || manager1;
 
-    const manager1 = await User.create({
-      name: 'John Green',
-      email: 'john@freshfarms.com',
-      password: 'manager123',
-      phone: '+94779876543',
-      role: 'manager',
-    });
-
-    const manager2 = await User.create({
-      name: 'Sarah Miller',
-      email: 'sarah@organicmart.com',
-      password: 'manager123',
-      phone: '+94779876544',
-      role: 'manager',
-    });
-
-    const customer = await User.create({
-      name: 'Jane Doe',
-      email: 'jane@example.com',
-      password: 'customer123',
-      phone: '+94775555555',
-      role: 'customer',
-      loyaltyPoints: 150,
-      addresses: [
-        {
-          street: '123 Galle Road',
-          city: 'Colombo',
-          state: 'Western',
-          zipCode: '00100',
-          country: 'Sri Lanka',
-          isDefault: true,
-        },
-      ],
-    });
-
-    console.log('Users created...');
+    if (!adminUser) {
+      throw new Error('No admin user found. Create an admin account before seeding.');
+    }
 
     // Create Stores
     const store1 = await Store.create({
       managerId: manager1._id,
-      name: 'Fresh Farms',
-      slug: 'fresh-farms',
-      description: 'Your local farm-to-table grocery store bringing the freshest produce, dairy, and organic products directly from local farms.',
-      address: '456 Galle Road, Colombo 03',
+      name: 'Zage Atelier',
+      slug: 'zage-atelier',
+      description: 'Contemporary fashion boutique with premium wardrobe staples, accessories, and seasonal style drops.',
+      address: '456 Fashion Avenue, Colombo 03',
       city: 'Colombo',
       phone: '+94112555101',
-      email: 'hello@freshfarms.com',
-      bannerImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200',
-      logo: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=200',
+      email: 'hello@zageatelier.com',
+      bannerImage: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200',
+      logo: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=200',
       operatingHours: { open: '07:00', close: '22:00' },
       isActive: true,
     });
 
     const store2 = await Store.create({
       managerId: manager2._id,
-      name: 'Organic Mart',
-      slug: 'organic-mart',
-      description: 'Premium organic and health-focused grocery store. We source only certified organic products for health-conscious shoppers.',
-      address: '789 Duplication Road, Colombo 04',
+      name: 'Zage Beauty Lab',
+      slug: 'zage-beauty-lab',
+      description: 'Luxury cosmetics and skincare destination featuring clean beauty formulas and salon-grade essentials.',
+      address: '789 Beauty Boulevard, Colombo 04',
       city: 'Colombo',
       phone: '+94112555202',
-      email: 'info@organicmart.com',
-      bannerImage: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200',
-      logo: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=200',
+      email: 'info@zagebeautylab.com',
+      bannerImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1200',
+      logo: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=200',
       operatingHours: { open: '08:00', close: '21:00' },
       isActive: true,
     });
 
     console.log('Stores created...');
 
-    // Create Cashier Users (assigned to stores)
-    const cashier1 = await User.create({
-      name: 'Mike Cashier',
-      email: 'cashier@freshfarms.com',
-      password: 'cashier123',
-      phone: '+94771234568',
-      role: 'cashier',
-      assignedStore: store1._id,
-      employeeInfo: {
-        salary: 45000,
-        department: 'Sales',
-        joinDate: new Date('2025-01-15'),
-        bankAccount: '1234567890',
-        bankName: 'Commercial Bank',
-        epfNo: 'EPF-001',
-        etfNo: 'ETF-001',
-      },
-    });
-
-    const cashier2 = await User.create({
-      name: 'Lisa Cashier',
-      email: 'cashier@organicmart.com',
-      password: 'cashier123',
-      phone: '+94779876545',
-      role: 'cashier',
-      assignedStore: store2._id,
-      employeeInfo: {
-        salary: 45000,
-        department: 'Sales',
-        joinDate: new Date('2025-03-01'),
-        bankAccount: '0987654321',
-        bankName: 'Sampath Bank',
-        epfNo: 'EPF-002',
-        etfNo: 'ETF-002',
-      },
-    });
-
-    console.log('Cashiers created...');
-
-    // Create Delivery Guy Users
-    const deliveryGuy1 = await User.create({
-      name: 'Kamal Perera',
-      email: 'kamal@freshcart.com',
-      password: 'delivery123',
-      phone: '+94771112233',
-      role: 'deliveryGuy',
-      assignedStore: store1._id,
-      employeeInfo: {
-        salary: 35000,
-        department: 'Delivery',
-        joinDate: new Date('2025-02-01'),
-        bankAccount: '5555555555',
-        bankName: 'BOC',
-        epfNo: 'EPF-003',
-        etfNo: 'ETF-003',
-      },
-    });
-
-    const deliveryGuy2 = await User.create({
-      name: 'Nimal Silva',
-      email: 'nimal@freshcart.com',
-      password: 'delivery123',
-      phone: '+94774445566',
-      role: 'deliveryGuy',
-      assignedStore: store2._id,
-      employeeInfo: {
-        salary: 35000,
-        department: 'Delivery',
-        joinDate: new Date('2025-04-01'),
-        bankAccount: '6666666666',
-        bankName: 'HNB',
-        epfNo: 'EPF-004',
-        etfNo: 'ETF-004',
-      },
-    });
-
-    console.log('Delivery Guys created...');
+    // Keep existing staff users and remap assigned stores
+    await User.updateMany({ role: 'cashier' }, { $set: { assignedStore: store1._id } });
+    await User.updateMany({ role: 'deliveryGuy' }, { $set: { assignedStore: store2._id } });
 
     // Create Categories
     const categories = await Category.insertMany([
-      { name: 'Fresh Fruits', slug: 'fresh-fruits', icon: '🍎', image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400', isActive: true },
-      { name: 'Vegetables', slug: 'vegetables', icon: '🥦', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400', isActive: true },
-      { name: 'Dairy & Eggs', slug: 'dairy-eggs', icon: '🥛', image: 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=400', isActive: true },
-      { name: 'Bakery', slug: 'bakery', icon: '🍞', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400', isActive: true },
-      { name: 'Meat & Seafood', slug: 'meat-seafood', icon: '🥩', image: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400', isActive: true },
-      { name: 'Beverages', slug: 'beverages', icon: '🥤', image: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400', isActive: true },
-      { name: 'Snacks', slug: 'snacks', icon: '🍿', image: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400', isActive: true },
-      { name: 'Pantry', slug: 'pantry', icon: '🫙', image: 'https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?w=400', isActive: true },
+      { name: "Women's Fashion", slug: 'womens-fashion', icon: '👗', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400', isActive: true },
+      { name: "Men's Fashion", slug: 'mens-fashion', icon: '👔', image: 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=400', isActive: true },
+      { name: 'Accessories', slug: 'accessories', icon: '👜', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=400', isActive: true },
+      { name: 'Cosmetics', slug: 'cosmetics', icon: '💄', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400', isActive: true },
+      { name: 'Skincare', slug: 'skincare', icon: '🧴', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400', isActive: true },
+      { name: 'Haircare', slug: 'haircare', icon: '💇', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400', isActive: true },
+      { name: 'Beauty Tools', slug: 'beauty-tools', icon: '✨', image: 'https://images.unsplash.com/photo-1631214524020-3f0f8e92907f?w=400', isActive: true },
     ]);
 
     console.log('Categories created...');
 
     // Create Products (with barcodes, SKUs, and multi-currency pricing)
     const products = [
-      // Fresh Fruits
       {
-        storeId: store1._id, name: 'Organic Red Apples', slug: 'organic-red-apples',
-        categoryId: categories[0]._id, description: 'Crisp and juicy organic Gala apples. Sourced directly from upstate farms, these apples are perfect for snacking, baking, or adding to salads.',
-        price: 1600, priceLKR: 1600, priceUSD: 4.99, mrp: 2240, discount: 29, unit: 'kg',
-        stock: 150, images: [
-          'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600',
-          'https://images.unsplash.com/photo-1579613832125-5d34a13ffe2a?w=600',
-        ],
-        averageRating: 4.5, totalReviews: 23, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567001', sku: 'FF-FRT-001',
+        storeId: store1._id, name: 'Satin Wrap Midi Dress', slug: 'satin-wrap-midi-dress',
+        categoryId: categories[0]._id, description: 'Elegant satin wrap dress with a flattering silhouette for evening events and smart-casual styling.',
+        price: 12400, priceLKR: 12400, priceUSD: 38.75, mrp: 14600, discount: 15, unit: 'piece',
+        stock: 85, images: ['https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600'],
+        averageRating: 4.7, totalReviews: 41, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567001', sku: 'ZA-WMN-001',
       },
       {
-        storeId: store1._id, name: 'Fresh Bananas', slug: 'fresh-bananas',
-        categoryId: categories[0]._id, description: 'Premium yellow bananas, perfectly ripened. Great source of potassium and natural energy.',
-        price: 640, priceLKR: 640, priceUSD: 1.99, mrp: 800, discount: 20, unit: 'bunch',
-        stock: 200, images: ['https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600'],
-        averageRating: 4.7, totalReviews: 45, isFeatured: true, isOnSale: false, status: 'active',
-        barcode: '4901234567002', sku: 'FF-FRT-002',
+        storeId: store1._id, name: 'Tailored Wide-Leg Trousers', slug: 'tailored-wide-leg-trousers',
+        categoryId: categories[0]._id, description: 'High-waist tailored trousers in a soft drape fabric designed for elevated everyday wear.',
+        price: 9800, priceLKR: 9800, priceUSD: 30.62, mrp: 11600, discount: 15, unit: 'piece',
+        stock: 72, images: ['https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=600'],
+        averageRating: 4.5, totalReviews: 28, isFeatured: false, isOnSale: false, status: 'active',
+        barcode: '5901234567002', sku: 'ZA-WMN-002',
       },
       {
-        storeId: store2._id, name: 'Organic Strawberries', slug: 'organic-strawberries',
-        categoryId: categories[0]._id, description: 'Sweet, juicy organic strawberries. Hand-picked at peak ripeness for maximum flavor.',
-        price: 1920, priceLKR: 1920, priceUSD: 5.99, mrp: 2560, discount: 25, unit: 'pack',
-        stock: 80, images: ['https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600'],
-        averageRating: 4.8, totalReviews: 34, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567003', sku: 'OM-FRT-001',
+        storeId: store1._id, name: 'Slim Fit Oxford Shirt', slug: 'slim-fit-oxford-shirt',
+        categoryId: categories[1]._id, description: 'Premium cotton oxford shirt with crisp collar and breathable fabric for office or occasion dressing.',
+        price: 8900, priceLKR: 8900, priceUSD: 27.81, mrp: 10200, discount: 13, unit: 'piece',
+        stock: 96, images: ['https://images.unsplash.com/photo-1603252109303-2751441dd157?w=600'],
+        averageRating: 4.6, totalReviews: 36, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567003', sku: 'ZA-MEN-001',
       },
       {
-        storeId: store2._id, name: 'Valencia Oranges', slug: 'valencia-oranges',
-        categoryId: categories[0]._id, description: 'Sweet and seedless Valencia oranges perfect for juicing or eating fresh. Rich in Vitamin C.',
-        price: 1120, priceLKR: 1120, priceUSD: 3.49, mrp: 1600, discount: 30, unit: 'kg',
-        stock: 120, images: ['https://images.unsplash.com/photo-1547514701-42782101795e?w=600'],
-        averageRating: 4.3, totalReviews: 19, isFeatured: false, isOnSale: true, status: 'active',
-        barcode: '4901234567004', sku: 'OM-FRT-002',
-      },
-
-      // Vegetables
-      {
-        storeId: store1._id, name: 'Fresh Broccoli', slug: 'fresh-broccoli',
-        categoryId: categories[1]._id, description: 'Farm-fresh broccoli crowns. Packed with vitamins and perfect for stir-fries, steaming, or roasting.',
-        price: 960, priceLKR: 960, priceUSD: 2.99, mrp: 1280, discount: 25, unit: 'piece',
-        stock: 90, images: ['https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=600'],
-        averageRating: 4.4, totalReviews: 12, isFeatured: false, isOnSale: true, status: 'active',
-        barcode: '4901234567005', sku: 'FF-VEG-001',
+        storeId: store2._id, name: 'Minimal Bomber Jacket', slug: 'minimal-bomber-jacket',
+        categoryId: categories[1]._id, description: 'Lightweight bomber jacket with modern cut, rib cuffs, and matte finish for transitional weather.',
+        price: 15600, priceLKR: 15600, priceUSD: 48.75, mrp: 18200, discount: 14, unit: 'piece',
+        stock: 64, images: ['https://images.unsplash.com/photo-1551537482-f2075a1d41f2?w=600'],
+        averageRating: 4.8, totalReviews: 22, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567004', sku: 'ZA-MEN-002',
       },
       {
-        storeId: store1._id, name: 'Baby Spinach', slug: 'baby-spinach',
-        categoryId: categories[1]._id, description: 'Tender baby spinach leaves. Pre-washed and ready to eat. Great for salads and smoothies.',
-        price: 1120, priceLKR: 1120, priceUSD: 3.49, mrp: 1440, discount: 22, unit: 'pack',
-        stock: 65, images: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=600'],
-        averageRating: 4.6, totalReviews: 28, isFeatured: true, isOnSale: false, status: 'active',
-        barcode: '4901234567006', sku: 'FF-VEG-002',
+        storeId: store1._id, name: 'Structured Mini Crossbody', slug: 'structured-mini-crossbody',
+        categoryId: categories[2]._id, description: 'Compact crossbody bag with gold-tone hardware and adjustable strap for day-to-night styling.',
+        price: 7600, priceLKR: 7600, priceUSD: 23.75, mrp: 9200, discount: 17, unit: 'piece',
+        stock: 104, images: ['https://images.unsplash.com/photo-1594223274512-ad4803739b7c?w=600'],
+        averageRating: 4.7, totalReviews: 51, isFeatured: true, isOnSale: false, status: 'active',
+        barcode: '5901234567005', sku: 'ZA-ACC-001',
       },
       {
-        storeId: store2._id, name: 'Organic Carrots', slug: 'organic-carrots',
-        categoryId: categories[1]._id, description: 'Sweet and crunchy organic carrots. Perfect for snacking, cooking, or juicing.',
-        price: 800, priceLKR: 800, priceUSD: 2.49, mrp: 1120, discount: 29, unit: 'kg',
-        stock: 110, images: ['https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=600'],
-        averageRating: 4.5, totalReviews: 17, isFeatured: false, isOnSale: true, status: 'active',
-        barcode: '4901234567007', sku: 'OM-VEG-001',
+        storeId: store2._id, name: 'Classic Steel Chronograph Watch', slug: 'classic-steel-chronograph-watch',
+        categoryId: categories[2]._id, description: 'Polished stainless-steel watch with water resistance and timeless chronograph styling.',
+        price: 18900, priceLKR: 18900, priceUSD: 59.06, mrp: 21500, discount: 12, unit: 'piece',
+        stock: 38, images: ['https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=600'],
+        averageRating: 4.8, totalReviews: 17, isFeatured: false, isOnSale: true, status: 'active',
+        barcode: '5901234567006', sku: 'ZA-ACC-002',
       },
       {
-        storeId: store2._id, name: 'Cherry Tomatoes', slug: 'cherry-tomatoes',
-        categoryId: categories[1]._id, description: 'Vine-ripened cherry tomatoes bursting with flavor. Ideal for salads, pasta, and snacking.',
-        price: 1280, priceLKR: 1280, priceUSD: 3.99, mrp: 1600, discount: 20, unit: 'pack',
-        stock: 75, images: ['https://images.unsplash.com/photo-1546470427-0d4db154ceb8?w=600'],
-        averageRating: 4.2, totalReviews: 8, isFeatured: false, isOnSale: false, status: 'active',
-        barcode: '4901234567008', sku: 'OM-VEG-002',
-      },
-
-      // Dairy & Eggs
-      {
-        storeId: store1._id, name: 'Farm Fresh Eggs', slug: 'farm-fresh-eggs',
-        categoryId: categories[2]._id, description: 'Free-range farm-fresh eggs from happy hens. Rich yolks and superior taste.',
-        price: 1760, priceLKR: 1760, priceUSD: 5.49, mrp: 2240, discount: 21, unit: 'dozen',
-        stock: 200, images: ['https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=600'],
-        averageRating: 4.9, totalReviews: 56, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567009', sku: 'FF-DRY-001',
+        storeId: store2._id, name: 'Velvet Matte Lipstick Set', slug: 'velvet-matte-lipstick-set',
+        categoryId: categories[3]._id, description: 'Long-wear matte lipstick trio with highly pigmented shades and comfortable finish.',
+        price: 5200, priceLKR: 5200, priceUSD: 16.25, mrp: 6400, discount: 19, unit: 'set',
+        stock: 130, images: ['https://images.unsplash.com/photo-1583241800698-89f5fba95f73?w=600'],
+        averageRating: 4.6, totalReviews: 73, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567007', sku: 'ZA-COS-001',
       },
       {
-        storeId: store1._id, name: 'Whole Milk', slug: 'whole-milk',
-        categoryId: categories[2]._id, description: 'Fresh whole milk from local dairy farms. Creamy, nutritious, and perfect for your morning cereal or coffee.',
-        price: 1280, priceLKR: 1280, priceUSD: 3.99, mrp: 1440, discount: 11, unit: 'litre',
-        stock: 100, images: ['https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600'],
-        averageRating: 4.7, totalReviews: 31, isFeatured: false, isOnSale: false, status: 'active',
-        barcode: '4901234567010', sku: 'FF-DRY-002',
+        storeId: store2._id, name: 'Illuminating Liquid Foundation', slug: 'illuminating-liquid-foundation',
+        categoryId: categories[3]._id, description: 'Buildable medium-coverage foundation with natural luminous finish and all-day comfort.',
+        price: 6800, priceLKR: 6800, priceUSD: 21.25, mrp: 7900, discount: 14, unit: 'bottle',
+        stock: 116, images: ['https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600'],
+        averageRating: 4.5, totalReviews: 49, isFeatured: true, isOnSale: false, status: 'active',
+        barcode: '5901234567008', sku: 'ZA-COS-002',
       },
       {
-        storeId: store2._id, name: 'Greek Yogurt', slug: 'greek-yogurt',
-        categoryId: categories[2]._id, description: 'Thick and creamy Greek yogurt. High in protein and probiotics. Perfect for breakfast bowls.',
-        price: 1600, priceLKR: 1600, priceUSD: 4.99, mrp: 1920, discount: 17, unit: 'pack',
-        stock: 85, images: ['https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600'],
-        averageRating: 4.6, totalReviews: 22, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567011', sku: 'OM-DRY-001',
-      },
-
-      // Bakery
-      {
-        storeId: store1._id, name: 'Sourdough Bread', slug: 'sourdough-bread',
-        categoryId: categories[3]._id, description: 'Artisan sourdough bread baked fresh daily. Crispy crust with a soft, tangy interior.',
-        price: 1920, priceLKR: 1920, priceUSD: 5.99, mrp: 2400, discount: 20, unit: 'loaf',
-        stock: 40, images: ['https://images.unsplash.com/photo-1585478259715-876acc5be8eb?w=600'],
-        averageRating: 4.8, totalReviews: 41, isFeatured: true, isOnSale: false, status: 'active',
-        barcode: '4901234567012', sku: 'FF-BKR-001',
+        storeId: store2._id, name: 'Hydra Glow Face Serum', slug: 'hydra-glow-face-serum',
+        categoryId: categories[4]._id, description: 'Hyaluronic acid serum that deeply hydrates skin and boosts radiance with lightweight texture.',
+        price: 7200, priceLKR: 7200, priceUSD: 22.50, mrp: 8600, discount: 16, unit: 'bottle',
+        stock: 140, images: ['https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600'],
+        averageRating: 4.9, totalReviews: 88, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567009', sku: 'ZA-SKN-001',
       },
       {
-        storeId: store2._id, name: 'Chocolate Croissants', slug: 'chocolate-croissants',
-        categoryId: categories[3]._id, description: 'Flaky, buttery croissants filled with rich Belgian chocolate. Freshly baked every morning.',
-        price: 1280, priceLKR: 1280, priceUSD: 3.99, mrp: 1760, discount: 27, unit: 'pack of 4',
-        stock: 30, images: ['https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=600'],
-        averageRating: 4.7, totalReviews: 18, isFeatured: false, isOnSale: true, status: 'active',
-        barcode: '4901234567013', sku: 'OM-BKR-001',
-      },
-
-      // Meat & Seafood
-      {
-        storeId: store1._id, name: 'Atlantic Salmon Fillet', slug: 'atlantic-salmon-fillet',
-        categoryId: categories[4]._id, description: 'Premium wild-caught Atlantic salmon fillets. Rich in omega-3 fatty acids.',
-        price: 4160, priceLKR: 4160, priceUSD: 12.99, mrp: 5120, discount: 19, unit: 'kg',
-        stock: 45, images: ['https://images.unsplash.com/photo-1574781330855-d0db8cc6a79c?w=600'],
-        averageRating: 4.6, totalReviews: 15, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567014', sku: 'FF-MSF-001',
+        storeId: store1._id, name: 'SPF 50 Daily Defense Cream', slug: 'spf-50-daily-defense-cream',
+        categoryId: categories[4]._id, description: 'Broad-spectrum sunscreen with non-greasy finish suitable under makeup and daily wear.',
+        price: 4900, priceLKR: 4900, priceUSD: 15.31, mrp: 5900, discount: 17, unit: 'tube',
+        stock: 154, images: ['https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=600'],
+        averageRating: 4.7, totalReviews: 65, isFeatured: false, isOnSale: true, status: 'active',
+        barcode: '5901234567010', sku: 'ZA-SKN-002',
       },
       {
-        storeId: store1._id, name: 'Chicken Breast', slug: 'chicken-breast',
-        categoryId: categories[4]._id, description: 'Boneless skinless chicken breast. Hormone-free and raised without antibiotics.',
-        price: 2880, priceLKR: 2880, priceUSD: 8.99, mrp: 3520, discount: 18, unit: 'kg',
-        stock: 70, images: ['https://images.unsplash.com/photo-1604503468506-a8da13d82571?w=600'],
-        averageRating: 4.4, totalReviews: 27, isFeatured: false, isOnSale: false, status: 'active',
-        barcode: '4901234567015', sku: 'FF-MSF-002',
-      },
-
-      // Beverages
-      {
-        storeId: store2._id, name: 'Cold Pressed Orange Juice', slug: 'cold-pressed-oj',
-        categoryId: categories[5]._id, description: 'Freshly cold-pressed orange juice with no added sugars or preservatives. Pure citrus goodness.',
-        price: 2240, priceLKR: 2240, priceUSD: 6.99, mrp: 2720, discount: 18, unit: 'bottle',
-        stock: 60, images: ['https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=600'],
-        averageRating: 4.5, totalReviews: 20, isFeatured: false, isOnSale: true, status: 'active',
-        barcode: '4901234567016', sku: 'OM-BEV-001',
+        storeId: store1._id, name: 'Repair & Shine Shampoo', slug: 'repair-and-shine-shampoo',
+        categoryId: categories[5]._id, description: 'Sulfate-free shampoo enriched with argan oil to strengthen strands and enhance shine.',
+        price: 4300, priceLKR: 4300, priceUSD: 13.44, mrp: 5200, discount: 17, unit: 'bottle',
+        stock: 122, images: ['https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600'],
+        averageRating: 4.4, totalReviews: 39, isFeatured: false, isOnSale: false, status: 'active',
+        barcode: '5901234567011', sku: 'ZA-HRC-001',
       },
       {
-        storeId: store2._id, name: 'Organic Green Tea', slug: 'organic-green-tea',
-        categoryId: categories[5]._id, description: 'Premium organic green tea bags. Light, refreshing, and packed with antioxidants.',
-        price: 1600, priceLKR: 1600, priceUSD: 4.99, mrp: 1920, discount: 17, unit: 'box of 20',
-        stock: 90, images: ['https://images.unsplash.com/photo-1556881286-fc6915169721?w=600'],
-        averageRating: 4.3, totalReviews: 14, isFeatured: true, isOnSale: false, status: 'active',
-        barcode: '4901234567017', sku: 'OM-BEV-002',
+        storeId: store2._id, name: 'Keratin Smooth Conditioner', slug: 'keratin-smooth-conditioner',
+        categoryId: categories[5]._id, description: 'Salon-grade conditioner to reduce frizz, detangle, and leave hair silky after every wash.',
+        price: 4600, priceLKR: 4600, priceUSD: 14.38, mrp: 5600, discount: 18, unit: 'bottle',
+        stock: 98, images: ['https://images.unsplash.com/photo-1626015365106-415f61c4d426?w=600'],
+        averageRating: 4.6, totalReviews: 42, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567012', sku: 'ZA-HRC-002',
       },
-      // Snacks
       {
-        storeId: store1._id, name: 'Mixed Nuts Premium', slug: 'mixed-nuts-premium',
-        categoryId: categories[6]._id, description: 'A premium blend of almonds, cashews, walnuts, and pecans. Lightly salted and roasted to perfection.',
-        price: 3200, priceLKR: 3200, priceUSD: 9.99, mrp: 4160, discount: 23, unit: 'pack',
-        stock: 55, images: ['https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=600'],
-        averageRating: 4.7, totalReviews: 33, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567018', sku: 'FF-SNK-001',
+        storeId: store1._id, name: 'Luxury Makeup Brush Set', slug: 'luxury-makeup-brush-set',
+        categoryId: categories[6]._id, description: 'Professional 10-piece brush set with ultra-soft bristles for flawless blending and contouring.',
+        price: 8400, priceLKR: 8400, priceUSD: 26.25, mrp: 9800, discount: 14, unit: 'set',
+        stock: 76, images: ['https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=600'],
+        averageRating: 4.8, totalReviews: 31, isFeatured: true, isOnSale: true, status: 'active',
+        barcode: '5901234567013', sku: 'ZA-BTY-001',
       },
-      // Pantry
       {
-        storeId: store2._id, name: 'Extra Virgin Olive Oil', slug: 'extra-virgin-olive-oil',
-        categoryId: categories[7]._id, description: 'Cold-pressed extra virgin olive oil from Mediterranean olives. Perfect for cooking, dressing, and dipping.',
-        price: 3840, priceLKR: 3840, priceUSD: 11.99, mrp: 4800, discount: 20, unit: 'bottle',
-        stock: 40, images: ['https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600'],
-        averageRating: 4.8, totalReviews: 25, isFeatured: true, isOnSale: true, status: 'active',
-        barcode: '4901234567019', sku: 'OM-PNT-001',
+        storeId: store2._id, name: 'Rose Quartz Facial Roller', slug: 'rose-quartz-facial-roller',
+        categoryId: categories[6]._id, description: 'Cooling facial massage roller that supports absorption of skincare products and boosts glow.',
+        price: 3500, priceLKR: 3500, priceUSD: 10.94, mrp: 4200, discount: 17, unit: 'piece',
+        stock: 118, images: ['https://images.unsplash.com/photo-1601612628452-9e99ced43524?w=600'],
+        averageRating: 4.5, totalReviews: 54, isFeatured: false, isOnSale: true, status: 'active',
+        barcode: '5901234567014', sku: 'ZA-BTY-002',
       },
     ];
 
@@ -405,15 +236,8 @@ const seedData = async () => {
     console.log('');
     console.log('=== SEED DATA COMPLETE ===');
     console.log('');
-    console.log('Test Accounts:');
-    console.log('  Admin:       admin@freshcart.com / admin123');
-    console.log('  Manager1:    john@freshfarms.com / manager123     (Fresh Farms)');
-    console.log('  Manager2:    sarah@organicmart.com / manager123   (Organic Mart)');
-    console.log('  Customer:    jane@example.com / customer123');
-    console.log('  Cashier1:    cashier@freshfarms.com / cashier123  (Fresh Farms)');
-    console.log('  Cashier2:    cashier@organicmart.com / cashier123 (Organic Mart)');
-    console.log('  Delivery1:   kamal@freshcart.com / delivery123    (Fresh Farms)');
-    console.log('  Delivery2:   nimal@freshcart.com / delivery123    (Organic Mart)');
+    console.log('Existing user accounts are preserved.');
+    console.log('Seed updates only categories, products, stores, and vouchers.');
     console.log('');
     console.log('Voucher Codes: WELCOME10, FRESH500');
     console.log('');

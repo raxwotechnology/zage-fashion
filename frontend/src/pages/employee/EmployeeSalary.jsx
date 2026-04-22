@@ -3,7 +3,7 @@ import { LayoutDashboard, User, Clock, Calendar, CreditCard, TrendingUp, FileTex
 import DashboardLayout from '../../components/DashboardLayout';
 import useAuthStore from '../../store/authStore';
 import getEmployeeNavItems from './employeeNav';
-import API from '../../services/api';
+import API, { exportSalaryHistory } from '../../services/api';
 import { toast } from 'react-toastify';
 
 const EmployeeSalary = () => {
@@ -11,6 +11,28 @@ const EmployeeSalary = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecord, setSelectedRecord] = useState(null);
+
+  const downloadSalaryReport = async (format) => {
+    try {
+      const { data } = await exportSalaryHistory('me', { format });
+      const blob = new Blob([data], {
+        type: format === 'pdf'
+          ? 'application/pdf'
+          : format === 'xlsx'
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'text/csv',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `salary-report.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Salary report exported (${format.toUpperCase()})`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to export salary report');
+    }
+  };
 
   useEffect(() => {
     const fetchSalary = async () => {
@@ -46,6 +68,10 @@ const EmployeeSalary = () => {
     <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-dark-navy">💰 Salary & EPF/ETF</h1>
+        <div className="flex gap-2">
+          <button onClick={() => downloadSalaryReport('pdf')} className="px-3 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white">Export PDF</button>
+          <button onClick={() => downloadSalaryReport('xlsx')} className="px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white">Export Excel</button>
+        </div>
 
         {/* Salary Overview Card */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">

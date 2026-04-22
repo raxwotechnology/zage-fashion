@@ -55,7 +55,7 @@ const Checkout = () => {
       if (!user) return;
       try {
         const { data } = await getMyLoyaltyPoints();
-        setClaimedVouchers((data?.vouchers || []).filter((v) => !v.isUsed));
+        setClaimedVouchers(data?.availableVouchers || []);
       } catch {
         setClaimedVouchers([]);
       }

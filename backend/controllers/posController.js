@@ -364,6 +364,17 @@ const posCheckout = async (req, res, next) => {
       }
     }
 
+    // Generate invoice number (INV-YYYYMMDD-XXXX)
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayPosCount = await Order.countDocuments({
+      isPosOrder: true,
+      createdAt: { $gte: todayStart },
+    });
+    const invoiceNumber = `INV-${dateStr}-${String(todayPosCount + 1).padStart(4, '0')}`;
+
     // Create the POS order
     const order = await Order.create({
       userId: req.user._id,
@@ -376,6 +387,7 @@ const posCheckout = async (req, res, next) => {
       paymentStatus: 'completed',
       orderStatus: 'completed',
       isPosOrder: true,
+      invoiceNumber,
       cashierId: req.user._id,
       posSessionId: activeSession._id,
       tenderedAmount: tenderedAmount || totalAmount,

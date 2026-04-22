@@ -1,5 +1,5 @@
 /**
- * Shared validation utilities for FreshCart
+ * Shared validation utilities for Zage Fashion Corner
  */
 
 // Sri Lankan mobile number validation

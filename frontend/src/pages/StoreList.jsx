@@ -34,7 +34,7 @@ const StoreList = () => {
         initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl md:text-3xl font-bold text-dark-navy mt-0 mb-1">Our Stores</h1>
-        <p className="text-muted-text m-0">Discover local grocery stores near you</p>
+        <p className="text-muted-text m-0">Discover our fashion and beauty boutiques near you</p>
       </motion.div>
 
       {loading ? (

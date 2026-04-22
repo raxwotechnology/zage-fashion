@@ -26,7 +26,7 @@ const Register = () => {
   const [phoneError, setPhoneError] = useState('');
   const login = useAuthStore((state) => state.login);
   const settings = useSettingsStore((s) => s.settings);
-  const brandName = settings?.shopName || 'FreshCart';
+  const brandName = settings?.shopName || 'Zage Fashion Corner';
   const brandLogoUrl = settings?.logoUrl;
   const navigate = useNavigate();
 
@@ -85,7 +85,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-orange-50 py-12">
+    <div className="min-h-[85vh] flex items-center justify-center bg-gradient-to-br from-rose-50 via-white to-stone-100 py-12">
       <motion.div
         className="bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-card-border w-full max-w-md mx-4"
         initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
@@ -96,7 +96,7 @@ const Register = () => {
             <span>{brandName}</span>
           </Link>
           <h1 className="text-2xl font-bold text-dark-navy mt-0 mb-2">Create Account</h1>
-          <p className="text-muted-text m-0">Join {brandName} for fresh groceries</p>
+          <p className="text-muted-text m-0">Join {brandName} for curated style and beauty essentials</p>
         </div>
 
         <form onSubmit={otpRequested ? verifyOtpHandler : requestOtpHandler} className="space-y-4">
@@ -193,7 +193,7 @@ const Register = () => {
                 type="button"
                 onClick={requestOtpHandler}
                 disabled={loading}
-                className="w-full border border-primary-green text-primary-green font-semibold py-3 rounded-xl hover:bg-emerald-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full border border-primary-green text-primary-green font-semibold py-3 rounded-xl hover:bg-rose-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Resend OTP
               </button>
@@ -202,7 +202,7 @@ const Register = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-green text-white font-semibold py-3.5 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-primary-green text-white font-semibold py-3.5 rounded-xl hover:bg-fuchsia-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? (otpRequested ? 'Verifying OTP...' : 'Sending OTP...') : (otpRequested ? 'Verify OTP & Create Account' : 'Send OTP')}
           </button>

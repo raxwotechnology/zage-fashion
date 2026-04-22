@@ -3,15 +3,40 @@ const Voucher = require('../models/Voucher');
 const User = require('../models/User');
 const Product = require('../models/Product');
 
+const normalizeUserVouchers = (vouchers = []) => {
+  const now = Date.now();
+  const deduped = new Map();
+  for (const voucher of vouchers) {
+    if (!voucher?.code) continue;
+    if (voucher.isUsed) continue;
+    if (voucher.expiresAt && new Date(voucher.expiresAt).getTime() <= now) continue;
+    // Keep only one voucher option per code for UI, but preserve a count for visibility.
+    const key = String(voucher.code).toUpperCase();
+    const existing = deduped.get(key);
+    if (!existing) {
+      deduped.set(key, {
+        ...voucher.toObject?.() || voucher,
+        code: key,
+        duplicateCount: 1,
+      });
+    } else {
+      existing.duplicateCount += 1;
+    }
+  }
+  return [...deduped.values()];
+};
+
 // @desc    Get my loyalty points
 // @route   GET /api/loyalty/points
 // @access  Private
 const getMyPoints = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select('loyaltyPoints vouchers');
+    const availableVouchers = normalizeUserVouchers(user.vouchers || []);
     res.json({
       points: user.loyaltyPoints || 0,
       vouchers: user.vouchers || [],
+      availableVouchers,
     });
   } catch (error) { next(error); }
 };
@@ -133,11 +158,10 @@ const applyVoucher = async (req, res, next) => {
       }
     }
 
-    // Check if user already used this voucher
-    const alreadyUsed = voucher.usedBy?.some(
-      (entry) => entry.userId.toString() === req.user._id.toString()
-    );
-    if (alreadyUsed && voucher.source !== 'promotion') {
+    const userUsageCount = (voucher.usedBy || []).filter(
+      (entry) => String(entry?.userId) === String(req.user._id)
+    ).length;
+    if (voucher.perUserMaxUses && userUsageCount >= voucher.perUserMaxUses) {
       res.status(400); return next(new Error('You have already used this voucher'));
     }
 
@@ -189,18 +213,15 @@ const claimVoucher = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user._id);
-    const alreadyClaimed = (user.vouchers || []).some((v) => v.code === voucher.code);
-    if (alreadyClaimed) {
-      return res.json({ message: 'Voucher already claimed' });
-    }
-
     user.vouchers.push({
+      voucherId: voucher._id,
       code: voucher.code,
       type: voucher.type,
       value: voucher.value,
       minOrderAmount: voucher.minOrderAmount || 0,
       expiresAt: voucher.expiresAt,
       isUsed: false,
+      claimedAt: new Date(),
     });
     await user.save();
 
@@ -217,8 +238,24 @@ const getAvailableVouchers = async (req, res, next) => {
       isActive: true,
       expiresAt: { $gt: new Date() },
       $expr: { $lt: ['$usedCount', '$maxUses'] },
-    }).select('code type value minOrderAmount maxDiscountAmount description expiresAt');
+    }).select('code type value minOrderAmount maxDiscountAmount description expiresAt perUserMaxUses applicableProductIds applicableCategoryIds');
+    // Deduplicate by code so UI does not show duplicate options.
+    const deduped = new Map();
+    for (const voucher of vouchers) {
+      if (!deduped.has(voucher.code)) deduped.set(voucher.code, voucher);
+    }
+    res.json([...deduped.values()]);
+  } catch (error) { next(error); }
+};
 
+// @desc    Get all vouchers for admin/manager
+// @route   GET /api/loyalty/vouchers/admin
+// @access  Private/Admin/Manager
+const getAllVouchers = async (req, res, next) => {
+  try {
+    const vouchers = await Voucher.find({})
+      .sort({ createdAt: -1 })
+      .select('code type value minOrderAmount maxDiscountAmount maxUses perUserMaxUses usedCount expiresAt isActive description source applicableProductIds applicableCategoryIds');
     res.json(vouchers);
   } catch (error) { next(error); }
 };
@@ -230,7 +267,7 @@ const createVoucher = async (req, res, next) => {
   try {
     const {
       code, type, value, minOrderAmount, maxDiscountAmount, maxUses, description, expiresAt, source,
-      applicableProductIds = [], applicableCategoryIds = [],
+      perUserMaxUses, applicableProductIds = [], applicableCategoryIds = [],
     } = req.body;
     const exists = await Voucher.findOne({ code: code.toUpperCase() });
     if (exists) { res.status(400); return next(new Error('Voucher code already exists')); }
@@ -241,6 +278,7 @@ const createVoucher = async (req, res, next) => {
       minOrderAmount: minOrderAmount || 0,
       maxDiscountAmount,
       maxUses: maxUses || 9999,
+      perUserMaxUses: perUserMaxUses || 1,
       description,
       expiresAt: expiresAt || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       source: source || 'admin',
@@ -302,6 +340,7 @@ const awardOrderPoints = async (userId, orderTotal, currency = 'LKR') => {
 module.exports = {
   getMyPoints, getLoyaltyHistory, redeemPoints, issueBonusPoints,
   applyVoucher, applyPromoCode, getAvailableVouchers,
+  getAllVouchers,
   claimVoucher,
   createVoucher, updateVoucher, deleteVoucher,
   awardOrderPoints,

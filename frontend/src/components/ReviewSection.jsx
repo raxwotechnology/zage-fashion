@@ -138,7 +138,7 @@ const ReviewSection = ({ productId, onReviewsChanged }) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 mb-6 overflow-hidden"
+            className="bg-rose-50 border border-rose-100 rounded-2xl p-6 mb-6 overflow-hidden"
           >
             <h4 className="font-bold text-dark-navy mt-0 mb-4">Write Your Review</h4>
             <div className="mb-4">
@@ -159,7 +159,7 @@ const ReviewSection = ({ productId, onReviewsChanged }) => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-primary-green text-white font-medium py-2.5 px-6 rounded-xl hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                className="bg-primary-green text-white font-medium py-2.5 px-6 rounded-xl hover:bg-fuchsia-600 transition-colors disabled:opacity-50"
               >
                 {submitting ? 'Submitting...' : 'Submit Review'}
               </button>
@@ -205,7 +205,7 @@ const ReviewSection = ({ productId, onReviewsChanged }) => {
               className="border border-card-border rounded-xl p-4"
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center flex-shrink-0">
                   <User size={18} className="text-primary-green" />
                 </div>
                 <div className="flex-1">

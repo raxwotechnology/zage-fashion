@@ -60,7 +60,7 @@ const Navbar = () => {
   const fetchCart = useCartStore((s) => s.fetchCart);
   const { currency, toggleCurrency, fetchRate, getProductPrice } = useCurrencyStore();
   const settings = useSettingsStore((s) => s.settings);
-  const brandName = settings?.shopName || 'FreshCart';
+  const brandName = settings?.shopName || 'Zage Fashion Corner';
   const brandLogoUrl = settings?.logoUrl;
   const brandPhone = settings?.phone || '+94 11 255 5000';
   const freeDeliveryThreshold = Number(settings?.deliveryFeeThreshold || 5000).toLocaleString();
@@ -183,10 +183,10 @@ const Navbar = () => {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       {/* Top Utility Bar */}
-      <div className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white text-xs">
+      <div className="bg-gradient-to-r from-zinc-900 to-rose-900 text-white text-xs">
         <div className="base-container py-1.5 flex items-center justify-between">
-          <span className="hidden sm:inline">🚚 Free delivery on orders over Rs. {freeDeliveryThreshold}</span>
-          <span className="sm:hidden text-[11px]">🚚 Free delivery over Rs.{freeDeliveryThreshold}</span>
+          <span className="hidden sm:inline">✨ Free shipping on orders over Rs. {freeDeliveryThreshold}</span>
+          <span className="sm:hidden text-[11px]">✨ Free shipping over Rs.{freeDeliveryThreshold}</span>
           <div className="flex items-center gap-3">
             <span className="hidden md:inline">📞 {brandPhone}</span>
             {/* Currency Toggle */}
@@ -218,7 +218,7 @@ const Navbar = () => {
               to={link.path}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(link.path)
-                  ? 'text-primary-green bg-emerald-50'
+                  ? 'text-primary-green bg-rose-50'
                   : 'text-muted-text hover:text-dark-navy hover:bg-gray-50'
               }`}
             >
@@ -230,7 +230,7 @@ const Navbar = () => {
               to={dashLink.path}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(dashLink.path)
-                  ? 'text-primary-green bg-emerald-50'
+                  ? 'text-primary-green bg-rose-50'
                   : 'text-violet-600 hover:bg-violet-50'
               }`}
             >
@@ -244,14 +244,14 @@ const Navbar = () => {
           <form onSubmit={handleSearchSubmit} className="relative w-full">
             <input
               type="text"
-              placeholder="Search for fresh groceries..."
+              placeholder="Search fashion and beauty products..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full border border-card-border rounded-full py-2.5 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-primary-green focus:border-transparent transition-all text-sm"
             />
             <button
               type="submit"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-primary-green text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-emerald-600 transition-colors"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-primary-green text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-fuchsia-700 transition-colors"
             >
               <Search size={16} />
             </button>
@@ -273,7 +273,7 @@ const Navbar = () => {
                       setShowSearchResults(false);
                       setSearchQuery('');
                     }}
-                    className="w-full text-left flex items-center justify-between gap-3 px-4 py-3 hover:bg-emerald-50 transition-colors border-b border-card-border"
+                    className="w-full text-left flex items-center justify-between gap-3 px-4 py-3 hover:bg-rose-50 transition-colors border-b border-card-border"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-dark-navy m-0 truncate">{f.label}</p>
@@ -293,7 +293,7 @@ const Navbar = () => {
                     key={product._id}
                     to={`/product/${product._id}`}
                     onClick={() => { setShowSearchResults(false); setSearchQuery(''); }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 transition-colors border-b border-card-border last:border-b-0"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-rose-50 transition-colors border-b border-card-border last:border-b-0"
                   >
                     <img
                       src={product.images?.[0] || 'https://via.placeholder.com/50'}
@@ -311,7 +311,7 @@ const Navbar = () => {
                 ))}
                 <button
                   onClick={handleSearchSubmit}
-                  className="w-full text-center py-2.5 text-sm text-primary-green hover:bg-emerald-50 transition-colors font-medium"
+                  className="w-full text-center py-2.5 text-sm text-primary-green hover:bg-rose-50 transition-colors font-medium"
                 >
                   View all results for "{searchQuery}"
                 </button>
@@ -334,7 +334,7 @@ const Navbar = () => {
 
           {/* Cart */}
           {isCustomer && (
-            <Link to="/cart" className="relative text-dark-navy hover:text-primary-green transition-colors p-1.5 rounded-lg hover:bg-emerald-50" title="Cart">
+            <Link to="/cart" className="relative text-dark-navy hover:text-primary-green transition-colors p-1.5 rounded-lg hover:bg-rose-50" title="Cart">
               <ShoppingCart size={20} />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-accent-orange text-white text-[10px] font-bold rounded-full h-4.5 w-4.5 min-w-[18px] h-[18px] flex items-center justify-center">
@@ -348,7 +348,7 @@ const Navbar = () => {
           {user ? (
             <div className="relative group cursor-pointer">
               <div className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                <div className="w-8 h-8 bg-gradient-to-br from-rose-400 to-fuchsia-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="hidden md:block">
@@ -359,20 +359,20 @@ const Navbar = () => {
 
               {/* Dropdown */}
               <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-card-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 py-1 overflow-hidden">
-                <div className="px-4 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-card-border">
+                <div className="px-4 py-3 bg-gradient-to-r from-rose-50 to-fuchsia-50 border-b border-card-border">
                   <p className="text-sm font-semibold text-dark-navy m-0">{user.name}</p>
                   <p className="text-xs text-muted-text m-0">{user.email}</p>
                   <span className="inline-block mt-1 text-[10px] font-bold uppercase bg-primary-green/10 text-primary-green px-2 py-0.5 rounded-full">{user.role}</span>
                 </div>
-                <Link to="/profile" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
+                <Link to="/profile" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-rose-50 hover:text-rose-600 transition-colors">
                   <User size={14} /> My Profile
                 </Link>
                 {isCustomer && (
                   <>
-                    <Link to="/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
+                    <Link to="/orders" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-rose-50 hover:text-rose-600 transition-colors">
                       <Package size={14} /> Orders
                     </Link>
-                    <Link to="/wishlist" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-emerald-50 hover:text-primary-green transition-colors">
+                    <Link to="/wishlist" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-rose-50 hover:text-rose-600 transition-colors">
                       <Heart size={14} /> Wishlist
                     </Link>
                     <Link to="/loyalty" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-navy hover:bg-amber-50 hover:text-amber-600 transition-colors">
@@ -406,7 +406,7 @@ const Navbar = () => {
                 <User size={18} />
                 <span className="hidden sm:inline">Sign In</span>
               </Link>
-              <Link to="/register" className="hidden sm:flex bg-primary-green text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">
+              <Link to="/register" className="hidden sm:flex bg-primary-green text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-fuchsia-700 transition-colors shadow-sm">
                 Register
               </Link>
             </div>
@@ -431,7 +431,7 @@ const Navbar = () => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search groceries..."
+                  placeholder="Search fashion and beauty..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="w-full border border-card-border rounded-xl py-2.5 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green"
@@ -449,7 +449,7 @@ const Navbar = () => {
                 to={link.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   isActive(link.path)
-                    ? 'text-primary-green bg-emerald-50'
+                    ? 'text-primary-green bg-rose-50'
                     : 'text-dark-navy hover:bg-gray-50'
                 }`}
               >
@@ -525,7 +525,7 @@ const Navbar = () => {
                 <Link to="/login" className="flex-1 text-center bg-gray-100 text-dark-navy text-sm font-medium py-2.5 rounded-xl hover:bg-gray-200 transition-colors">
                   Sign In
                 </Link>
-                <Link to="/register" className="flex-1 text-center bg-primary-green text-white text-sm font-medium py-2.5 rounded-xl hover:bg-emerald-600 transition-colors">
+                <Link to="/register" className="flex-1 text-center bg-primary-green text-white text-sm font-medium py-2.5 rounded-xl hover:bg-fuchsia-700 transition-colors">
                   Register
                 </Link>
               </div>

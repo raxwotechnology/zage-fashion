@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Save, Upload, Globe, Phone, Mail, MapPin, Palette, DollarSign, Gift, Shield, Store } from 'lucide-react';
+import { Settings, Save, Upload, Globe, Phone, Mail, MapPin, Palette, DollarSign, Gift, Shield, Store, UserCog } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getSettings, updateSettings, uploadLogo } from '../../services/api';
 import { toast } from 'react-toastify';
@@ -74,24 +74,25 @@ const AdminSettings = () => {
     } catch (err) { toast.error('Failed to upload logo'); }
   };
 
-  if (loading) return <DashboardLayout navItems={navItems} title="Admin Panel"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
+  if (loading) return <DashboardLayout navItems={navItems} title="Zage Admin Panel"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
 
   const tabs = [
     { key: 'general', label: 'General', icon: Globe },
     { key: 'contact', label: 'Contact', icon: Phone },
     { key: 'commerce', label: 'Commerce', icon: DollarSign },
     { key: 'loyalty', label: 'Loyalty', icon: Gift },
+    { key: 'permissions', label: 'Permissions', icon: UserCog },
     { key: 'social', label: 'Social', icon: Palette },
     { key: 'advanced', label: 'Advanced', icon: Shield },
   ];
 
   return (
-    <DashboardLayout navItems={navItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Zage Admin Panel">
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-dark-navy">⚙️ Site Settings</h1>
-            <p className="text-muted-text text-sm mt-1">Manage your store configuration</p>
+            <h1 className="text-2xl font-bold text-dark-navy">⚙️ Brand Settings</h1>
+            <p className="text-muted-text text-sm mt-1">Manage your fashion and beauty storefront configuration</p>
           </div>
           <button onClick={handleSave} disabled={saving}
             className="flex items-center gap-2 bg-primary-green hover:bg-emerald-600 text-white font-medium px-6 py-2.5 rounded-xl transition-colors shadow-md disabled:opacity-50">
@@ -132,15 +133,15 @@ const AdminSettings = () => {
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
-                <SettingsInputField label="Shop Name" value={settings.shopName} onChange={(v) => handleChange('shopName', v)} placeholder="FreshCart" />
-                <SettingsInputField label="Tagline" value={settings.tagline} onChange={(v) => handleChange('tagline', v)} placeholder="Fresh Groceries Delivered" />
+                <SettingsInputField label="Shop Name" value={settings.shopName} onChange={(v) => handleChange('shopName', v)} placeholder="Zage Fashion Corner" />
+                <SettingsInputField label="Tagline" value={settings.tagline} onChange={(v) => handleChange('tagline', v)} placeholder="Where style meets skincare" />
               </div>
             </div>
 
             {/* Footer */}
             <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
               <h2 className="font-semibold text-dark-navy mb-4">Footer</h2>
-              <SettingsInputField label="Footer Text" value={settings.footerText} onChange={(v) => handleChange('footerText', v)} placeholder="© 2026 FreshCart. All rights reserved." />
+              <SettingsInputField label="Footer Text" value={settings.footerText} onChange={(v) => handleChange('footerText', v)} placeholder="© 2026 Zage Fashion Corner. All rights reserved." />
             </div>
           </div>
         )}
@@ -150,13 +151,13 @@ const AdminSettings = () => {
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
             <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><Phone size={18} /> Contact Details</h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <SettingsInputField label="Email" value={settings.email} onChange={(v) => handleChange('email', v)} placeholder="info@freshcart.lk" />
+              <SettingsInputField label="Email" value={settings.email} onChange={(v) => handleChange('email', v)} placeholder="hello@zagebeauty.com" />
               <SettingsInputField label="Primary Phone" value={settings.phone} onChange={(v) => handleChange('phone', v)} placeholder="+94 11 255 5000" />
               <SettingsInputField label="Secondary Phone" value={settings.phone2} onChange={(v) => handleChange('phone2', v)} placeholder="Optional" />
               <SettingsInputField label="Country" value={settings.country} onChange={(v) => handleChange('country', v)} placeholder="Sri Lanka" />
               <SettingsInputField label="City" value={settings.city} onChange={(v) => handleChange('city', v)} placeholder="Colombo" />
               <div className="sm:col-span-2">
-                <SettingsInputField label="Full Address" value={settings.address} onChange={(v) => handleChange('address', v)} placeholder="123 Market Street, Colombo 03" />
+                <SettingsInputField label="Full Address" value={settings.address} onChange={(v) => handleChange('address', v)} placeholder="88 Fashion Avenue, Colombo 03" />
               </div>
             </div>
           </div>
@@ -200,14 +201,102 @@ const AdminSettings = () => {
           </div>
         )}
 
+        {/* Permissions */}
+        {tab === 'permissions' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
+              <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><UserCog size={18} /> Role Permissions</h2>
+              <p className="text-xs text-muted-text mb-6">Control feature access for each role. Changes take effect immediately after saving.</p>
+
+              {/* Cashier Permissions */}
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-dark-navy mb-3 flex items-center gap-2">
+                  <span className="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center text-xs font-bold">C</span>
+                  Cashier Permissions
+                </h3>
+                <div className="space-y-3 pl-9">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Barcode Generation</p>
+                      <p className="text-xs text-muted-text">Allow cashiers to generate and print barcodes</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      cashier: { ...settings.rolePermissions?.cashier, canGenerateBarcodes: !settings.rolePermissions?.cashier?.canGenerateBarcodes }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.cashier?.canGenerateBarcodes !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.cashier?.canGenerateBarcodes !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Return Access</p>
+                      <p className="text-xs text-muted-text">Allow cashiers to process customer returns</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      cashier: { ...settings.rolePermissions?.cashier, canAccessReturns: !settings.rolePermissions?.cashier?.canAccessReturns }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.cashier?.canAccessReturns ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.cashier?.canAccessReturns ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manager Permissions */}
+              <div>
+                <h3 className="text-sm font-bold text-dark-navy mb-3 flex items-center gap-2">
+                  <span className="w-7 h-7 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center text-xs font-bold">M</span>
+                  Manager Permissions
+                </h3>
+                <div className="space-y-3 pl-9">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Barcode Generation</p>
+                      <p className="text-xs text-muted-text">Allow managers to generate and print barcodes</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      manager: { ...settings.rolePermissions?.manager, canGenerateBarcodes: !settings.rolePermissions?.manager?.canGenerateBarcodes }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canGenerateBarcodes !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canGenerateBarcodes !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Return Access</p>
+                      <p className="text-xs text-muted-text">Allow managers to process customer returns</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      manager: { ...settings.rolePermissions?.manager, canAccessReturns: !settings.rolePermissions?.manager?.canAccessReturns }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canAccessReturns !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canAccessReturns !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-rose-50 rounded-xl p-4 text-sm text-rose-800">
+              <p className="font-medium mb-1">⚠️ Note:</p>
+              <p className="text-xs">Admin always has full access to all features. Permission changes apply to Cashier and Manager roles only.</p>
+              <p className="text-xs mt-1">Remember to click <strong>Save Changes</strong> after modifying permissions.</p>
+            </div>
+          </div>
+        )}
+
         {/* Social */}
         {tab === 'social' && (
           <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
             <h2 className="font-semibold text-dark-navy mb-4 flex items-center gap-2"><Palette size={18} /> Social Media Links</h2>
             <div className="space-y-4">
-              <SettingsInputField label="Facebook URL" value={settings.socialLinks?.facebook} onChange={(v) => handleSocialChange('facebook', v)} placeholder="https://facebook.com/freshcart" />
-              <SettingsInputField label="Instagram URL" value={settings.socialLinks?.instagram} onChange={(v) => handleSocialChange('instagram', v)} placeholder="https://instagram.com/freshcart" />
-              <SettingsInputField label="Twitter URL" value={settings.socialLinks?.twitter} onChange={(v) => handleSocialChange('twitter', v)} placeholder="https://twitter.com/freshcart" />
+              <SettingsInputField label="Facebook URL" value={settings.socialLinks?.facebook} onChange={(v) => handleSocialChange('facebook', v)} placeholder="https://facebook.com/zagebeautycorner" />
+              <SettingsInputField label="Instagram URL" value={settings.socialLinks?.instagram} onChange={(v) => handleSocialChange('instagram', v)} placeholder="https://instagram.com/zagebeautycorner" />
+              <SettingsInputField label="Twitter URL" value={settings.socialLinks?.twitter} onChange={(v) => handleSocialChange('twitter', v)} placeholder="https://x.com/zagebeauty" />
             </div>
           </div>
         )}

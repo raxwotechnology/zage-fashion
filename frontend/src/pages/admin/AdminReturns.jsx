@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import navItems from './adminNavItems';
 import { toast } from 'react-toastify';
-import { approveCustomerReturn, getCustomerReturns, rejectCustomerReturn } from '../../services/api';
+import { approveCustomerReturn, exportCustomerReturnsReport, getCustomerReturns, rejectCustomerReturn } from '../../services/api';
 
 const statusColors = {
   requested: 'bg-amber-100 text-amber-700',
@@ -16,6 +16,8 @@ const AdminReturns = () => {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const fetchReturns = async () => {
     try {
@@ -60,6 +62,22 @@ const AdminReturns = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const { data } = await exportCustomerReturnsReport({ startDate, endDate, status: filter !== 'all' ? filter : undefined });
+      const blob = new Blob([data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'customer-returns-report.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Return report exported');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to export return report');
+    }
+  };
+
   return (
     <DashboardLayout navItems={navItems} title="Admin Panel">
       <div className="space-y-6">
@@ -67,6 +85,11 @@ const AdminReturns = () => {
           <div>
             <h1 className="text-2xl font-bold text-dark-navy">Returns</h1>
             <p className="text-muted-text text-sm mt-1">Pending / Approved / Rejected return requests</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-card-border rounded-lg px-2 py-1 text-xs" />
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-card-border rounded-lg px-2 py-1 text-xs" />
+            <button onClick={handleExport} className="px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold">Export PDF</button>
           </div>
         </div>
 

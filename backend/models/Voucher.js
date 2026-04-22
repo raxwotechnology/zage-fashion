@@ -28,14 +28,24 @@ const voucherSchema = mongoose.Schema(
       type: Number,
       default: 1,
     },
+    perUserMaxUses: {
+      type: Number,
+      default: 1,
+    },
     usedCount: {
       type: Number,
       default: 0,
     },
     usedBy: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        usedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
     expiresAt: {

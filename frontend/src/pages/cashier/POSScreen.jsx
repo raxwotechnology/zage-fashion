@@ -36,7 +36,7 @@ const POSScreen = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const settings = useSettingsStore((s) => s.settings);
-  const brandName = settings?.shopName || 'FreshCart';
+  const brandName = settings?.shopName || 'Zage Fashion Corner';
   const pos = usePosStore();
 
   const [products, setProducts] = useState([]);

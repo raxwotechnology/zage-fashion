@@ -9,7 +9,7 @@ const payrollSchema = mongoose.Schema(
     },
     storeId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: false,
       ref: 'Store',
     },
     month: {

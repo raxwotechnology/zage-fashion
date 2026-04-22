@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
 const settingsSchema = new mongoose.Schema({
-  shopName: { type: String, default: 'FreshCart' },
-  tagline: { type: String, default: 'Fresh Groceries Delivered to Your Door' },
+  shopName: { type: String, default: 'Zage Fashion Corner' },
+  tagline: { type: String, default: 'Where style meets skincare' },
   logo: { type: String, default: '' },
-  email: { type: String, default: 'info@freshcart.lk' },
+  email: { type: String, default: 'hello@zagebeauty.com' },
   phone: { type: String, default: '+94 11 255 5000' },
   phone2: { type: String, default: '' },
-  address: { type: String, default: '123 Market Street, Colombo 03, Sri Lanka' },
+  address: { type: String, default: '88 Fashion Avenue, Colombo 03, Sri Lanka' },
   city: { type: String, default: 'Colombo' },
   country: { type: String, default: 'Sri Lanka' },
   currency: { type: String, default: 'LKR' },
@@ -22,8 +22,18 @@ const settingsSchema = new mongoose.Schema({
     instagram: { type: String, default: '' },
     twitter: { type: String, default: '' },
   },
-  footerText: { type: String, default: '© 2026 FreshCart. All rights reserved.' },
+  footerText: { type: String, default: '© 2026 Zage Fashion Corner. All rights reserved.' },
   maintenanceMode: { type: Boolean, default: false },
+  rolePermissions: {
+    cashier: {
+      canGenerateBarcodes: { type: Boolean, default: true },
+      canAccessReturns: { type: Boolean, default: false },
+    },
+    manager: {
+      canGenerateBarcodes: { type: Boolean, default: true },
+      canAccessReturns: { type: Boolean, default: true },
+    },
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', settingsSchema);

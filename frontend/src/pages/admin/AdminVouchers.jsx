@@ -7,6 +7,7 @@ import navItems from './adminNavItems';
 
 const emptyForm = {
   code: '', type: 'percentage', value: '', minOrderAmount: '', maxDiscountAmount: '', maxUses: '',
+  perUserMaxUses: '1',
   description: '', expiresAt: '', source: 'admin', applicableProductIds: '', applicableCategoryIds: '',
 };
 
@@ -23,10 +24,16 @@ const AdminVouchers = () => {
 
   const fetchVouchers = async () => {
     try {
-      const { data } = await API.get('/loyalty/vouchers');
-      setVouchers(data);
+      try {
+        const { data } = await API.get('/loyalty/vouchers/admin');
+        setVouchers(data || []);
+      } catch (adminErr) {
+        // Backward-compatible fallback in case backend is not restarted yet.
+        const { data } = await API.get('/loyalty/vouchers');
+        setVouchers(data || []);
+      }
     } catch (err) {
-      toast.error('Failed to load vouchers');
+      toast.error(err.response?.data?.message || 'Failed to load vouchers');
     } finally {
       setLoading(false);
     }
@@ -43,6 +50,7 @@ const AdminVouchers = () => {
       minOrderAmount: v.minOrderAmount || '',
       maxDiscountAmount: v.maxDiscountAmount || '',
       maxUses: v.maxUses || '',
+      perUserMaxUses: v.perUserMaxUses || 1,
       description: v.description || '',
       expiresAt: v.expiresAt ? v.expiresAt.split('T')[0] : '',
       source: v.source || 'admin',
@@ -62,6 +70,7 @@ const AdminVouchers = () => {
         minOrderAmount: Number(form.minOrderAmount) || 0,
         maxDiscountAmount: Number(form.maxDiscountAmount) || undefined,
         maxUses: Number(form.maxUses) || 9999,
+        perUserMaxUses: Number(form.perUserMaxUses) || 1,
         applicableProductIds: form.applicableProductIds
           ? form.applicableProductIds.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
@@ -223,6 +232,10 @@ const AdminVouchers = () => {
                   <label className="block text-sm font-medium text-dark-navy mb-1">Max Uses</label>
                   <input type="number" value={form.maxUses} onChange={(e) => setForm({...form, maxUses: e.target.value})} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-dark-navy mb-1">Usage Limit Per User</label>
+                <input type="number" value={form.perUserMaxUses} onChange={(e) => setForm({...form, perUserMaxUses: e.target.value})} className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-dark-navy mb-1">Expiry Date</label>

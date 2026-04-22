@@ -4,6 +4,9 @@ const Product = require('../models/Product');
 const Store = require('../models/Store');
 const User = require('../models/User');
 const LoyaltyTransaction = require('../models/LoyaltyTransaction');
+const Settings = require('../models/Settings');
+const PDFDocument = require('pdfkit');
+const path = require('path');
 const { sendEmail, customerReturnUpdateEmail } = require('../utils/emailService');
 
 const resolveStoreId = async (req) => {
@@ -363,6 +366,58 @@ const managerRejectCustomerReturn = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// @desc    Export customer returns report as branded PDF
+// @route   GET /api/returns/customer/export
+// @access  Private/Admin
+const exportCustomerReturnsPdf = async (req, res, next) => {
+  try {
+    const { startDate, endDate, status } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+    const returns = await CustomerReturn.find(filter)
+      .populate('customerId', 'name email')
+      .populate('approvedBy', 'name')
+      .sort({ createdAt: -1 })
+      .limit(500);
+    const settings = await Settings.findOne().lean();
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="customer-returns-report.pdf"');
+    doc.pipe(res);
+
+    const companyName = settings?.shopName || 'Zage Fashion Corner';
+    const logoPath = settings?.logo ? path.join(__dirname, '..', settings.logo.replace(/^\//, '')) : null;
+    if (logoPath) {
+      try { doc.image(logoPath, 40, 34, { width: 50 }); } catch (err) { /* ignore missing logo */ }
+    }
+    doc.fontSize(16).text(companyName, 100, 40);
+    doc.fontSize(9).fillColor('#555').text(settings?.address || '', 100, 62);
+    doc.fillColor('#000');
+    doc.moveTo(40, 95).lineTo(555, 95).strokeColor('#CCCCCC').stroke();
+
+    doc.fontSize(14).text('Customer Return Report', 40, 110, { align: 'center' });
+    doc.fontSize(10).text(`Date range: ${startDate || 'N/A'} to ${endDate || 'N/A'}`, { align: 'center' });
+    doc.moveDown(1);
+
+    returns.forEach((ret, index) => {
+      if (doc.y > 740) doc.addPage();
+      doc.fontSize(11).text(`${index + 1}. ${ret.holdBillNo || ret._id.toString().slice(-8)} | ${new Date(ret.createdAt).toLocaleDateString()} | ${ret.status}`);
+      doc.fontSize(9).text(`Customer: ${ret.customerId?.name || 'N/A'} | Product(s): ${(ret.items || []).map((it) => it.orderItemName).join(', ') || 'N/A'}`);
+      doc.fontSize(9).text(`Reason: ${(ret.items || []).map((it) => it.reason).filter(Boolean).join('; ') || ret.notes || 'N/A'}`);
+      doc.fontSize(9).text(`Processed By: ${ret.approvedBy?.name || 'Pending'}`);
+      doc.moveDown(0.6);
+    });
+
+    doc.end();
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   getReturnOrder,
   createCustomerReturn,
@@ -371,5 +426,6 @@ module.exports = {
   rejectCustomerReturn,
   managerApproveCustomerReturn,
   managerRejectCustomerReturn,
+  exportCustomerReturnsPdf,
 };
 

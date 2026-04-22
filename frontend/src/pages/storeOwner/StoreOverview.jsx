@@ -76,7 +76,7 @@ const StoreOverview = () => {
     <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
       <div>
         <div className="mb-8">
-          <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-blue-600 rounded-3xl p-6 text-white shadow-lg">
+          <div className="bg-gradient-to-br from-rose-500 via-fuchsia-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg">
             <h1 className="text-2xl sm:text-3xl font-bold">Store Overview</h1>
             <p className="text-white/80 text-sm mt-1">Track products, orders, and revenue at a glance.</p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -110,7 +110,7 @@ const StoreOverview = () => {
         <div className="bg-white rounded-2xl border border-card-border shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-card-border flex items-center justify-between">
             <h2 className="font-semibold text-dark-navy">Recent Orders</h2>
-            <Link to="/manager/orders" className="text-sm text-primary-green hover:text-emerald-700 font-medium">
+            <Link to="/manager/orders" className="text-sm text-rose-600 hover:text-fuchsia-700 font-medium">
               View All
             </Link>
           </div>

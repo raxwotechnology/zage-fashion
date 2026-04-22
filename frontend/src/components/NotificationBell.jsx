@@ -71,12 +71,12 @@ const NotificationBell = () => {
 
       {open && (
         <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-card-border rounded-2xl shadow-2xl z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-card-border flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50">
+          <div className="px-4 py-3 border-b border-card-border flex items-center justify-between bg-gradient-to-r from-rose-50 to-fuchsia-50">
             <h3 className="font-semibold text-dark-navy text-sm m-0">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead()}
-                className="text-xs text-primary-green hover:text-emerald-700 font-medium flex items-center gap-1"
+                className="text-xs text-primary-green hover:text-fuchsia-700 font-medium flex items-center gap-1"
               >
                 <CheckCheck size={14} />
                 Mark all read
@@ -101,7 +101,7 @@ const NotificationBell = () => {
                       setOpen(false);
                     }
                   }}
-                  className={`px-4 py-3 border-b border-card-border last:border-b-0 cursor-pointer transition-colors hover:bg-emerald-50 ${
+                  className={`px-4 py-3 border-b border-card-border last:border-b-0 cursor-pointer transition-colors hover:bg-rose-50 ${
                     !n.isRead ? 'bg-blue-50/50' : ''
                   }`}
                 >
@@ -127,7 +127,7 @@ const NotificationBell = () => {
             <div className="px-4 py-2.5 border-t border-card-border text-center bg-gray-50">
               <button
                 onClick={() => setOpen(false)}
-                className="text-xs text-primary-green hover:text-emerald-700 font-medium"
+                className="text-xs text-primary-green hover:text-fuchsia-700 font-medium"
               >
                 View all notifications
               </button>

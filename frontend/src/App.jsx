@@ -44,6 +44,8 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminPayroll from './pages/admin/AdminPayroll';
 import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminReturns from './pages/admin/AdminReturns';
+import AdminBarcodes from './pages/admin/AdminBarcodes';
+import BarcodeGenerator from './pages/barcode/BarcodeGenerator';
 import CashierLogin from './pages/cashier/CashierLogin';
 import POSScreen from './pages/cashier/POSScreen';
 import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
@@ -128,6 +130,10 @@ function App() {
           <Route path="/admin/payroll" element={<ProtectedRoute roles={['admin']}><AdminPayroll /></ProtectedRoute>} />
           <Route path="/admin/inventory" element={<ProtectedRoute roles={['admin']}><Navigate to="/admin/products" replace /></ProtectedRoute>} />
           <Route path="/admin/promotions" element={<ProtectedRoute roles={['admin']}><AdminPromotions /></ProtectedRoute>} />
+          <Route path="/admin/barcodes" element={<ProtectedRoute roles={['admin']}><AdminBarcodes /></ProtectedRoute>} />
+
+          {/* Barcode Generator (Admin + Manager + Cashier) */}
+          <Route path="/barcode-generator" element={<ProtectedRoute roles={['admin', 'manager', 'cashier']}><BarcodeGenerator /></ProtectedRoute>} />
 
           {/* Cashier */}
           <Route path="/cashier-login" element={<CashierLogin />} />
@@ -141,7 +147,7 @@ function App() {
           <Route path="/employee/profile" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeProfile /></ProtectedRoute>} />
           <Route path="/employee/attendance" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeAttendance /></ProtectedRoute>} />
           <Route path="/employee/leaves" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeLeaves /></ProtectedRoute>} />
-          <Route path="/employee/returns" element={<ProtectedRoute roles={['cashier']}><EmployeeReturns /></ProtectedRoute>} />
+          {/* Returns removed from cashier — only manager/admin have return access */}
           <Route path="/employee/salary" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeSalary /></ProtectedRoute>} />
           <Route path="/employee/stock" element={<ProtectedRoute roles={['cashier', 'stockEmployee']}><CashierStock /></ProtectedRoute>} />
         </Routes>

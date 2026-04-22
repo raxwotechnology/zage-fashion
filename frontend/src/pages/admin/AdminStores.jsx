@@ -111,7 +111,7 @@ const AdminStores = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-dark-navy mb-1">Store Name *</label>
-                <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="FreshMart Colombo"
+                <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Zage Atelier Colombo"
                   className="w-full border border-card-border rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-green" />
               </div>
               <div>

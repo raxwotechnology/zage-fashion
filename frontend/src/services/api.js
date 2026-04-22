@@ -193,6 +193,8 @@ export const calculateSalary = (data) => API.post('/payroll/calculate', data);
 export const processSalaryPayment = (data) => API.post('/payroll/pay', data);
 export const getSalaryHistory = (employeeId) => API.get(`/payroll/history/${employeeId}`);
 export const getPayrollReport = (params) => API.get('/payroll/report', { params });
+export const exportSalaryHistory = (employeeId, params) =>
+  API.get(`/payroll/history/${employeeId}/export`, { params, responseType: 'blob' });
 
 // Settings
 export const getSettings = () => API.get('/settings');
@@ -232,6 +234,12 @@ export const rejectCustomerReturn = (id, data) => API.put(`/returns/customer/${i
 export const getReturnOrder = (id) => API.get(`/returns/orders/${id}`);
 export const managerApproveCustomerReturn = (id, data) => API.put(`/returns/customer/${id}/manager-approve`, data);
 export const managerRejectCustomerReturn = (id, data) => API.put(`/returns/customer/${id}/manager-reject`, data);
+export const exportCustomerReturnsReport = (params) =>
+  API.get('/returns/customer/export', { params, responseType: 'blob' });
+
+// Barcode Generator
+export const logBarcodeGeneration = (data) => API.post('/barcodes/generate', data);
+export const getBarcodeLogs = (params) => API.get('/barcodes/logs', { params });
 
 // Promotions
 export const getPromotions = (params) => API.get('/promotions', { params });

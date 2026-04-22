@@ -84,6 +84,10 @@ const orderSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    invoiceNumber: {
+      type: String,
+      sparse: true,
+    },
     cashierId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

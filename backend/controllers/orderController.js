@@ -93,6 +93,13 @@ const createOrder = async (req, res, next) => {
         res.status(400);
         return next(new Error('Voucher must be claimed before checkout'));
       }
+      const userUsageCount = (voucher.usedBy || []).filter(
+        (entry) => String(entry?.userId) === String(req.user._id)
+      ).length;
+      if (voucher.perUserMaxUses && userUsageCount >= voucher.perUserMaxUses) {
+        res.status(400);
+        return next(new Error('You have reached your usage limit for this voucher'));
+      }
       const orderAmount = items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
       if (voucher.minOrderAmount && orderAmount < voucher.minOrderAmount) {
         res.status(400);
@@ -196,12 +203,17 @@ const createOrder = async (req, res, next) => {
     if (appliedVoucher) {
       appliedVoucher.usedCount = Number(appliedVoucher.usedCount || 0) + 1;
       if (!Array.isArray(appliedVoucher.usedBy)) appliedVoucher.usedBy = [];
-      appliedVoucher.usedBy.push(req.user._id);
+      appliedVoucher.usedBy.push({ userId: req.user._id, usedAt: new Date() });
       await appliedVoucher.save();
-      await User.updateOne(
-        { _id: req.user._id, 'vouchers.code': appliedVoucher.code },
-        { $set: { 'vouchers.$.isUsed': true } }
+      const userDoc = await User.findById(req.user._id);
+      const voucherIndex = (userDoc?.vouchers || []).findIndex(
+        (v) => v.code === appliedVoucher.code && v.isUsed !== true
       );
+      if (voucherIndex >= 0) {
+        userDoc.vouchers[voucherIndex].isUsed = true;
+        userDoc.vouchers[voucherIndex].usedAt = new Date();
+        await userDoc.save();
+      }
     }
 
     // Update product stock

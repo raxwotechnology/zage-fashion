@@ -25,7 +25,7 @@ const AdminOverview = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={navItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Zage Admin Panel">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -47,11 +47,11 @@ const AdminOverview = () => {
   ];
 
   return (
-    <DashboardLayout navItems={navItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Zage Admin Panel">
       <div>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-dark-navy">Admin Dashboard</h1>
-          <p className="text-muted-text text-sm mt-1">Platform overview and key metrics</p>
+          <h1 className="text-2xl font-bold text-dark-navy">Zage Brand Dashboard</h1>
+          <p className="text-muted-text text-sm mt-1">Operations overview for fashion and beauty storefront</p>
         </div>
 
         {/* Stats Grid */}

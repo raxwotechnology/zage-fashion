@@ -1,4 +1,4 @@
-import { LayoutDashboard, User, Clock, Calendar, CreditCard, Monitor, Truck, Package, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, User, Clock, Calendar, CreditCard, Monitor, Truck, Package, RotateCcw, Barcode } from 'lucide-react';
 
 const getEmployeeNavItems = (role) => {
   const items = [
@@ -12,7 +12,7 @@ const getEmployeeNavItems = (role) => {
   if (role === 'cashier') {
     items.push({ path: '/pos', label: 'POS Terminal', icon: Monitor });
     items.push({ path: '/employee/stock', label: 'Stock View', icon: Package });
-    items.push({ path: '/employee/returns', label: 'Returns', icon: RotateCcw });
+    items.push({ path: '/barcode-generator', label: 'Barcode Generator', icon: Barcode });
   }
 
   if (role === 'stockEmployee') {
