@@ -56,12 +56,16 @@ const DashboardLayout = ({ children, navItems, title }) => {
         <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
           <p className="text-[10px] uppercase tracking-widest text-muted-text font-semibold px-3 mb-3">{title}</p>
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+            const isRoot = item.path === '/admin' || item.path === '/manager' || item.path === '/employee';
+            const isActive = isRoot
+              ? location.pathname === item.path
+              : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={() => setSidebarOpen(false)}
+                preventScrollReset
+                onClick={() => { setSidebarOpen(false); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                   isActive
                     ? 'bg-rose-50 text-rose-600 shadow-sm'

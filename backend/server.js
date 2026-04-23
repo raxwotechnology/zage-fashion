@@ -13,10 +13,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS: allow production frontend + any local dev port
+// Set CORS_ORIGINS in .env for custom domains (comma-separated)
+const envOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
 const allowedOrigins = [
   'https://zagefashion.netlify.app',
   'https://www.zagefashion.netlify.app',
   'http://localhost:3000',
+  ...envOrigins,
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -64,6 +67,9 @@ app.use('/api/suppliers', require('./routes/supplierRoutes'));
 app.use('/api/stock', require('./routes/stockRoutes'));
 app.use('/api/returns', require('./routes/returnRoutes'));
 app.use('/api/barcodes', require('./routes/barcodeRoutes'));
+app.use('/api/supplier-payments', require('./routes/supplierPaymentRoutes'));
+app.use('/api/predictions', require('./routes/predictionRoutes'));
+app.use('/api/overtime', require('./routes/overtimeRoutes'));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

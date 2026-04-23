@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Package, ChevronRight, ShoppingBag, XCircle, Download, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { createCustomerReturn, getMyOrders } from '../services/api';
+import { createCustomerReturn, getMyOrders, cancelMyOrder } from '../services/api';
 import useAuthStore from '../store/authStore';
 import useCurrencyStore from '../store/currencyStore';
 import { toast } from 'react-toastify';
@@ -49,6 +49,74 @@ const OrdersPage = () => {
       case 'cancelled': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  const isCancellable = (order) => {
+    if (['cancelled', 'shipped', 'out_for_delivery', 'delivered', 'completed'].includes(order.orderStatus)) return false;
+    const hours = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+    return hours <= 1;
+  };
+
+  const getCancelTimeLeft = (order) => {
+    const elapsed = Date.now() - new Date(order.createdAt).getTime();
+    const remaining = (60 * 60 * 1000) - elapsed;
+    if (remaining <= 0) return null;
+    const mins = Math.floor(remaining / 60000);
+    return `${mins}m left`;
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    try {
+      await cancelMyOrder(orderId, { reason: 'Cancelled by customer' });
+      toast.success('Order cancelled successfully');
+      const { data } = await getMyOrders();
+      setOrders(data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel order');
+    }
+  };
+
+  const downloadBill = (order) => {
+    const lines = [
+      '═══════════════════════════════════════',
+      '           ZAGE FASHION CORNER',
+      '            PURCHASE RECEIPT',
+      '═══════════════════════════════════════',
+      '',
+      `Order ID: #${order._id.slice(-8).toUpperCase()}`,
+      `Date: ${new Date(order.createdAt).toLocaleString()}`,
+      `Status: ${order.orderStatus.toUpperCase()}`,
+      `Payment: ${order.paymentMethod?.toUpperCase() || 'N/A'}`,
+      '',
+      '───────────────────────────────────────',
+      'ITEMS:',
+      '───────────────────────────────────────',
+    ];
+    (order.items || []).forEach((item, i) => {
+      lines.push(`${i + 1}. ${item.name}`);
+      lines.push(`   Qty: ${item.quantity} × Rs. ${item.price?.toLocaleString()} = Rs. ${(item.price * item.quantity).toLocaleString()}`);
+    });
+    lines.push('───────────────────────────────────────');
+    if (order.deliveryFee) lines.push(`Delivery Fee:    Rs. ${order.deliveryFee.toLocaleString()}`);
+    if (order.tax) lines.push(`Tax:             Rs. ${order.tax.toLocaleString()}`);
+    if (order.discountAmount) lines.push(`Discount:       -Rs. ${order.discountAmount.toLocaleString()}`);
+    lines.push(`TOTAL:           Rs. ${order.totalAmount?.toLocaleString()}`);
+    lines.push('');
+    if (order.deliveryAddress) {
+      lines.push(`Delivery: ${order.deliveryAddress.street}, ${order.deliveryAddress.city}`);
+    }
+    lines.push('');
+    lines.push('═══════════════════════════════════════');
+    lines.push('     Thank you for shopping with us!');
+    lines.push('═══════════════════════════════════════');
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Zage_Receipt_${order._id.slice(-8).toUpperCase()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const isReturnEligible = (order) => {
@@ -200,7 +268,24 @@ const OrdersPage = () => {
                   </div>
                 )}
               </div>
-              <div className="mt-3 flex items-center gap-3">
+              <div className="mt-3 flex items-center gap-3 flex-wrap">
+                {isCancellable(order) && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); handleCancel(order._id); }}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"
+                  >
+                    <XCircle size={14} /> Cancel Order
+                    <span className="text-red-400 ml-1 flex items-center gap-0.5"><Clock size={10} />{getCancelTimeLeft(order)}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); downloadBill(order); }}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1"
+                >
+                  <Download size={14} /> Download Bill
+                </button>
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); if (isReturnEligible(order)) openReturnModal(order); }}

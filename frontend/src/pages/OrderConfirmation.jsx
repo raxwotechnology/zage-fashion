@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, Package, MapPin, Clock, CreditCard } from 'lucide-react';
+import { CheckCircle, Package, MapPin, Clock, CreditCard, Download, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getOrderById } from '../services/api';
+import { getOrderById, cancelMyOrder } from '../services/api';
 import useCurrencyStore from '../store/currencyStore';
+import { toast } from 'react-toastify';
 
 const OrderConfirmation = () => {
   const { id } = useParams();
@@ -151,6 +152,49 @@ const OrderConfirmation = () => {
       </motion.div>
 
       <div className="flex flex-wrap gap-4 justify-center">
+        {order.orderStatus !== 'cancelled' && !['shipped', 'out_for_delivery', 'delivered', 'completed'].includes(order.orderStatus) && (() => {
+          const hours = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+          return hours <= 1;
+        })() && (
+          <button onClick={async () => {
+            if (!window.confirm('Cancel this order?')) return;
+            try {
+              await cancelMyOrder(order._id, { reason: 'Cancelled by customer' });
+              toast.success('Order cancelled');
+              const { data } = await getOrderById(id);
+              setOrder(data);
+            } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+          }} className="bg-red-500 text-white font-semibold py-3 px-8 rounded-full hover:bg-red-600 transition-all shadow-lg flex items-center gap-2">
+            <XCircle size={18} /> Cancel Order
+          </button>
+        )}
+        <button onClick={() => {
+          const lines = [
+            '═══════════════════════════════════════',
+            '           ZAGE FASHION CORNER',
+            '            PURCHASE RECEIPT',
+            '═══════════════════════════════════════',
+            '', `Order: #${order._id.slice(-8).toUpperCase()}`,
+            `Date: ${new Date(order.createdAt).toLocaleString()}`,
+            `Status: ${order.orderStatus}`, `Payment: ${order.paymentMethod}`, '',
+            '───────────────────────────────────────', 'ITEMS:', '───────────────────────────────────────',
+          ];
+          order.items.forEach((it, i) => {
+            lines.push(`${i + 1}. ${it.name} (x${it.quantity}) = Rs. ${(it.price * it.quantity).toLocaleString()}`);
+          });
+          lines.push('───────────────────────────────────────');
+          if (order.deliveryFee) lines.push(`Delivery: Rs. ${order.deliveryFee}`);
+          if (order.tax) lines.push(`Tax: Rs. ${order.tax}`);
+          lines.push(`TOTAL: Rs. ${order.totalAmount?.toLocaleString()}`);
+          lines.push('', '═══════════════════════════════════════', '   Thank you for shopping with us!', '═══════════════════════════════════════');
+          const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url;
+          a.download = `Zage_Bill_${order._id.slice(-8).toUpperCase()}.txt`;
+          a.click(); URL.revokeObjectURL(url);
+        }} className="bg-blue-500 text-white font-semibold py-3 px-8 rounded-full hover:bg-blue-600 transition-all shadow-lg flex items-center gap-2">
+          <Download size={18} /> Download Bill
+        </button>
         <Link to="/orders" className="bg-primary-green text-white font-semibold py-3 px-8 rounded-full hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200">
           View All Orders
         </Link>

@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const PriceHistory = require('../models/PriceHistory');
 
 // @desc    Get all products (with filtering, sorting, pagination)
 // @route   GET /api/products
@@ -194,6 +195,10 @@ const createProduct = async (req, res, next) => {
       allowKokoPos: allowKokoPos !== undefined ? !!allowKokoPos : true,
       lastCost: Number(purchasePrice || 0),
       avgCost: Number(purchasePrice || 0),
+      costPrice: Number(purchasePrice || 0),
+      newStock: stock || 0,
+      oldStock: 0,
+      stockType: 'new',
     });
 
     res.status(201).json(product);
@@ -217,7 +222,33 @@ const updateProduct = async (req, res, next) => {
       'name', 'categoryId', 'subCategory', 'description', 'price',
       'mrp', 'discount', 'unit', 'variants', 'stock', 'images',
       'isFeatured', 'isOnSale', 'status', 'allowKokoOnline', 'allowKokoPos',
+      'stockType', 'oldStock', 'newStock', 'costPrice',
     ];
+
+    // Log price change if price or cost changed
+    const priceChanged = req.body.price !== undefined && Number(req.body.price) !== product.price;
+    const costChanged = req.body.costPrice !== undefined && Number(req.body.costPrice) !== Number(product.costPrice || 0);
+    const mrpChanged = req.body.mrp !== undefined && Number(req.body.mrp) !== Number(product.mrp || 0);
+
+    if (priceChanged || costChanged || mrpChanged) {
+      const oldPrice = product.price;
+      const newPrice = Number(req.body.price || product.price);
+      const changePercent = oldPrice > 0 ? ((newPrice - oldPrice) / oldPrice * 100) : 0;
+
+      await PriceHistory.create({
+        productId: product._id,
+        storeId: product.storeId,
+        oldPrice,
+        newPrice,
+        oldCost: Number(product.costPrice || product.lastCost || 0),
+        newCost: Number(req.body.costPrice || req.body.purchasePrice || product.costPrice || 0),
+        oldMrp: Number(product.mrp || 0),
+        newMrp: Number(req.body.mrp || product.mrp || 0),
+        priceChangePercent: Math.round(changePercent * 10) / 10,
+        reason: req.body.priceChangeReason || 'Price update',
+        changedBy: req.user?._id,
+      });
+    }
 
     fields.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -233,6 +264,7 @@ const updateProduct = async (req, res, next) => {
       const parsedPurchasePrice = Number(req.body.purchasePrice || 0);
       product.lastCost = parsedPurchasePrice;
       product.avgCost = parsedPurchasePrice;
+      if (!req.body.costPrice) product.costPrice = parsedPurchasePrice;
     }
 
     const updated = await product.save();
@@ -279,6 +311,19 @@ const getMyProducts = async (req, res, next) => {
   }
 };
 
+// @desc    Get price history for a product
+// @route   GET /api/products/:id/price-history
+// @access  Private/Admin/Manager
+const getPriceHistory = async (req, res, next) => {
+  try {
+    const history = await PriceHistory.find({ productId: req.params.id })
+      .populate('changedBy', 'name')
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.json(history);
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   getProducts,
   searchProducts,
@@ -289,4 +334,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getMyProducts,
+  getPriceHistory,
 };

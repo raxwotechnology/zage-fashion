@@ -9,8 +9,8 @@ const attendanceSchema = mongoose.Schema(
     },
     storeId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: 'Store',
+      default: null,
     },
     date: {
       type: Date,
@@ -26,6 +26,10 @@ const attendanceSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    overtime: {
+      type: Number,
+      default: 0,
+    },
     status: {
       type: String,
       enum: ['present', 'absent', 'half-day', 'leave', 'late'],
@@ -33,6 +37,10 @@ const attendanceSchema = mongoose.Schema(
     },
     notes: {
       type: String,
+    },
+    markedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
   },
   {

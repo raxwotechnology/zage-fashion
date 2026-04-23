@@ -185,8 +185,8 @@ const Navbar = () => {
       {/* Top Utility Bar */}
       <div className="bg-gradient-to-r from-zinc-900 to-rose-900 text-white text-xs">
         <div className="base-container py-1.5 flex items-center justify-between">
-          <span className="hidden sm:inline">✨ Free shipping on orders over Rs. {freeDeliveryThreshold}</span>
-          <span className="sm:hidden text-[11px]">✨ Free shipping over Rs.{freeDeliveryThreshold}</span>
+          <span className="hidden sm:inline">🛍️ {brandName} — Fashion & Cosmetic Essentials</span>
+          <span className="sm:hidden text-[11px]">🛍️ {brandName}</span>
           <div className="flex items-center gap-3">
             <span className="hidden md:inline">📞 {brandPhone}</span>
             {/* Currency Toggle */}

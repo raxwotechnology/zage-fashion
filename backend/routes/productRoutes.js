@@ -10,6 +10,7 @@ const {
   updateProduct,
   deleteProduct,
   getMyProducts,
+  getPriceHistory,
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -27,6 +28,8 @@ router.route('/:id')
   .get(getProductById)
   .put(protect, authorize('manager', 'admin'), updateProduct)
   .delete(protect, authorize('manager', 'admin'), deleteProduct);
+
+router.get('/:id/price-history', protect, authorize('manager', 'admin'), getPriceHistory);
 
 module.exports = router;
 

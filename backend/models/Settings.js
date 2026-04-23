@@ -23,15 +23,28 @@ const settingsSchema = new mongoose.Schema({
     twitter: { type: String, default: '' },
   },
   footerText: { type: String, default: '© 2026 Zage Fashion Corner. All rights reserved.' },
+  heroProducts: [{
+    name: { type: String },
+    price: { type: Number },
+    emoji: { type: String },
+  }],
   maintenanceMode: { type: Boolean, default: false },
   rolePermissions: {
     cashier: {
       canGenerateBarcodes: { type: Boolean, default: true },
       canAccessReturns: { type: Boolean, default: false },
+      canViewInventory: { type: Boolean, default: false },
+      canApplyDiscounts: { type: Boolean, default: true },
+      canViewSalesReports: { type: Boolean, default: false },
+      canManageStock: { type: Boolean, default: false },
     },
     manager: {
       canGenerateBarcodes: { type: Boolean, default: true },
       canAccessReturns: { type: Boolean, default: true },
+      canManagePayroll: { type: Boolean, default: true },
+      canManageSupplierPayments: { type: Boolean, default: true },
+      canViewPredictions: { type: Boolean, default: false },
+      canManagePromotions: { type: Boolean, default: true },
     },
   },
 }, { timestamps: true });

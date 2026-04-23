@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Edit3, Save, X, UserPlus } from 'lucide-react';
+import { Users, Search, Edit3, Save, X, UserPlus, Clock, Calendar, CheckCircle } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getEmployees, addEmployee, updateEmployee } from '../../services/api';
+import { getEmployees, addEmployee, updateEmployee, adminMarkAttendance, adminCreateLeave, getAttendanceReport, getStoreLeaves } from '../../services/api';
 import { toast } from 'react-toastify';
 import managerNavItems from './managerNavItems';
 import useAuthStore from '../../store/authStore';
@@ -32,6 +32,10 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
   const [showAddModal, setShowAddModal] = useState(false);
   const [newForm, setNewForm] = useState(emptyNewForm);
   const [adding, setAdding] = useState(false);
+  const [showAttModal, setShowAttModal] = useState(false);
+  const [attForm, setAttForm] = useState({ employeeId: '', date: new Date().toISOString().split('T')[0], checkInTime: '09:00', checkOutTime: '17:00', status: 'present', notes: '' });
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({ employeeId: '', type: 'casual', startDate: '', endDate: '', reason: '', status: 'approved' });
 
   useEffect(() => { fetchEmployees(); }, []);
 
@@ -96,6 +100,32 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
     (e) => e.name?.toLowerCase().includes(search.toLowerCase()) || e.email?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleMarkAtt = async () => {
+    if (!attForm.employeeId) return toast.error('Select employee');
+    try {
+      const dateStr = attForm.date;
+      await adminMarkAttendance({
+        employeeId: attForm.employeeId,
+        date: dateStr,
+        checkInTime: `${dateStr}T${attForm.checkInTime}:00`,
+        checkOutTime: `${dateStr}T${attForm.checkOutTime}:00`,
+        status: attForm.status,
+        notes: attForm.notes,
+      });
+      toast.success('Attendance marked');
+      setShowAttModal(false);
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+  };
+
+  const handleAddLeave = async () => {
+    if (!leaveForm.employeeId || !leaveForm.startDate || !leaveForm.endDate) return toast.error('Fill all fields');
+    try {
+      await adminCreateLeave(leaveForm);
+      toast.success('Leave created');
+      setShowLeaveModal(false);
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+  };
+
   if (loading) {
     return (
       <DashboardLayout navItems={navItems} title={title}>
@@ -138,12 +168,20 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
             <h1 className="text-2xl font-bold text-dark-navy">👥 Employees</h1>
             <p className="text-muted-text text-sm mt-1">{employees.length} staff members</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-primary-green hover:bg-emerald-600 text-white font-medium px-5 py-2.5 rounded-xl transition-colors shadow-md"
-          >
-            <UserPlus size={16} /> Add Employee
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowAttModal(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md text-sm">
+              <Clock size={16} /> Mark Attendance
+            </button>
+            <button onClick={() => setShowLeaveModal(true)}
+              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2.5 rounded-xl transition-colors shadow-md text-sm">
+              <Calendar size={16} /> Add Leave
+            </button>
+            <button onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 bg-primary-green hover:bg-emerald-600 text-white font-medium px-5 py-2.5 rounded-xl transition-colors shadow-md text-sm">
+              <UserPlus size={16} /> Add Employee
+            </button>
+          </div>
         </div>
 
         <div className="relative mb-6">
@@ -353,6 +391,128 @@ const ManagerEmployees = ({ navItems = managerNavItems, title = 'Manager Dashboa
           </div>
         )}
       </div>
+
+      {/* Mark Attendance Modal */}
+      {showAttModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-card-border">
+              <h2 className="text-lg font-bold text-dark-navy flex items-center gap-2"><Clock size={20} className="text-blue-600" /> Mark Attendance</h2>
+              <button onClick={() => setShowAttModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs text-muted-text block mb-1">Employee *</label>
+                <select value={attForm.employeeId} onChange={(e) => setAttForm({...attForm, employeeId: e.target.value})}
+                  className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm bg-white">
+                  <option value="">Select employee</option>
+                  {employees.map(e => <option key={e._id} value={e._id}>{e.name} ({e.role})</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Date</label>
+                  <input type="date" value={attForm.date} onChange={(e) => setAttForm({...attForm, date: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Status</label>
+                  <select value={attForm.status} onChange={(e) => setAttForm({...attForm, status: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm bg-white">
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="half-day">Half Day</option>
+                    <option value="late">Late</option>
+                    <option value="leave">Leave</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Check In</label>
+                  <input type="time" value={attForm.checkInTime} onChange={(e) => setAttForm({...attForm, checkInTime: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Check Out</label>
+                  <input type="time" value={attForm.checkOutTime} onChange={(e) => setAttForm({...attForm, checkOutTime: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-text block mb-1">Notes</label>
+                <input value={attForm.notes} onChange={(e) => setAttForm({...attForm, notes: e.target.value})}
+                  className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" placeholder="Optional notes" />
+              </div>
+              <button onClick={handleMarkAtt} className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-semibold">
+                <CheckCircle size={16} className="inline mr-2" />Mark Attendance
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Leave Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-card-border">
+              <h2 className="text-lg font-bold text-dark-navy flex items-center gap-2"><Calendar size={20} className="text-amber-500" /> Create Leave</h2>
+              <button onClick={() => setShowLeaveModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-xs text-muted-text block mb-1">Employee *</label>
+                <select value={leaveForm.employeeId} onChange={(e) => setLeaveForm({...leaveForm, employeeId: e.target.value})}
+                  className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm bg-white">
+                  <option value="">Select employee</option>
+                  {employees.map(e => <option key={e._id} value={e._id}>{e.name} ({e.role})</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Leave Type</label>
+                  <select value={leaveForm.type} onChange={(e) => setLeaveForm({...leaveForm, type: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm bg-white">
+                    <option value="casual">Casual</option>
+                    <option value="sick">Sick</option>
+                    <option value="annual">Annual</option>
+                    <option value="unpaid">Unpaid</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Status</label>
+                  <select value={leaveForm.status} onChange={(e) => setLeaveForm({...leaveForm, status: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm bg-white">
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">Start Date *</label>
+                  <input type="date" value={leaveForm.startDate} onChange={(e) => setLeaveForm({...leaveForm, startDate: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-text block mb-1">End Date *</label>
+                  <input type="date" value={leaveForm.endDate} onChange={(e) => setLeaveForm({...leaveForm, endDate: e.target.value})}
+                    className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-text block mb-1">Reason</label>
+                <input value={leaveForm.reason} onChange={(e) => setLeaveForm({...leaveForm, reason: e.target.value})}
+                  className="w-full border border-card-border rounded-lg px-3 py-2.5 text-sm" placeholder="Reason for leave" />
+              </div>
+              <button onClick={handleAddLeave} className="w-full py-2.5 bg-amber-500 text-white rounded-xl font-semibold">
+                Create Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

@@ -617,6 +617,50 @@ const getStoreOrders = async (req, res, next) => {
   }
 };
 
+// @desc    Cancel own order (within 1 hour)
+// @route   PUT /api/orders/:id/cancel
+// @access  Private
+const cancelMyOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      res.status(404);
+      return next(new Error('Order not found'));
+    }
+    if (order.userId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      return next(new Error('Not authorized'));
+    }
+    if (order.orderStatus === 'cancelled') {
+      res.status(400);
+      return next(new Error('Order is already cancelled'));
+    }
+    if (['shipped', 'out_for_delivery', 'delivered', 'completed'].includes(order.orderStatus)) {
+      res.status(400);
+      return next(new Error('Cannot cancel order at this stage'));
+    }
+    // 1-hour cancellation window
+    const hoursSinceOrder = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceOrder > 1) {
+      res.status(400);
+      return next(new Error('Cancellation window (1 hour) has expired'));
+    }
+    order.orderStatus = 'cancelled';
+    order.cancelledAt = new Date();
+    order.cancellationReason = req.body.reason || 'Cancelled by customer';
+    await order.save();
+    // Restore stock
+    for (const item of order.items || []) {
+      if (item?.productId && item?.quantity) {
+        await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.quantity } });
+      }
+    }
+    res.json({ message: 'Order cancelled successfully', order });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createOrder,
   getMyOrders,
@@ -627,4 +671,5 @@ module.exports = {
   verifyPaymentOtp,
   payHereNotify,
   getStoreOrders,
+  cancelMyOrder,
 };

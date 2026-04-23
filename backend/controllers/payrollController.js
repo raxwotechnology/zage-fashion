@@ -2,8 +2,11 @@ const Payroll = require('../models/Payroll');
 const User = require('../models/User');
 const { sendNotification } = require('../utils/notificationService');
 const { salaryPaidEmail, sendEmail } = require('../utils/emailService');
-const PDFDocument = require('pdfkit');
-const XLSX = require('xlsx');
+
+// Lazy-loaded: only required when export functions are actually called
+let PDFDocument, XLSX;
+const loadPdfkit = () => { if (!PDFDocument) PDFDocument = require('pdfkit'); return PDFDocument; };
+const loadXlsx = () => { if (!XLSX) XLSX = require('xlsx'); return XLSX; };
 
 // Sri Lankan statutory rates
 const EPF_EMPLOYEE_RATE = 0.08; // 8% employee contribution
@@ -202,17 +205,19 @@ const exportEmployeeSalaryReport = async (req, res, next) => {
     const rows = buildSalaryExportRows(records);
 
     if (format === 'xlsx') {
-      const sheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, sheet, 'Salary Report');
-      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      const xl = loadXlsx();
+      const sheet = xl.utils.json_to_sheet(rows);
+      const workbook = xl.utils.book_new();
+      xl.utils.book_append_sheet(workbook, sheet, 'Salary Report');
+      const buffer = xl.write(workbook, { type: 'buffer', bookType: 'xlsx' });
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="salary-report-${employeeId}.xlsx"`);
       return res.send(buffer);
     }
 
     if (format === 'pdf') {
-      const doc = new PDFDocument({ margin: 40, size: 'A4' });
+      const PDF = loadPdfkit();
+      const doc = new PDF({ margin: 40, size: 'A4' });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="salary-report-${employeeId}.pdf"`);
       doc.pipe(res);

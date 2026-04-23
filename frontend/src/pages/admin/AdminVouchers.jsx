@@ -129,9 +129,34 @@ const AdminVouchers = () => {
             <h1 className="text-2xl font-bold text-dark-navy">🎟️ Voucher Management</h1>
             <p className="text-muted-text text-sm mt-1">{vouchers.length} vouchers</p>
           </div>
-          <button onClick={openCreate} className="flex items-center gap-2 bg-primary-green text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-emerald-600 shadow-lg shadow-emerald-200 transition-all text-sm">
-            <Plus size={18} /> Create Voucher
-          </button>
+          <div className="flex gap-3">
+            <button onClick={() => {
+              const rows = [['Code', 'Type', 'Value', 'Min Order', 'Max Discount', 'Used', 'Max Uses', 'Per User', 'Expires', 'Status', 'Description']];
+              vouchers.forEach(v => {
+                rows.push([
+                  v.code, v.type, v.value,
+                  v.minOrderAmount || 0, v.maxDiscountAmount || '',
+                  v.usedCount || 0, v.maxUses || '∞',
+                  v.perUserMaxUses || 1,
+                  v.expiresAt ? new Date(v.expiresAt).toLocaleDateString() : 'Never',
+                  v.isActive ? 'Active' : 'Inactive',
+                  v.description || '',
+                ]);
+              });
+              const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = `vouchers_export_${new Date().toISOString().split('T')[0]}.csv`;
+              a.click(); URL.revokeObjectURL(url);
+              toast.success('Vouchers exported!');
+            }} className="flex items-center gap-2 border border-card-border text-dark-navy px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition-all text-sm">
+              📥 Export CSV
+            </button>
+            <button onClick={openCreate} className="flex items-center gap-2 bg-primary-green text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-emerald-600 shadow-lg shadow-emerald-200 transition-all text-sm">
+              <Plus size={18} /> Create Voucher
+            </button>
+          </div>
         </div>
 
         <div className="relative mb-6">

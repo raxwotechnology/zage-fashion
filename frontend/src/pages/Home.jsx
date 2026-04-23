@@ -4,12 +4,18 @@ import { Sparkles, Star, ArrowRight, Truck, ShieldCheck, Clock3, Gem } from 'luc
 import { motion } from 'framer-motion';
 import { getCategories, getFeaturedProducts, getDeals } from '../services/api';
 import ProductCard from '../components/ProductCard';
+import useSettingsStore from '../store/settingsStore';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const settings = useSettingsStore((s) => s.settings);
+  const heroProducts = settings?.heroProducts || [
+    { name: 'Luxe Tote Bag', price: 9500, emoji: '👜' },
+    { name: 'Radiance Serum', price: 6800, emoji: '✨' },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,28 +97,32 @@ const Home = () => {
                 <span className="text-8xl">💄</span>
               </div>
               {/* Floating badges */}
-              <motion.div
-                className="absolute -top-4 right-0 bg-white rounded-2xl shadow-lg p-3 flex items-center gap-2"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                <span className="text-2xl">👜</span>
-                <div>
-                  <p className="text-xs font-bold text-dark-navy m-0">Luxe Tote Bag</p>
-                  <p className="text-xs text-primary-green m-0 font-semibold">$49.99</p>
-                </div>
-              </motion.div>
-              <motion.div
-                className="absolute bottom-4 -left-4 bg-white rounded-2xl shadow-lg p-3 flex items-center gap-2"
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 3.5, repeat: Infinity }}
-              >
-                <span className="text-2xl">✨</span>
-                <div>
-                  <p className="text-xs font-bold text-dark-navy m-0">Radiance Serum</p>
-                  <p className="text-xs text-primary-green m-0 font-semibold">$34.00</p>
-                </div>
-              </motion.div>
+              {heroProducts[0] && (
+                <motion.div
+                  className="absolute -top-4 right-0 bg-white rounded-2xl shadow-lg p-3 flex items-center gap-2"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  <span className="text-2xl">{heroProducts[0].emoji || '👜'}</span>
+                  <div>
+                    <p className="text-xs font-bold text-dark-navy m-0">{heroProducts[0].name}</p>
+                    <p className="text-xs text-primary-green m-0 font-semibold">LKR {Number(heroProducts[0].price).toLocaleString()}</p>
+                  </div>
+                </motion.div>
+              )}
+              {heroProducts[1] && (
+                <motion.div
+                  className="absolute bottom-4 -left-4 bg-white rounded-2xl shadow-lg p-3 flex items-center gap-2"
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ duration: 3.5, repeat: Infinity }}
+                >
+                  <span className="text-2xl">{heroProducts[1].emoji || '✨'}</span>
+                  <div>
+                    <p className="text-xs font-bold text-dark-navy m-0">{heroProducts[1].name}</p>
+                    <p className="text-xs text-primary-green m-0 font-semibold">LKR {Number(heroProducts[1].price).toLocaleString()}</p>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </div>

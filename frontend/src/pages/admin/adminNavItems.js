@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Monitor, Ticket, BarChart3, DollarSign, Wallet, Package, Gift, CreditCard, UserCog, RotateCcw, Barcode } from 'lucide-react';
+import { LayoutDashboard, Users, Store, Tag, ShoppingBag, Monitor, Ticket, BarChart3, DollarSign, Wallet, Package, Gift, CreditCard, UserCog, RotateCcw, Barcode, TrendingUp, Brain, Clock } from 'lucide-react';
 
 const adminNavItems = [
   { path: '/admin', label: 'Overview', icon: LayoutDashboard },
@@ -15,7 +15,11 @@ const adminNavItems = [
   { path: '/admin/expenses', label: 'Expenses & Income', icon: Wallet },
   { path: '/admin/financials', label: 'Financials', icon: DollarSign },
   { path: '/admin/payroll', label: 'Payroll', icon: CreditCard },
+  { path: '/admin/overtime', label: 'Overtime Pay', icon: Clock },
   { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/admin/supplier-payments', label: 'Supplier Payments', icon: Wallet },
+  { path: '/admin/sales-tracking', label: 'Sales Tracking', icon: TrendingUp },
+  { path: '/admin/predictions', label: 'AI Predictions', icon: Brain },
   { path: '/admin/settings', label: 'Settings', icon: LayoutDashboard },
   { path: '/barcode-generator', label: 'Barcode Generator', icon: Barcode },
   { path: '/pos', label: 'POS Terminal', icon: Monitor },

@@ -734,6 +734,115 @@ const getEmployeePerformance = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// @desc    Admin/Manager mark attendance for an employee
+// @route   POST /api/hr/attendance/mark
+// @access  Private/Admin/Manager
+const adminMarkAttendance = async (req, res, next) => {
+  try {
+    const { employeeId, date, checkInTime, checkOutTime, status, notes } = req.body;
+
+    if (!employeeId) { res.status(400); return next(new Error('employeeId is required')); }
+
+    const employee = await User.findById(employeeId);
+    if (!employee) { res.status(404); return next(new Error('Employee not found')); }
+
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Check if attendance already exists for this date
+    let attendance = await Attendance.findOne({
+      employeeId,
+      date: { $gte: targetDate, $lt: new Date(targetDate.getTime() + 86400000) },
+    });
+
+    if (attendance) {
+      // Update existing
+      if (checkInTime) attendance.checkIn = new Date(checkInTime);
+      if (checkOutTime) {
+        attendance.checkOut = new Date(checkOutTime);
+        const diffMs = attendance.checkOut - attendance.checkIn;
+        attendance.hoursWorked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+        if (attendance.hoursWorked >= 8) attendance.overtime = parseFloat((attendance.hoursWorked - 8).toFixed(2));
+      }
+      if (status) attendance.status = status;
+      if (notes) attendance.notes = notes;
+      attendance.markedBy = req.user._id;
+      await attendance.save();
+      return res.json(attendance);
+    }
+
+    // Create new
+    const ciTime = checkInTime ? new Date(checkInTime) : new Date(targetDate.getTime() + 9 * 3600000);
+    let hoursWorked = 0;
+    let overtime = 0;
+    let coTime = null;
+
+    if (checkOutTime) {
+      coTime = new Date(checkOutTime);
+      const diffMs = coTime - ciTime;
+      hoursWorked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+      if (hoursWorked >= 8) overtime = parseFloat((hoursWorked - 8).toFixed(2));
+    }
+
+    attendance = await Attendance.create({
+      employeeId,
+      storeId: employee.assignedStore || null,
+      date: targetDate,
+      checkIn: ciTime,
+      checkOut: coTime,
+      hoursWorked,
+      overtime,
+      status: status || 'present',
+      notes: notes || `Marked by ${req.user.name}`,
+      markedBy: req.user._id,
+    });
+
+    res.status(201).json(attendance);
+  } catch (error) { next(error); }
+};
+
+// @desc    Admin/Manager create leave for an employee
+// @route   POST /api/hr/leaves/create-for-employee
+// @access  Private/Admin/Manager
+const adminCreateLeave = async (req, res, next) => {
+  try {
+    const { employeeId, type, startDate, endDate, reason, status } = req.body;
+
+    if (!employeeId) { res.status(400); return next(new Error('employeeId is required')); }
+
+    const employee = await User.findById(employeeId);
+    if (!employee) { res.status(404); return next(new Error('Employee not found')); }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+    const leave = await Leave.create({
+      employeeId,
+      storeId: employee.assignedStore || null,
+      leaveType: type || 'casual',
+      startDate: start,
+      endDate: end,
+      totalDays,
+      reason: reason || `Created by ${req.user.name}`,
+      status: status || 'approved', // Admin-created leaves are auto-approved
+      approvedBy: req.user._id,
+    });
+
+    // Notify the employee
+    await sendNotification({
+      userId: employee._id,
+      userEmail: employee.email,
+      type: 'leave_approved',
+      title: 'Leave Created',
+      message: `${req.user.name} created ${leave.leaveType} leave for you (${totalDays} day${totalDays > 1 ? 's' : ''}).`,
+      link: '/employee/leaves',
+    });
+
+    res.status(201).json(leave);
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   checkIn, checkOut, getMyAttendance, getAttendanceReport,
   requestLeave, getMyLeaves, getStoreLeaves, approveLeave, rejectLeave,
@@ -741,4 +850,5 @@ module.exports = {
   startBreak, endBreak, getBreakHistory, getActiveBreak,
   createTarget, getTargets, getMyTargets, updateTargetProgress, payTargetBonus,
   getEmployeePerformance,
+  adminMarkAttendance, adminCreateLeave,
 };

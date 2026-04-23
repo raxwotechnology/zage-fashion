@@ -8,6 +8,29 @@
   --color-card-border: #eaded6;
   --color-muted-text: #7b6f69;
   
+  /* Override emerald → rose/fuchsia to eliminate green throughout */
+  --color-emerald-50: #fdf2f8;
+  --color-emerald-100: #fce7f3;
+  --color-emerald-200: #fbcfe8;
+  --color-emerald-300: #f9a8d4;
+  --color-emerald-400: #f472b6;
+  --color-emerald-500: #d946a0;
+  --color-emerald-600: #c026d3;
+  --color-emerald-700: #a21caf;
+  --color-emerald-800: #86198f;
+  --color-emerald-900: #701a75;
+  --color-emerald-950: #4a044e;
+
+  /* Override teal → rose/fuchsia */
+  --color-teal-50: #fdf2f8;
+  --color-teal-100: #fce7f3;
+  --color-teal-200: #fbcfe8;
+  --color-teal-300: #f9a8d4;
+  --color-teal-400: #f472b6;
+  --color-teal-500: #d946a0;
+  --color-teal-600: #c026d3;
+  --color-teal-700: #a21caf;
+
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -40,7 +63,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 50%, rgba(217, 70, 160, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
     radial-gradient(ellipse at 60% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
 }
@@ -67,7 +90,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 78, 59, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(217, 70, 160, 0.1) 0%, rgba(120, 20, 100, 0.15) 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -79,13 +102,13 @@ body {
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  background: linear-gradient(135deg, #d946a0 0%, #c026d3 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   margin: 0 auto 1.5rem;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(217, 70, 160, 0.3);
 }
 
 .pos-login-branding h1 {
@@ -97,7 +120,7 @@ body {
 }
 
 .pos-login-tagline {
-  color: #10B981;
+  color: #d946a0;
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -196,8 +219,8 @@ body {
 }
 
 .pos-input:focus {
-  border-color: #10B981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  border-color: #d946a0;
+  box-shadow: 0 0 0 3px rgba(217, 70, 160, 0.15);
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -231,19 +254,19 @@ body {
   padding: 0.85rem;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  background: linear-gradient(135deg, #d946a0 0%, #c026d3 100%);
   color: white;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s;
   margin-top: 0.5rem;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 15px rgba(217, 70, 160, 0.3);
 }
 
 .pos-login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 20px rgba(217, 70, 160, 0.4);
 }
 
 .pos-login-btn:disabled {
@@ -275,7 +298,7 @@ body {
 }
 
 .pos-login-footer-link a:hover {
-  color: #10B981;
+  color: #d946a0;
 }
 
 /* ── POS Screen ── */
@@ -307,7 +330,7 @@ body {
 }
 
 .pos-topbar-icon {
-  color: #10B981;
+  color: #d946a0;
 }
 
 .pos-topbar-title {
@@ -325,9 +348,9 @@ body {
 .pos-topbar-store {
   padding: 0.35rem 1rem;
   border-radius: 20px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  color: #10B981;
+  background: rgba(217, 70, 160, 0.1);
+  border: 1px solid rgba(217, 70, 160, 0.2);
+  color: #d946a0;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -368,7 +391,7 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: linear-gradient(135deg, #d946a0, #c026d3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -451,8 +474,8 @@ body {
 }
 
 .pos-search-input:focus {
-  border-color: #10B981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  border-color: #d946a0;
+  box-shadow: 0 0 0 3px rgba(217, 70, 160, 0.1);
 }
 
 .pos-search-input::placeholder {
@@ -484,9 +507,9 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  border: 1px solid rgba(217, 70, 160, 0.3);
+  background: rgba(217, 70, 160, 0.1);
+  color: #d946a0;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -496,7 +519,7 @@ body {
 }
 
 .pos-scan-btn:hover {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(217, 70, 160, 0.2);
   transform: scale(1.05);
 }
 
@@ -535,8 +558,8 @@ body {
 }
 
 .pos-product-card:hover {
-  border-color: rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(217, 70, 160, 0.3);
+  background: rgba(217, 70, 160, 0.06);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
@@ -614,7 +637,7 @@ body {
 .pos-product-price {
   font-size: 1rem;
   font-weight: 800;
-  color: #10B981;
+  color: #d946a0;
 }
 
 .pos-product-unit {
@@ -652,7 +675,7 @@ body {
   height: 30px;
   border-radius: 10px;
   border: none;
-  background: #10B981;
+  background: #d946a0;
   color: white;
   cursor: pointer;
   display: flex;
@@ -667,7 +690,7 @@ body {
 }
 
 .pos-product-add-btn:hover {
-  background: #059669;
+  background: #c026d3;
   transform: scale(1.1);
 }
 
@@ -688,7 +711,7 @@ body {
   width: 36px;
   height: 36px;
   border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #10B981;
+  border-top-color: #d946a0;
   border-radius: 50%;
   animation: pos-spin 0.7s linear infinite;
 }
@@ -841,8 +864,8 @@ body {
 }
 
 .pos-qty-btn:hover {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10B981;
+  background: rgba(217, 70, 160, 0.15);
+  color: #d946a0;
 }
 
 .pos-qty-btn:disabled {
@@ -862,7 +885,7 @@ body {
 .pos-cart-item-total {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #10B981;
+  color: #d946a0;
   min-width: 50px;
   text-align: right;
 }
@@ -977,9 +1000,9 @@ body {
 }
 
 .pos-payment-btn.active {
-  border-color: #10B981;
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  border-color: #d946a0;
+  background: rgba(217, 70, 160, 0.1);
+  color: #d946a0;
 }
 
 .pos-payment-btn:hover {
@@ -1027,8 +1050,8 @@ body {
 }
 
 .pos-cash-input:focus {
-  border-color: #10B981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+  border-color: #d946a0;
+  box-shadow: 0 0 0 2px rgba(217, 70, 160, 0.1);
 }
 
 .pos-change-display {
@@ -1038,8 +1061,8 @@ body {
   padding: 0.5rem 0.75rem;
   margin-top: 0.4rem;
   border-radius: 10px;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: rgba(217, 70, 160, 0.08);
+  border: 1px solid rgba(217, 70, 160, 0.15);
 }
 
 .pos-change-display span:first-child {
@@ -1050,7 +1073,7 @@ body {
 .pos-change-amount {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #10B981;
+  color: #d946a0;
 }
 
 /* Checkout Button */
@@ -1059,7 +1082,7 @@ body {
   padding: 0.85rem;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  background: linear-gradient(135deg, #d946a0 0%, #c026d3 100%);
   color: white;
   font-size: 1.05rem;
   font-weight: 800;
@@ -1069,13 +1092,13 @@ body {
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.3s;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 20px rgba(217, 70, 160, 0.3);
   margin-top: 0.5rem;
 }
 
 .pos-checkout-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 25px rgba(217, 70, 160, 0.4);
 }
 
 .pos-checkout-btn:disabled {
@@ -1258,7 +1281,7 @@ body {
 .pos-receipt-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #10B981;
+  color: #d946a0;
   letter-spacing: 2px;
 }
 
@@ -1295,8 +1318,8 @@ body {
 .pos-receipt-payment-badge {
   padding: 1px 6px;
   border-radius: 4px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10B981;
+  background: rgba(217, 70, 160, 0.15);
+  color: #d946a0;
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -1352,7 +1375,7 @@ body {
 }
 
 .pos-receipt-change {
-  color: #10B981;
+  color: #d946a0;
   font-weight: 700;
 }
 
@@ -1509,7 +1532,7 @@ body {
 .pos-shift-stat-value {
   font-size: 1.3rem;
   font-weight: 800;
-  color: #10B981;
+  color: #d946a0;
 }
 
 .pos-shift-orders {
@@ -1545,8 +1568,8 @@ body {
 .pos-shift-order-method {
   padding: 2px 8px;
   border-radius: 6px;
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  background: rgba(217, 70, 160, 0.1);
+  color: #d946a0;
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1567,17 +1590,17 @@ body {
   padding: 0.6rem 1.25rem;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: linear-gradient(135deg, #d946a0, #c026d3);
   color: white;
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 10px rgba(217, 70, 160, 0.2);
 }
 
 .pos-btn-green:hover {
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 15px rgba(217, 70, 160, 0.3);
   transform: translateY(-1px);
 }
 

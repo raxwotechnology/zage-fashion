@@ -583,6 +583,74 @@ const getPosOrderById = async (req, res, next) => {
   }
 };
 
+// @desc    Get cashier-wise sales report
+// @route   GET /api/pos/cashier-report
+// @access  Private/Admin/Manager
+const getCashierSalesReport = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const filter = { isPosOrder: true, orderStatus: { $ne: 'cancelled' } };
+
+    if (req.user.role === 'manager') {
+      const storeId = await resolveStoreId(req.user);
+      if (storeId) filter.storeId = storeId;
+    }
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    } else {
+      // Default: last 30 days
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      filter.createdAt = { $gte: d };
+    }
+
+    const report = await Order.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: '$cashierId',
+          totalSales: { $sum: '$totalAmount' },
+          transactionCount: { $sum: 1 },
+          totalItems: { $sum: { $reduce: { input: '$items', initialValue: 0, in: { $add: ['$$value', '$$this.quantity'] } } } },
+          avgTransaction: { $avg: '$totalAmount' },
+          cashSales: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'cash'] }, '$totalAmount', 0] } },
+          cardSales: { $sum: { $cond: [{ $eq: ['$paymentMethod', 'card'] }, '$totalAmount', 0] } },
+          lastSale: { $max: '$createdAt' },
+        },
+      },
+      { $sort: { totalSales: -1 } },
+    ]);
+
+    // Populate cashier names
+    const cashierIds = report.map((r) => r._id).filter(Boolean);
+    const cashiers = await User.find({ _id: { $in: cashierIds } }).select('name email role').lean();
+    const cashierMap = {};
+    cashiers.forEach((c) => { cashierMap[String(c._id)] = c; });
+
+    const enriched = report.map((r) => ({
+      cashier: cashierMap[String(r._id)] || { name: 'Unknown', email: '' },
+      totalSales: Math.round(r.totalSales * 100) / 100,
+      transactionCount: r.transactionCount,
+      totalItems: r.totalItems,
+      avgTransaction: Math.round(r.avgTransaction * 100) / 100,
+      cashSales: Math.round(r.cashSales * 100) / 100,
+      cardSales: Math.round(r.cardSales * 100) / 100,
+      lastSale: r.lastSale,
+    }));
+
+    const totals = {
+      totalSales: enriched.reduce((s, r) => s + r.totalSales, 0),
+      totalTransactions: enriched.reduce((s, r) => s + r.transactionCount, 0),
+      totalItems: enriched.reduce((s, r) => s + r.totalItems, 0),
+    };
+
+    res.json({ cashiers: enriched, totals });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   getPosProducts,
   getProductByBarcode,
@@ -592,4 +660,5 @@ module.exports = {
   getActiveSession,
   startSession,
   endSession,
+  getCashierSalesReport,
 };

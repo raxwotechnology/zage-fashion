@@ -10,6 +10,7 @@ const {
   verifyPaymentOtp,
   payHereNotify,
   getStoreOrders,
+  cancelMyOrder,
 } = require('../controllers/orderController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -25,6 +26,7 @@ router.route('/:id/status').put(protect, authorize('manager', 'admin'), updateOr
 router.route('/:id/payhere-hash').post(protect, generatePayHereHash);
 router.route('/:id/payment-otp/request').post(protect, requestPaymentOtp);
 router.route('/:id/payment-otp/verify').post(protect, verifyPaymentOtp);
+router.route('/:id/cancel').put(protect, cancelMyOrder);
 
 module.exports = router;
 

@@ -143,6 +143,32 @@ const AdminSettings = () => {
               <h2 className="font-semibold text-dark-navy mb-4">Footer</h2>
               <SettingsInputField label="Footer Text" value={settings.footerText} onChange={(v) => handleChange('footerText', v)} placeholder="© 2026 Zage Fashion Corner. All rights reserved." />
             </div>
+
+            {/* Hero Products */}
+            <div className="bg-white rounded-2xl border border-card-border p-6 shadow-sm">
+              <h2 className="font-semibold text-dark-navy mb-2">🏠 Landing Page Hero Products</h2>
+              <p className="text-xs text-muted-text mb-4">These appear as floating badges on the homepage hero section.</p>
+              {[0, 1].map((idx) => {
+                const products = settings.heroProducts || [];
+                const prod = products[idx] || { name: '', price: '', emoji: '' };
+                const updateHeroProduct = (field, value) => {
+                  const updated = [...(settings.heroProducts || [{ name: '', price: '', emoji: '' }, { name: '', price: '', emoji: '' }])];
+                  if (!updated[idx]) updated[idx] = { name: '', price: '', emoji: '' };
+                  updated[idx] = { ...updated[idx], [field]: value };
+                  handleChange('heroProducts', updated);
+                };
+                return (
+                  <div key={idx} className="mb-4 p-4 rounded-xl border border-card-border bg-gray-50">
+                    <p className="text-xs font-bold text-muted-text mb-3 uppercase">Product Badge {idx + 1}</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <SettingsInputField label="Name" value={prod.name} onChange={(v) => updateHeroProduct('name', v)} placeholder={idx === 0 ? 'Luxe Tote Bag' : 'Radiance Serum'} />
+                      <SettingsInputField label="Price (LKR)" value={prod.price} onChange={(v) => updateHeroProduct('price', v)} type="number" placeholder="9500" />
+                      <SettingsInputField label="Emoji" value={prod.emoji} onChange={(v) => updateHeroProduct('emoji', v)} placeholder={idx === 0 ? '👜' : '✨'} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -241,6 +267,45 @@ const AdminSettings = () => {
                       <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.cashier?.canAccessReturns ? 'right-[3px]' : 'left-[3px]'}`} />
                     </button>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">View Inventory</p>
+                      <p className="text-xs text-muted-text">Allow cashiers to view stock levels</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      cashier: { ...settings.rolePermissions?.cashier, canViewInventory: !settings.rolePermissions?.cashier?.canViewInventory }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.cashier?.canViewInventory ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.cashier?.canViewInventory ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Apply Discounts</p>
+                      <p className="text-xs text-muted-text">Allow cashiers to apply manual discounts at POS</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      cashier: { ...settings.rolePermissions?.cashier, canApplyDiscounts: !(settings.rolePermissions?.cashier?.canApplyDiscounts !== false) }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.cashier?.canApplyDiscounts !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.cashier?.canApplyDiscounts !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Sales Reports</p>
+                      <p className="text-xs text-muted-text">Allow cashiers to view sales reports</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      cashier: { ...settings.rolePermissions?.cashier, canViewSalesReports: !settings.rolePermissions?.cashier?.canViewSalesReports }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.cashier?.canViewSalesReports ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.cashier?.canViewSalesReports ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -275,6 +340,58 @@ const AdminSettings = () => {
                     })}
                       className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canAccessReturns !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
                       <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canAccessReturns !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Payroll Management</p>
+                      <p className="text-xs text-muted-text">Allow managers to process salary payments</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      manager: { ...settings.rolePermissions?.manager, canManagePayroll: !(settings.rolePermissions?.manager?.canManagePayroll !== false) }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canManagePayroll !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canManagePayroll !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Supplier Payments</p>
+                      <p className="text-xs text-muted-text">Allow managers to manage supplier payment ledger</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      manager: { ...settings.rolePermissions?.manager, canManageSupplierPayments: !(settings.rolePermissions?.manager?.canManageSupplierPayments !== false) }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canManageSupplierPayments !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canManageSupplierPayments !== false ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">AI Predictions</p>
+                      <p className="text-xs text-muted-text">Allow managers to view AI sales forecasts</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      manager: { ...settings.rolePermissions?.manager, canViewPredictions: !settings.rolePermissions?.manager?.canViewPredictions }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canViewPredictions ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canViewPredictions ? 'right-[3px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">Promotions</p>
+                      <p className="text-xs text-muted-text">Allow managers to create and manage promotions</p>
+                    </div>
+                    <button onClick={() => handleChange('rolePermissions', {
+                      ...settings.rolePermissions,
+                      manager: { ...settings.rolePermissions?.manager, canManagePromotions: !(settings.rolePermissions?.manager?.canManagePromotions !== false) }
+                    })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${settings.rolePermissions?.manager?.canManagePromotions !== false ? 'bg-rose-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4.5 h-4.5 bg-white rounded-full absolute top-[3px] transition-all shadow-md ${settings.rolePermissions?.manager?.canManagePromotions !== false ? 'right-[3px]' : 'left-[3px]'}`} />
                     </button>
                   </div>
                 </div>

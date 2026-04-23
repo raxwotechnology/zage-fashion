@@ -9,6 +9,7 @@ const {
   getActiveSession,
   startSession,
   endSession,
+  getCashierSalesReport,
 } = require('../controllers/posController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -23,5 +24,6 @@ router.get('/orders/:id', getPosOrderById);
 router.get('/session/active', getActiveSession);
 router.post('/session/start', startSession);
 router.post('/session/end', endSession);
+router.get('/cashier-report', getCashierSalesReport);
 
 module.exports = router;

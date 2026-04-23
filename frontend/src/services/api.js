@@ -68,6 +68,7 @@ export const getMyStoreProducts = () => API.get('/products/my-store');
 export const createProduct = (data) => API.post('/products', data);
 export const updateProduct = (id, data) => API.put(`/products/${id}`, data);
 export const deleteProduct = (id) => API.delete(`/products/${id}`);
+export const getPriceHistory = (id) => API.get(`/products/${id}/price-history`);
 
 // Categories
 export const getCategories = () => API.get('/categories');
@@ -109,6 +110,7 @@ export const updateOrderStatus = (id, data) => API.put(`/orders/${id}/status`, d
 export const getPayHereHash = (orderId) => API.post(`/orders/${orderId}/payhere-hash`);
 export const requestOrderPaymentOtp = (orderId) => API.post(`/orders/${orderId}/payment-otp/request`);
 export const verifyOrderPaymentOtp = (orderId, data) => API.post(`/orders/${orderId}/payment-otp/verify`, data);
+export const cancelMyOrder = (orderId, data) => API.put(`/orders/${orderId}/cancel`, data);
 
 // Admin
 export const getAdminStats = () => API.get('/admin/stats');
@@ -173,6 +175,9 @@ export const rejectLeave = (id, data) => API.put(`/hr/leaves/${id}/reject`, data
 export const getEmployees = (params) => API.get('/hr/employees', { params });
 export const addEmployee = (data) => API.post('/hr/employees', data);
 export const updateEmployee = (id, data) => API.put(`/hr/employees/${id}`, data);
+export const getStoreLeaves = (params) => API.get('/hr/leaves/store', { params });
+export const adminMarkAttendance = (data) => API.post('/hr/attendance/mark', data);
+export const adminCreateLeave = (data) => API.post('/hr/leaves/create-for-employee', data);
 
 // Breaks
 export const startBreak = (data) => API.post('/hr/breaks/start', data);
@@ -241,6 +246,18 @@ export const exportCustomerReturnsReport = (params) =>
 export const logBarcodeGeneration = (data) => API.post('/barcodes/generate', data);
 export const getBarcodeLogs = (params) => API.get('/barcodes/logs', { params });
 
+// Supplier Payments
+export const getSupplierPaymentSummary = (params) => API.get('/supplier-payments/summary', { params });
+export const getSupplierLedger = (supplierId, params) => API.get(`/supplier-payments/${supplierId}/ledger`, { params });
+export const recordSupplierPayment = (supplierId, data) => API.post(`/supplier-payments/${supplierId}/pay`, data);
+export const recordSupplierPurchase = (supplierId, data) => API.post(`/supplier-payments/${supplierId}/purchase`, data);
+
+// Sales Tracking
+export const getCashierSalesReport = (params) => API.get('/pos/cashier-report', { params });
+
+// Predictions
+export const getSalesPredictions = (params) => API.get('/predictions/sales', { params });
+
 // Promotions
 export const getPromotions = (params) => API.get('/promotions', { params });
 export const getActivePromotions = () => API.get('/promotions/active');
@@ -248,5 +265,13 @@ export const createPromotion = (data) => API.post('/promotions', data);
 export const updatePromotion = (id, data) => API.put(`/promotions/${id}`, data);
 export const togglePromotion = (id) => API.put(`/promotions/${id}/toggle`);
 export const deletePromotion = (id) => API.delete(`/promotions/${id}`);
+// Overtime Pay
+export const getOvertimeRecords = (params) => API.get('/overtime', { params });
+export const getOvertimeSummary = (params) => API.get('/overtime/summary', { params });
+export const createOvertimeRecord = (data) => API.post('/overtime', data);
+export const markOvertimePaid = (id) => API.put(`/overtime/${id}/pay`);
+export const deleteOvertimeRecord = (id) => API.delete(`/overtime/${id}`);
+export const getEmployeeOTReport = (employeeId, params) => API.get(`/overtime/employee/${employeeId}`, { params });
+export const getMyOvertime = (params) => API.get('/overtime/my', { params });
 
 export default API;

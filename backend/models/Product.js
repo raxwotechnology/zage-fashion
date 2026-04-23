@@ -121,6 +121,24 @@ const productSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Supplier',
     },
+    // Stock tracking: old vs new
+    stockType: {
+      type: String,
+      enum: ['new', 'old', 'mixed'],
+      default: 'new',
+    },
+    oldStock: {
+      type: Number,
+      default: 0,
+    },
+    newStock: {
+      type: Number,
+      default: 0,
+    },
+    costPrice: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

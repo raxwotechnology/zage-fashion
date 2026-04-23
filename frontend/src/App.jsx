@@ -28,6 +28,7 @@ import ManagerReturns from './pages/storeOwner/ManagerReturns';
 import ManagerTargets from './pages/storeOwner/ManagerTargets';
 import ManagerPerformance from './pages/storeOwner/ManagerPerformance';
 import ManagerInventory from './pages/storeOwner/ManagerInventory';
+import ManagerSupplierPayments from './pages/storeOwner/ManagerSupplierPayments';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminStores from './pages/admin/AdminStores';
@@ -45,6 +46,10 @@ import AdminPayroll from './pages/admin/AdminPayroll';
 import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminReturns from './pages/admin/AdminReturns';
 import AdminBarcodes from './pages/admin/AdminBarcodes';
+import AdminSupplierPayments from './pages/admin/AdminSupplierPayments';
+import AdminSalesTracking from './pages/admin/AdminSalesTracking';
+import AdminPredictions from './pages/admin/AdminPredictions';
+import AdminOvertime from './pages/admin/AdminOvertime';
 import BarcodeGenerator from './pages/barcode/BarcodeGenerator';
 import CashierLogin from './pages/cashier/CashierLogin';
 import POSScreen from './pages/cashier/POSScreen';
@@ -55,6 +60,7 @@ import EmployeeAttendance from './pages/employee/EmployeeAttendance';
 import EmployeeLeaves from './pages/employee/EmployeeLeaves';
 import EmployeeReturns from './pages/employee/EmployeeReturns';
 import EmployeeSalary from './pages/employee/EmployeeSalary';
+import EmployeeOvertime from './pages/employee/EmployeeOvertime';
 import CashierStock from './pages/employee/CashierStock';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -112,6 +118,7 @@ function App() {
           <Route path="/manager/targets" element={<ProtectedRoute roles={['manager']}><ManagerTargets /></ProtectedRoute>} />
           <Route path="/manager/performance" element={<ProtectedRoute roles={['manager']}><ManagerPerformance /></ProtectedRoute>} />
           <Route path="/manager/inventory" element={<ProtectedRoute roles={['manager']}><Navigate to="/manager/products" replace /></ProtectedRoute>} />
+          <Route path="/manager/supplier-payments" element={<ProtectedRoute roles={['manager']}><ManagerSupplierPayments /></ProtectedRoute>} />
 
           {/* Admin */}
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminOverview /></ProtectedRoute>} />
@@ -131,6 +138,10 @@ function App() {
           <Route path="/admin/inventory" element={<ProtectedRoute roles={['admin']}><Navigate to="/admin/products" replace /></ProtectedRoute>} />
           <Route path="/admin/promotions" element={<ProtectedRoute roles={['admin']}><AdminPromotions /></ProtectedRoute>} />
           <Route path="/admin/barcodes" element={<ProtectedRoute roles={['admin']}><AdminBarcodes /></ProtectedRoute>} />
+          <Route path="/admin/supplier-payments" element={<ProtectedRoute roles={['admin']}><AdminSupplierPayments /></ProtectedRoute>} />
+          <Route path="/admin/sales-tracking" element={<ProtectedRoute roles={['admin']}><AdminSalesTracking /></ProtectedRoute>} />
+          <Route path="/admin/predictions" element={<ProtectedRoute roles={['admin']}><AdminPredictions /></ProtectedRoute>} />
+          <Route path="/admin/overtime" element={<ProtectedRoute roles={['admin']}><AdminOvertime /></ProtectedRoute>} />
 
           {/* Barcode Generator (Admin + Manager + Cashier) */}
           <Route path="/barcode-generator" element={<ProtectedRoute roles={['admin', 'manager', 'cashier']}><BarcodeGenerator /></ProtectedRoute>} />
@@ -149,6 +160,7 @@ function App() {
           <Route path="/employee/leaves" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeLeaves /></ProtectedRoute>} />
           {/* Returns removed from cashier — only manager/admin have return access */}
           <Route path="/employee/salary" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee']}><EmployeeSalary /></ProtectedRoute>} />
+          <Route path="/employee/overtime" element={<ProtectedRoute roles={['cashier', 'deliveryGuy', 'stockEmployee', 'manager']}><EmployeeOvertime /></ProtectedRoute>} />
           <Route path="/employee/stock" element={<ProtectedRoute roles={['cashier', 'stockEmployee']}><CashierStock /></ProtectedRoute>} />
         </Routes>
       </AppLayout>

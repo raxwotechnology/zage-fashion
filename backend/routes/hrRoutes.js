@@ -7,6 +7,7 @@ const {
   startBreak, endBreak, getBreakHistory, getActiveBreak,
   createTarget, getTargets, getMyTargets, updateTargetProgress, payTargetBonus,
   getEmployeePerformance,
+  adminMarkAttendance, adminCreateLeave,
 } = require('../controllers/hrController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -17,6 +18,7 @@ router.post('/attendance/check-in', authorize('cashier', 'deliveryGuy', 'stockEm
 router.post('/attendance/check-out', authorize('cashier', 'deliveryGuy', 'stockEmployee', 'manager'), checkOut);
 router.get('/attendance', getMyAttendance);
 router.get('/attendance/report', authorize('manager', 'admin'), getAttendanceReport);
+router.post('/attendance/mark', authorize('manager', 'admin'), adminMarkAttendance);
 
 // Leaves
 router.post('/leaves', requestLeave);
@@ -24,6 +26,7 @@ router.get('/leaves', getMyLeaves);
 router.get('/leaves/store', authorize('manager', 'admin'), getStoreLeaves);
 router.put('/leaves/:id/approve', authorize('manager', 'admin'), approveLeave);
 router.put('/leaves/:id/reject', authorize('manager', 'admin'), rejectLeave);
+router.post('/leaves/create-for-employee', authorize('manager', 'admin'), adminCreateLeave);
 
 // Employees
 router.get('/employees', authorize('manager', 'admin'), getEmployees);
