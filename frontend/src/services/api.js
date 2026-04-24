@@ -3,10 +3,9 @@ import axios from 'axios';
 // Use environment variable for API base URL
 // In production (Netlify): set VITE_API_URL in Netlify dashboard
 // In development: falls back to empty string (uses Vite proxy)
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const API = axios.create({
-  baseURL: API_BASE_URL ? `${API_BASE_URL}/api` : '/api',
+  baseURL: 'https://beauty.zage.lk/api',
   timeout: 30000, // 30s timeout (Render free tier cold starts can be slow)
   headers: {
     'Content-Type': 'application/json',
