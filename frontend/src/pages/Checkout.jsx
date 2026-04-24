@@ -196,7 +196,7 @@ const Checkout = () => {
       merchant_id: payData.merchant_id,
       return_url: window.location.origin + `/order-confirmation/${order._id}`,
       cancel_url: window.location.origin + '/checkout',
-      notify_url: `${window.location.protocol}//${window.location.hostname}:5000/api/orders/payhere-notify`,
+      notify_url: `${import.meta.env.VITE_API_URL}/api/orders/payhere-notify`,
       order_id: payData.order_id,
       items: order.items.map((i) => i.name).join(', '),
       amount: payData.amount,

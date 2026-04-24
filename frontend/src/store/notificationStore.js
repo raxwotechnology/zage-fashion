@@ -12,7 +12,7 @@ const useNotificationStore = create((set, get) => ({
       if (!userInfo) return;
       const { token } = JSON.parse(userInfo);
       
-      const res = await fetch('/api/notifications', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -30,7 +30,7 @@ const useNotificationStore = create((set, get) => ({
       if (!userInfo) return;
       const { token } = JSON.parse(userInfo);
 
-      const res = await fetch('/api/notifications/unread-count', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -46,7 +46,7 @@ const useNotificationStore = create((set, get) => ({
       if (!userInfo) return;
       const { token } = JSON.parse(userInfo);
 
-      await fetch(`/api/notifications/${id}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -68,7 +68,7 @@ const useNotificationStore = create((set, get) => ({
       if (!userInfo) return;
       const { token } = JSON.parse(userInfo);
 
-      await fetch('/api/notifications/read-all', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/read-all`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
       });
