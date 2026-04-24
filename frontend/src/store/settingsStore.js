@@ -4,7 +4,7 @@ import { getSettings } from '../services/api';
 const toAbsoluteLogoUrl = (logoPath) => {
   if (!logoPath) return '';
   if (/^https?:\/\//i.test(logoPath)) return logoPath;
-  const apiBase = 'https://beauty.zage.lk';
+  const apiBase = import.meta.env.VITE_API_URL;
   return apiBase ? `${apiBase}${logoPath}` : logoPath;
 };
 

@@ -31,7 +31,7 @@ const useCurrencyStore = create((set, get) => ({
     if (now - lastFetched < 30 * 60 * 1000) return;
 
     try {
-      const res = await fetch('https://beauty.zage.lk/api/currency/rate');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/rate`);
       const data = await res.json();
       if (data.rate) {
         get().setExchangeRate(data.rate);
