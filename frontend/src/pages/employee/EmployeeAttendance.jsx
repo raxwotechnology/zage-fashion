@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { LayoutDashboard, User, Clock, Calendar, CreditCard, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import useAuthStore from '../../store/authStore';
-import getEmployeeNavItems from './employeeNav';
+import { getEmployeeNavGroups } from './employeeNav';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -62,7 +62,7 @@ const EmployeeAttendance = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+      <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -71,7 +71,7 @@ const EmployeeAttendance = () => {
   }
 
   return (
-    <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+    <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-dark-navy">⏰ My Attendance</h1>
 

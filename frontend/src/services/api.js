@@ -247,12 +247,13 @@ export const exportCustomerReturnsReport = (params) =>
 export const logBarcodeGeneration = (data) => API.post('/barcodes/generate', data);
 export const getBarcodeLogs = (params) => API.get('/barcodes/logs', { params });
 
-// Supplier Payments
 export const getSupplierPaymentSummary = (params) => API.get('/supplier-payments/summary', { params });
 export const getSupplierPayments = (params) => API.get('/supplier-payments/payments', { params });
 export const getSupplierLedger = (supplierId, params) => API.get(`/supplier-payments/${supplierId}/ledger`, { params });
 export const recordSupplierPayment = (supplierId, data) => API.post(`/supplier-payments/${supplierId}/pay`, data);
 export const recordSupplierPurchase = (supplierId, data) => API.post(`/supplier-payments/${supplierId}/purchase`, data);
+export const updateSupplierTransaction = (id, data) => API.put(`/supplier-payments/transaction/${id}`, data);
+export const deleteSupplierTransaction = (id) => API.delete(`/supplier-payments/transaction/${id}`);
 
 // Sales Tracking
 export const getCashierSalesReport = (params) => API.get('/pos/cashier-report', { params });

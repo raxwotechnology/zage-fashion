@@ -1,8 +1,8 @@
 import ManagerEmployees from '../storeOwner/ManagerEmployees';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const AdminEmployees = () => {
-  return <ManagerEmployees navItems={adminNavItems} title="Admin Panel" />;
+  return <ManagerEmployees navItems={navItems} title="Admin Panel" />;
 };
 
 export default AdminEmployees;

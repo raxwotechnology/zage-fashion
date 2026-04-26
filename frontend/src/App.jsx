@@ -75,8 +75,20 @@ const AppLayout = ({ children }) => {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
-  const isPOS = location.pathname === '/pos' || location.pathname === '/cashier-login';
-  if (isPOS) return <>{children}</>;
+
+  const path = location.pathname;
+
+  // Pages that should have NO shared Navbar/Footer
+  const isNoLayout =
+    path === '/pos' ||
+    path === '/cashier-login' ||
+    path.startsWith('/admin') ||
+    path.startsWith('/manager') ||
+    path.startsWith('/employee') ||
+    path.startsWith('/delivery') ||
+    path.startsWith('/barcode');
+
+  if (isNoLayout) return <>{children}</>;
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -85,6 +97,7 @@ const AppLayout = ({ children }) => {
     </div>
   );
 };
+
 
 function App() {
   return (

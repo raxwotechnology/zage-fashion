@@ -7,7 +7,7 @@ import {
 } from '../../services/api';
 import { toast } from 'react-toastify';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../utils/exportUtils';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const CATEGORIES = ['Marketing', 'Utilities', 'Water Bill', 'Electricity', 'Transport', 'Rent', 'Salaries', 'Supplies', 'Maintenance', 'Insurance', 'Internet & Phone', 'Equipment', 'Packaging', 'Cleaning', 'Security', 'Other'];
 

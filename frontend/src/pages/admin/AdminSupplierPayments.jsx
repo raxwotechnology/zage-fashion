@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Wallet, Search, ArrowLeft, CreditCard, TrendingUp, TrendingDown, DollarSign, Calendar, Download, ChevronDown, X, FileText, FileSpreadsheet } from 'lucide-react';
+import { Wallet, Search, ArrowLeft, CreditCard, TrendingUp, TrendingDown, DollarSign, Calendar, Download, ChevronDown, X, FileText, FileSpreadsheet, Edit2, Trash2, Save } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import adminNavItems from './adminNavItems';
-import { getSupplierPaymentSummary, getSupplierLedger, recordSupplierPayment, recordSupplierPurchase, getSupplierPayments } from '../../services/api';
+import { adminNavGroups as navItems } from './adminNavItems';
+import { getSupplierPaymentSummary, getSupplierLedger, recordSupplierPayment, recordSupplierPurchase, getSupplierPayments, updateSupplierTransaction, deleteSupplierTransaction } from '../../services/api';
 import { toast } from 'react-toastify';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const AdminSupplierPayments = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -24,6 +24,8 @@ const AdminSupplierPayments = () => {
   const [supplierToPay, setSupplierToPay] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseForm, setPurchaseForm] = useState({ totalCost: '', amountPaid: '', description: '' });
+  const [editTx, setEditTx] = useState(null); // transaction being edited
+  const [editForm, setEditForm] = useState({ amount: '', description: '', date: '' });
 
   const fetchSummary = async (isRefresh = false) => {
     try {
@@ -129,6 +131,38 @@ const AdminSupplierPayments = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleEditTx = (t) => {
+    setEditTx(t._id);
+    setEditForm({
+      amount: t.amount,
+      description: t.description || '',
+      date: t.date ? new Date(t.date).toISOString().split('T')[0] : '',
+    });
+  };
+
+  const handleSaveTx = async () => {
+    try {
+      await updateSupplierTransaction(editTx, { amount: Number(editForm.amount), description: editForm.description, date: editForm.date });
+      toast.success('Transaction updated');
+      setEditTx(null);
+      openLedger(selectedSupplier);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Update failed');
+    }
+  };
+
+  const handleDeleteTx = async (id) => {
+    if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
+    try {
+      await deleteSupplierTransaction(id);
+      toast.success('Transaction deleted');
+      openLedger(selectedSupplier);
+      fetchSummary(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const exportAllPaymentsExcel = async () => {
     try {
       const res = await getSupplierPayments();
@@ -152,7 +186,7 @@ const AdminSupplierPayments = () => {
       const res = await getSupplierPayments();
       const doc = new jsPDF();
       doc.text('Supplier Payments Report', 14, 15);
-      doc.autoTable({
+      autoTable(doc, {
         head: [['Supplier', 'Amount (LKR)', 'Date', 'Payment Method']],
         body: res.data.map(p => [
           p.supplierId?.name || 'Unknown',
@@ -178,7 +212,7 @@ const AdminSupplierPayments = () => {
   // Ledger View
   if (selectedSupplier) {
     return (
-      <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Admin Panel">
         <div style={{ maxWidth: '1100px' }}>
           {/* Back Button */}
           <button onClick={() => { setSelectedSupplier(null); setLedger(null); }}
@@ -236,27 +270,54 @@ const AdminSupplierPayments = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                   <thead>
                     <tr style={{ background: '#fdf2f8' }}>
-                      {['Date', 'Type', 'Description', 'By', 'Amount', 'Balance'].map((h) => (
+                      {['Date', 'Type', 'Description', 'By', 'Amount', 'Balance', 'Actions'].map((h) => (
                         <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontWeight: 700, color: '#7b6f69', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {ledger.transactions.map((t, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid #f5f0ec' }}>
-                        <td style={{ padding: '0.7rem 1rem', color: '#1f1f1f' }}>{new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <tr key={i} style={{ borderBottom: '1px solid #f5f0ec', background: editTx === t._id ? '#fff9f5' : 'white' }}>
+                        <td style={{ padding: '0.7rem 1rem', color: '#1f1f1f', minWidth: '100px' }}>
+                          {editTx === t._id
+                            ? <input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} style={{ border: '1px solid #eaded6', borderRadius: '6px', padding: '3px 6px', fontSize: '0.8rem', width: '120px' }} />
+                            : new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
                         <td style={{ padding: '0.7rem 1rem' }}>
                           <span style={{ padding: '2px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: t.type === 'purchase' ? '#fef3c7' : '#d1fae5', color: t.type === 'purchase' ? '#92400e' : '#065f46' }}>
                             {t.type === 'purchase' ? 'PURCHASE' : 'PAYMENT'}
                           </span>
                         </td>
-                        <td style={{ padding: '0.7rem 1rem', color: '#7b6f69', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description}</td>
+                        <td style={{ padding: '0.7rem 1rem', color: '#7b6f69', maxWidth: '200px' }}>
+                          {editTx === t._id
+                            ? <input value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} style={{ border: '1px solid #eaded6', borderRadius: '6px', padding: '3px 8px', fontSize: '0.82rem', width: '100%' }} />
+                            : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{t.description}</span>}
+                        </td>
                         <td style={{ padding: '0.7rem 1rem', color: '#7b6f69' }}>{t.createdBy?.name || '—'}</td>
-                        <td style={{ padding: '0.7rem 1rem', fontWeight: 700, color: t.type === 'purchase' ? '#dc2626' : '#059669' }}>
-                          {t.type === 'purchase' ? '+' : '-'} LKR {t.amount.toLocaleString()}
+                        <td style={{ padding: '0.7rem 1rem', fontWeight: 700, color: t.type === 'purchase' ? '#dc2626' : '#059669', minWidth: '110px' }}>
+                          {editTx === t._id
+                            ? <input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} style={{ border: '1px solid #eaded6', borderRadius: '6px', padding: '3px 6px', fontSize: '0.85rem', width: '90px', fontWeight: 700 }} />
+                            : <>{t.type === 'purchase' ? '+' : '-'} LKR {t.amount.toLocaleString()}</>}
                         </td>
                         <td style={{ padding: '0.7rem 1rem', fontWeight: 700, color: t.runningBalance > 0 ? '#dc2626' : '#059669' }}>
                           LKR {t.runningBalance.toLocaleString()}
+                        </td>
+                        <td style={{ padding: '0.7rem 1rem' }}>
+                          {editTx === t._id ? (
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                              <button onClick={handleSaveTx} style={{ background: '#059669', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                              <button onClick={() => setEditTx(null)} style={{ background: '#f5f0ec', color: '#7b6f69', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                              <button onClick={() => handleEditTx(t)} title="Edit" style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
+                                <Edit2 size={13} />
+                              </button>
+                              <button onClick={() => handleDeleteTx(t._id)} title="Delete" style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}>
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -385,7 +446,7 @@ const AdminSupplierPayments = () => {
 
   // Summary View
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Admin Panel">
       <div style={{ maxWidth: '1100px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>

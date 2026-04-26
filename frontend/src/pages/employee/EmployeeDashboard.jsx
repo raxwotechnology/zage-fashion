@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Calendar, CheckCircle, AlertCircle, TrendingUp, Coffee, Target, Award } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import useAuthStore from '../../store/authStore';
-import getEmployeeNavItems from './employeeNav';
+import { getEmployeeNavGroups } from './employeeNav';
 import API from '../../services/api';
 import { getActiveBreak, startBreak, endBreak, getMyTargets } from '../../services/api';
 import { toast } from 'react-toastify';
@@ -129,7 +129,7 @@ const EmployeeDashboard = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+      <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -138,7 +138,7 @@ const EmployeeDashboard = () => {
   }
 
   return (
-    <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+    <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
       <div className="space-y-6">
         {/* Welcome Card */}
         <div className="bg-gradient-to-r from-rose-500 to-fuchsia-600 rounded-2xl p-6 text-white shadow-lg">

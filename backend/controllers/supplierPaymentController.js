@@ -266,10 +266,44 @@ const recordPurchase = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// @desc    Update a supplier payment/purchase transaction
+// @route   PUT /api/supplier-payments/transaction/:id
+// @access  Private/Admin/Manager
+const updateTransaction = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { amount, description, paymentMethod, date } = req.body;
+    const transaction = await SupplierPayment.findById(id);
+    if (!transaction) { res.status(404); return next(new Error('Transaction not found')); }
+    if (amount !== undefined && amount > 0) transaction.amount = amount;
+    if (description !== undefined) transaction.description = description;
+    if (paymentMethod) transaction.paymentMethod = paymentMethod;
+    if (date) transaction.date = new Date(date);
+    await transaction.save();
+    const populated = await SupplierPayment.findById(id).populate('createdBy', 'name');
+    res.json(populated);
+  } catch (error) { next(error); }
+};
+
+// @desc    Delete a supplier payment/purchase transaction
+// @route   DELETE /api/supplier-payments/transaction/:id
+// @access  Private/Admin
+const deleteTransaction = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const transaction = await SupplierPayment.findById(id);
+    if (!transaction) { res.status(404); return next(new Error('Transaction not found')); }
+    await SupplierPayment.findByIdAndDelete(id);
+    res.json({ message: 'Transaction deleted' });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   getSupplierSummary,
   getSupplierPayments,
   getSupplierLedger,
   recordPayment,
   recordPurchase,
+  updateTransaction,
+  deleteTransaction,
 };

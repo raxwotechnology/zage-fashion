@@ -3,7 +3,7 @@ import { Settings, Save, Upload, Globe, Phone, Mail, MapPin, Palette, DollarSign
 import DashboardLayout from '../../components/DashboardLayout';
 import { getSettings, updateSettings, uploadLogo } from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import useSettingsStore from '../../store/settingsStore';
 
 const SettingsInputField = ({ label, value, onChange, type = 'text', placeholder = '', suffix = '' }) => (
@@ -63,15 +63,22 @@ const AdminSettings = () => {
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    // Reset file input so same file can be re-uploaded
+    e.target.value = '';
     const formData = new FormData();
     formData.append('logo', file);
     try {
       const { data } = await uploadLogo(formData);
-      const merged = { ...settings, logo: data.logo };
+      // Backend returns relative path like /uploads/logo-xxx.png
+      const logoPath = data.logoUrl || data.logo;
+      const merged = { ...settings, logoUrl: logoPath, logo: logoPath };
       setSettings(merged);
+      // Force-update the global store so DashboardLayout & Navbar reflect instantly
       setSettingsLocal(merged);
-      toast.success('Logo uploaded!');
-    } catch (err) { toast.error('Failed to upload logo'); }
+      toast.success('Logo uploaded successfully! ✅');
+    } catch (err) {
+      toast.error('Failed to upload logo: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   if (loading) return <DashboardLayout navItems={navItems} title="Zage Admin Panel"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
@@ -118,8 +125,8 @@ const AdminSettings = () => {
               <h2 className="font-semibold text-dark-navy mb-4">Shop Branding</h2>
               <div className="flex items-center gap-6 mb-6">
                 <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-card-border flex items-center justify-center overflow-hidden bg-gray-50">
-                  {settings.logo ? (
-                    <img src={settings.logo} alt="Logo" className="w-full h-full object-cover" />
+                  {(settings.logoUrl || settings.logo) ? (
+                    <img src={settings.logoUrl || settings.logo} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
                     <Store size={32} className="text-gray-300" />
                   )}

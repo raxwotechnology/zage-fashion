@@ -12,10 +12,13 @@ const Home = () => {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const settings = useSettingsStore((s) => s.settings);
+  const fetchSettings = useSettingsStore((s) => s.fetchSettings);
   const heroProducts = settings?.heroProducts || [
     { name: 'Luxe Tote Bag', price: 9500, emoji: '👜' },
     { name: 'Radiance Serum', price: 6800, emoji: '✨' },
   ];
+
+  useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,9 +60,16 @@ const Home = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <span className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 text-xs font-bold px-4 py-2 rounded-full mb-6 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 text-xs font-bold px-4 py-2 rounded-full mb-4 uppercase tracking-wider">
               <Sparkles size={14} /> New Season Beauty Edit
             </span>
+            {/* Brand Name - editable from admin settings */}
+            <div className="mb-3">
+              <p className="text-sm font-bold text-muted-text uppercase tracking-widest mb-1">Welcome to</p>
+              <h2 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-rose-500 to-fuchsia-700 bg-clip-text text-transparent leading-tight">
+                {settings?.shopName || 'Zage Fashion Corner'}
+              </h2>
+            </div>
             <h1 className="text-4xl md:text-6xl font-bold text-dark-navy leading-tight mb-6 mt-0">
               Signature style
               <br />
@@ -93,8 +103,24 @@ const Home = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
           >
             <div className="relative">
-              <div className="w-80 h-80 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-rose-100 to-stone-200 flex items-center justify-center shadow-2xl">
-                <span className="text-8xl">💄</span>
+              <div className="w-80 h-80 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-rose-100 to-stone-200 flex items-center justify-center shadow-2xl overflow-hidden border-4 border-white">
+                {settings?.logoUrl || settings?.logo ? (
+                  <img
+                    src={settings.logoUrl || settings.logo}
+                    alt={settings?.shopName || 'Brand Logo'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <span
+                  className="text-8xl"
+                  style={{ display: (settings?.logoUrl || settings?.logo) ? 'none' : 'block' }}
+                >
+                  💄
+                </span>
               </div>
               {/* Floating badges */}
               {heroProducts[0] && (

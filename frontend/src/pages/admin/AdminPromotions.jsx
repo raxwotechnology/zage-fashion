@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Trash2, ToggleLeft, ToggleRight, Tag, Gift, Percent, Calendar } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import { getPromotions, createPromotion, deletePromotion, togglePromotion } from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -81,7 +81,7 @@ const AdminPromotions = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Admin Panel">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -93,7 +93,7 @@ const AdminPromotions = () => {
   const expiredCount = promotions.filter(p => isExpired(p.endDate)).length;
 
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <div>

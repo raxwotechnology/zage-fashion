@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Clock, DollarSign, CheckCircle } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import getEmployeeNavItems from './employeeNav';
+import { getEmployeeNavGroups } from './employeeNav';
 import { getMyOvertime } from '../../services/api';
 import useAuthStore from '../../store/authStore';
 import { toast } from 'react-toastify';
 
 const EmployeeOvertime = () => {
   const user = useAuthStore((s) => s.user);
-  const navItems = getEmployeeNavItems(user?.role);
+  const navItems = getEmployeeNavGroups(user?.role);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 

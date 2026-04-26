@@ -3,7 +3,7 @@ import { Package, AlertTriangle, Search } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { toast } from 'react-toastify';
 import { exportToCSV, exportToExcel } from '../../utils/exportUtils';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 import { getMyStoreProducts } from '../../services/api';
 import API from '../../services/api';
 
@@ -68,7 +68,7 @@ const ManagerInventory = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -77,7 +77,7 @@ const ManagerInventory = () => {
   }
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title="Manager Dashboard">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <div>

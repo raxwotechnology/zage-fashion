@@ -5,7 +5,7 @@ import { getFinancialDashboard } from '../../services/api';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'react-toastify';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../utils/exportUtils';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const PIE_COLORS = ['#d946a0', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#a855f7', '#64748b', '#e11d48', '#0ea5e9', '#d946ef'];
 

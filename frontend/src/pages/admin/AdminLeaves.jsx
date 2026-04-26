@@ -1,8 +1,8 @@
 import ManagerLeaves from '../storeOwner/ManagerLeaves';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const AdminLeaves = () => {
-  return <ManagerLeaves navItems={adminNavItems} title="Admin Panel" />;
+  return <ManagerLeaves navItems={navItems} title="Admin Panel" />;
 };
 
 export default AdminLeaves;

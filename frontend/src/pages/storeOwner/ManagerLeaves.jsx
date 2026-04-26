@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Calendar, Check, X, Clock, FileText, FileSpreadsheet } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { toast } from 'react-toastify';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 import { getEmployees, adminCreateLeave } from '../../services/api';
 import API from '../../services/api';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
@@ -110,7 +110,7 @@ const ManagerLeaves = ({ navItems = managerNavItems, title = 'Manager Dashboard'
   const exportPDF = () => {
     const doc = new jsPDF('landscape');
     doc.text('Leave Requests Report', 14, 15);
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Employee', 'Role', 'Department', 'Type', 'Dates', 'Days', 'Status']],
       body: filtered.map(l => [
         l.employeeId?.name || 'Unknown',

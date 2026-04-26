@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 import { toast } from 'react-toastify';
 import { createCustomerReturn, getCustomerReturns, getReturnOrder, managerApproveCustomerReturn, managerRejectCustomerReturn } from '../../services/api';
 
@@ -88,7 +88,7 @@ const ManagerReturns = () => {
   };
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title="Manager Dashboard">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-dark-navy">Customer Returns</h1>

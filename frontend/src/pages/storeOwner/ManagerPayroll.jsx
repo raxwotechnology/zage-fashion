@@ -4,7 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getEmployees, calculateSalary, processSalaryPayment, getPayrollReport } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'react-toastify';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 
 
 

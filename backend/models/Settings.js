@@ -4,6 +4,7 @@ const settingsSchema = new mongoose.Schema({
   shopName: { type: String, default: 'Zage Fashion Corner' },
   tagline: { type: String, default: 'Where style meets skincare' },
   logo: { type: String, default: '' },
+  logoUrl: { type: String, default: '' },
   email: { type: String, default: 'hello@zagebeauty.com' },
   phone: { type: String, default: '+94 11 255 5000' },
   phone2: { type: String, default: '' },

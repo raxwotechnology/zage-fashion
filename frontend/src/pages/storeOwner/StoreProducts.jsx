@@ -4,7 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getMyStoreProducts, createProduct, updateProduct, deleteProduct, getCategories, getStores } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 import SuppliersPanel from '../inventory/SuppliersPanel';
 import StockReceivingPanel from '../inventory/StockReceivingPanel';
 import SupplierReturnsPanel from '../inventory/SupplierReturnsPanel';
@@ -126,7 +126,7 @@ const StoreProducts = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -135,7 +135,7 @@ const StoreProducts = () => {
   }
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
+    <DashboardLayout navItems={navItems} title="Store Dashboard">
       <div>
         <div className="flex gap-2 mb-6 flex-wrap">
           {[

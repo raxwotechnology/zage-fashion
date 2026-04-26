@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import API from '../../services/api';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
@@ -95,7 +95,7 @@ const LeaveRequestsPanel = ({ defaultFilter = 'pending' }) => {
       l.totalDays || 0,
       l.status || '',
     ]);
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Employee', 'Role', 'Dept', 'Type', 'Start', 'End', 'Days', 'Status']],
       body: tableData,
       startY: 20,

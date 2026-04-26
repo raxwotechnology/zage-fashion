@@ -3,7 +3,7 @@ import { Users, Search, Edit3, Save, X, UserPlus, Clock, Calendar, CheckCircle }
 import DashboardLayout from '../../components/DashboardLayout';
 import { getEmployees, addEmployee, updateEmployee, adminMarkAttendance, adminCreateLeave, getAttendanceReport, getStoreLeaves } from '../../services/api';
 import { toast } from 'react-toastify';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 import useAuthStore from '../../store/authStore';
 
 

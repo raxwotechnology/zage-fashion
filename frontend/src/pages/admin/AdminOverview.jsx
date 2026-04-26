@@ -3,7 +3,7 @@ import { Users, Store, Tag, ShoppingBag, TrendingUp, DollarSign, Package, Clock,
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminStats } from '../../services/api';
 import { Link } from 'react-router-dom';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const AdminOverview = () => {
   const [stats, setStats] = useState(null);

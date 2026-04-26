@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, Users, ShoppingCart, DollarSign, Calendar, Download, BarChart3 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import { getCashierSalesReport } from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -45,7 +45,7 @@ const AdminSalesTracking = () => {
   const maxSales = data?.cashiers?.length ? Math.max(...data.cashiers.map((c) => c.totalSales)) : 0;
 
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Admin Panel">
       <div style={{ maxWidth: '1100px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>

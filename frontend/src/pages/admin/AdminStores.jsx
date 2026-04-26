@@ -5,7 +5,7 @@ import { getAdminStores, toggleStoreStatus, createStore, updateStore } from '../
 import API from '../../services/api';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const emptyForm = { name: '', description: '', address: '', city: '', phone: '', email: '', bannerImage: '', logo: '', managerId: '' };
 

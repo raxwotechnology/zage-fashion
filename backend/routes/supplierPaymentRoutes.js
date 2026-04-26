@@ -6,6 +6,8 @@ const {
   getSupplierLedger,
   recordPayment,
   recordPurchase,
+  updateTransaction,
+  deleteTransaction,
 } = require('../controllers/supplierPaymentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -16,5 +18,7 @@ router.get('/payments', authorize('admin', 'manager'), getSupplierPayments);
 router.get('/:supplierId/ledger', authorize('admin', 'manager'), getSupplierLedger);
 router.post('/:supplierId/pay', authorize('admin', 'manager'), recordPayment);
 router.post('/:supplierId/purchase', authorize('admin', 'manager'), recordPurchase);
+router.put('/transaction/:id', authorize('admin', 'manager'), updateTransaction);
+router.delete('/transaction/:id', authorize('admin'), deleteTransaction);
 
 module.exports = router;

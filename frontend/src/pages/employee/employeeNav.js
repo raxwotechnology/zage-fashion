@@ -1,30 +1,62 @@
-import { LayoutDashboard, User, Clock, Calendar, CreditCard, Monitor, Truck, Package, RotateCcw, Barcode, Timer } from 'lucide-react';
+import {
+  LayoutDashboard, User, Clock, Calendar, CreditCard,
+  Monitor, Truck, Package, Barcode, Timer, Globe,
+} from 'lucide-react';
 
-const getEmployeeNavItems = (role) => {
-  const items = [
-    { path: '/employee', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/employee/profile', label: 'My Profile', icon: User },
-    { path: '/employee/attendance', label: 'Attendance', icon: Clock },
-    { path: '/employee/leaves', label: 'Leaves', icon: Calendar },
-    { path: '/employee/salary', label: 'Salary & EPF/ETF', icon: CreditCard },
-    { path: '/employee/overtime', label: 'Overtime', icon: Timer },
+const getEmployeeNavGroups = (role) => {
+  const groups = [
+    {
+      label: 'My Dashboard',
+      items: [
+        { path: '/employee',         label: 'Dashboard',      icon: LayoutDashboard },
+        { path: '/employee/profile', label: 'My Profile',     icon: User },
+      ],
+    },
+    {
+      label: 'Work & Attendance',
+      items: [
+        { path: '/employee/attendance', label: 'Attendance',       icon: Clock },
+        { path: '/employee/leaves',     label: 'Leave Requests',   icon: Calendar },
+        { path: '/employee/overtime',   label: 'Overtime',         icon: Timer },
+      ],
+    },
+    {
+      label: 'Payroll',
+      items: [
+        { path: '/employee/salary', label: 'Salary & EPF/ETF', icon: CreditCard },
+      ],
+    },
   ];
 
+  // Role-specific tools
+  const tools = [];
   if (role === 'cashier') {
-    items.push({ path: '/pos', label: 'POS Terminal', icon: Monitor });
-    items.push({ path: '/employee/stock', label: 'Stock View', icon: Package });
-    items.push({ path: '/barcode-generator', label: 'Barcode Generator', icon: Barcode });
+    tools.push({ path: '/pos',                label: 'POS Terminal',       icon: Monitor });
+    tools.push({ path: '/employee/stock',     label: 'Stock View',         icon: Package });
+    tools.push({ path: '/barcode-generator',  label: 'Barcode Generator',  icon: Barcode });
   }
-
   if (role === 'stockEmployee') {
-    items.push({ path: '/employee/stock', label: 'Stock View', icon: Package });
+    tools.push({ path: '/employee/stock', label: 'Stock View', icon: Package });
   }
-
   if (role === 'deliveryGuy') {
-    items.push({ path: '/delivery', label: 'Deliveries', icon: Truck });
+    tools.push({ path: '/delivery', label: 'Deliveries', icon: Truck });
   }
 
-  return items;
+  if (tools.length > 0) {
+    groups.push({ label: 'My Tools', items: tools });
+  }
+
+  groups.push({
+    label: 'Customer View',
+    items: [{ path: '/', label: 'Customer View', icon: Globe }],
+  });
+
+  return groups;
 };
 
+// Flat list for backward compat
+const getEmployeeNavItems = (role) =>
+  getEmployeeNavGroups(role).flatMap(g => g.items);
+
+export { getEmployeeNavGroups };
 export default getEmployeeNavItems;

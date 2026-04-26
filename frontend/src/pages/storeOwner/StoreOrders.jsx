@@ -4,7 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getStoreOrders, updateOrderStatus, assignDeliveryGuy, getAvailableDeliveryGuys } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',
@@ -97,7 +97,7 @@ const StoreOrders = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -106,7 +106,7 @@ const StoreOrders = () => {
   }
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title="Manager Dashboard">
       <div>
         <div className="mb-6">
           <div className="bg-white rounded-3xl border border-card-border shadow-sm p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
-import getEmployeeNavItems from './employeeNav';
+import { getEmployeeNavGroups } from './employeeNav';
 import useAuthStore from '../../store/authStore';
 import { toast } from 'react-toastify';
 import { createCustomerReturn, getCustomerReturns, getReturnOrder } from '../../services/api';
@@ -87,7 +87,7 @@ const EmployeeReturns = () => {
   };
 
   return (
-    <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+    <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-dark-navy">Customer Returns</h1>

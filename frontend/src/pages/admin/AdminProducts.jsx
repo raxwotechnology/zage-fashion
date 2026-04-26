@@ -3,7 +3,7 @@ import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminProducts, getCategories, getStores, createProduct, updateProduct, deleteProduct } from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import SuppliersPanel from '../inventory/SuppliersPanel';
 import StockReceivingPanel from '../inventory/StockReceivingPanel';
 import SupplierReturnsPanel from '../inventory/SupplierReturnsPanel';

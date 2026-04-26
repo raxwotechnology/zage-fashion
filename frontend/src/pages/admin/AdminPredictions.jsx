@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Brain, TrendingUp, TrendingDown, Minus, DollarSign, ShoppingCart, BarChart3, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import { getSalesPredictions } from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -33,7 +33,7 @@ const AdminPredictions = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Admin Panel">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', color: '#7b6f69' }}>
           <div style={{ textAlign: 'center' }}>
             <Brain size={48} style={{ color: '#d946a0', marginBottom: '1rem' }} />
@@ -46,7 +46,7 @@ const AdminPredictions = () => {
 
   if (!data) {
     return (
-      <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Admin Panel">
         <div style={{ textAlign: 'center', padding: '3rem', color: '#7b6f69' }}>Failed to load prediction data</div>
       </DashboardLayout>
     );
@@ -61,7 +61,7 @@ const AdminPredictions = () => {
   const maxRevenue = Math.max(...allData.map((d) => d.revenue), 1);
 
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Admin Panel">
       <div style={{ maxWidth: '1100px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>

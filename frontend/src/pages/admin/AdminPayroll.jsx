@@ -1,8 +1,8 @@
 import ManagerPayroll from '../storeOwner/ManagerPayroll';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const AdminPayroll = () => {
-  return <ManagerPayroll navItems={adminNavItems} title="Admin Panel" />;
+  return <ManagerPayroll navItems={navItems} title="Admin Panel" />;
 };
 
 export default AdminPayroll;

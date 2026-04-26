@@ -3,7 +3,7 @@ import { Barcode, Search, Download, Calendar, Filter, Clock, User, Package } fro
 import DashboardLayout from '../../components/DashboardLayout';
 import { getBarcodeLogs } from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const AdminBarcodes = () => {
   const [logs, setLogs] = useState([]);

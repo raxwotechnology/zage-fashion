@@ -3,7 +3,7 @@ import { Plus, Target, Award, X, CheckCircle, Trash2 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getTargets, getEmployees, createTarget, updateTargetProgress, payTargetBonus, deleteTarget } from '../../services/api';
 import { toast } from 'react-toastify';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const TARGET_TYPES = [
   { value: 'sales', label: 'Sales (Rs.)' },
@@ -94,7 +94,7 @@ const AdminTargets = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Admin Panel">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -106,7 +106,7 @@ const AdminTargets = () => {
   const totalBonus = targets.filter(t => t.status === 'completed').reduce((s, t) => s + (t.bonusAmount || 0), 0);
 
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
           <div>

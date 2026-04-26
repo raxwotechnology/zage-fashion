@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import { toast } from 'react-toastify';
 import { approveCustomerReturn, exportCustomerReturnsReport, getCustomerReturns, rejectCustomerReturn } from '../../services/api';
 

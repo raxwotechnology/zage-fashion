@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Ticket, Plus, Edit2, Trash2, X, Search, Copy, Check } from 'lucide-react';
+import { Ticket, Plus, Edit2, Trash2, X, Search, Copy, Check, FileText } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const emptyForm = {
   code: '', type: 'percentage', value: '', minOrderAmount: '', maxDiscountAmount: '', maxUses: '',
@@ -109,6 +111,42 @@ const AdminVouchers = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const downloadPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Voucher Report', 14, 18);
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Generated: ${new Date().toLocaleString()}  |  Total: ${vouchers.length} vouchers`, 14, 25);
+
+      autoTable(doc, {
+        startY: 30,
+        head: [['Code', 'Type', 'Value', 'Min Order', 'Used/Max', 'Expires', 'Status', 'Description']],
+        body: vouchers.map(v => [
+          v.code,
+          v.type === 'percentage' ? 'Percentage' : 'Fixed',
+          v.type === 'percentage' ? `${v.value}%` : `Rs. ${v.value}`,
+          v.minOrderAmount ? `Rs. ${v.minOrderAmount}` : '—',
+          `${v.usedCount || 0} / ${v.maxUses || '∞'}`,
+          v.expiresAt ? new Date(v.expiresAt).toLocaleDateString() : 'Never',
+          v.isActive ? 'Active' : 'Inactive',
+          v.description || '',
+        ]),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [217, 70, 160], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [253, 242, 248] },
+      });
+
+      doc.save(`vouchers_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('PDF downloaded!');
+    } catch (err) {
+      console.error('PDF error:', err);
+      toast.error('PDF generation failed: ' + err.message);
+    }
+  };
+
   const filtered = vouchers.filter(v => v.code?.toLowerCase().includes(search.toLowerCase()) || v.description?.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) {
@@ -124,12 +162,12 @@ const AdminVouchers = () => {
   return (
     <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-dark-navy">🎟️ Voucher Management</h1>
-            <p className="text-muted-text text-sm mt-1">{vouchers.length} vouchers</p>
+            <p className="text-muted-text text-sm mt-1">{vouchers.length} vouchers total</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => {
               const rows = [['Code', 'Type', 'Value', 'Min Order', 'Max Discount', 'Used', 'Max Uses', 'Per User', 'Expires', 'Status', 'Description']];
               vouchers.forEach(v => {
@@ -150,10 +188,13 @@ const AdminVouchers = () => {
               a.href = url; a.download = `vouchers_export_${new Date().toISOString().split('T')[0]}.csv`;
               a.click(); URL.revokeObjectURL(url);
               toast.success('Vouchers exported!');
-            }} className="flex items-center gap-2 border border-card-border text-dark-navy px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition-all text-sm">
+            }} className="flex items-center gap-2 border border-card-border text-dark-navy px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition-all text-sm">
               📥 Export CSV
             </button>
-            <button onClick={openCreate} className="flex items-center gap-2 bg-primary-green text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-emerald-600 shadow-lg shadow-emerald-200 transition-all text-sm">
+            <button onClick={downloadPDF} className="flex items-center gap-2 border border-red-200 text-red-600 px-4 py-2.5 rounded-xl font-semibold hover:bg-red-50 transition-all text-sm">
+              <FileText size={16} /> Export PDF
+            </button>
+            <button onClick={openCreate} className="flex items-center gap-2 bg-primary-green text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-emerald-600 shadow-lg shadow-emerald-200 transition-all text-sm">
               <Plus size={18} /> Create Voucher
             </button>
           </div>

@@ -3,7 +3,7 @@ import { Trash2, Search, ToggleLeft, ToggleRight } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminUsers, updateUserRole, toggleUserStatus, deleteUser } from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const roleColors = {
   customer: 'bg-sky-100 text-sky-700',

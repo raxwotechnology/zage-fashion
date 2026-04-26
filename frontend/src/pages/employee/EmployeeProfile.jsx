@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { LayoutDashboard, User, Clock, Calendar, CreditCard, Mail, Phone, MapPin, Building, Save } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import useAuthStore from '../../store/authStore';
-import getEmployeeNavItems from './employeeNav';
+import { getEmployeeNavGroups } from './employeeNav';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -27,7 +27,7 @@ const EmployeeProfile = () => {
   };
 
   return (
-    <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+    <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
       <div className="max-w-3xl space-y-6">
         <h1 className="text-2xl font-bold text-dark-navy">👤 My Profile</h1>
 

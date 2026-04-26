@@ -6,7 +6,7 @@ import {
   getPayrollReport,
 } from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../utils/exportUtils';
 
 const AdminReports = () => {

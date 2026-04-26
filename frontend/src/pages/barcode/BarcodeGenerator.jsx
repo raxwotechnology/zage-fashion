@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 // Dynamic nav items based on role
 import adminNavItems from '../admin/adminNavItems';
 import managerNavItems from '../storeOwner/managerNavItems';
-import getEmployeeNavItems from '../employee/employeeNav';
+import { getEmployeeNavGroups } from '../employee/employeeNav';
 
 const BarcodeGenerator = () => {
   const { user } = useAuthStore();
@@ -112,7 +112,7 @@ const BarcodeGenerator = () => {
   const getNavItems = () => {
     if (user?.role === 'admin') return adminNavItems;
     if (user?.role === 'manager') return managerNavItems;
-    return getEmployeeNavItems(user?.role);
+    return getEmployeeNavGroups(user?.role);
   };
 
   const dashTitle = user?.role === 'admin' ? 'Zage Admin Panel' :

@@ -4,7 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getAdminOrders, updateOrderStatus, approveOrder, cancelOrder, assignDeliveryGuy, getAvailableDeliveryGuys } from '../../services/api';
 import useCurrencyStore from '../../store/currencyStore';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const statusColors = {
   pending: 'bg-amber-100 text-amber-700',

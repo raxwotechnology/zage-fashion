@@ -4,10 +4,10 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { getAttendanceReport, getEmployees, getStores, adminMarkAttendance } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { toast } from 'react-toastify';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const now = new Date();
 
@@ -135,7 +135,7 @@ const AdminAttendance = () => {
     const head = [['Employee', 'Role', 'Department', 'Present', 'Leave', 'Absent', 'Late', 'Hours', 'Overtime']];
     const body = summaryData.map(e => [e.name, e.role, e.department, e.present, e.leave, e.absent, e.late, e.totalHours.toFixed(1), e.overtime.toFixed(1)]);
     
-    doc.autoTable({
+    autoTable(doc, {
       head,
       body,
       startY: 20,
@@ -146,10 +146,10 @@ const AdminAttendance = () => {
     toast.success('PDF downloaded');
   };
 
-  if (loading) return <DashboardLayout navItems={adminNavItems} title="Admin Dashboard"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
+  if (loading) return <DashboardLayout navItems={navItems} title="Admin Dashboard"><div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" /></div></DashboardLayout>;
 
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Dashboard">
+    <DashboardLayout navItems={navItems} title="Admin Dashboard">
       <div>
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div><h1 className="text-2xl font-bold text-dark-navy">📋 All Employees Attendance</h1><p className="text-muted-text text-sm mt-1">{summaryData.length} employees found for {month}/{year}</p></div>

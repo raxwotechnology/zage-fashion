@@ -26,6 +26,7 @@ const updateSettings = async (req, res) => {
       'shopName', 'tagline', 'email', 'phone', 'phone2', 'address', 'city', 'country',
       'currency', 'exchangeRate', 'deliveryFeeThreshold', 'deliveryFee', 'taxRate',
       'loyaltyPointsPerUnit', 'loyaltyPointValue', 'footerText', 'maintenanceMode',
+      'logoUrl', 'logo',
     ];
 
     fields.forEach(field => {
@@ -37,6 +38,16 @@ const updateSettings = async (req, res) => {
     // Social links
     if (req.body.socialLinks) {
       settings.socialLinks = { ...settings.socialLinks.toObject?.() || {}, ...req.body.socialLinks };
+    }
+
+    // Role permissions
+    if (req.body.rolePermissions) {
+      settings.rolePermissions = req.body.rolePermissions;
+    }
+
+    // Hero products
+    if (req.body.heroProducts) {
+      settings.heroProducts = req.body.heroProducts;
     }
 
     await settings.save();
@@ -58,10 +69,13 @@ const uploadLogo = async (req, res) => {
       settings = new Settings({});
     }
 
-    settings.logo = `/uploads/${req.file.filename}`;
+    // Store as relative path — frontend will prefix with its own base URL
+    const logoPath = `/uploads/${req.file.filename}`;
+    settings.logo = logoPath;
+    settings.logoUrl = logoPath;
     await settings.save();
 
-    res.json({ logo: settings.logo, message: 'Logo updated successfully' });
+    res.json({ logo: logoPath, logoUrl: logoPath, message: 'Logo updated successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

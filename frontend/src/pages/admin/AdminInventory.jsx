@@ -3,7 +3,7 @@ import { Package, AlertTriangle, Search, ArrowUpDown } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { toast } from 'react-toastify';
 import { exportToCSV, exportToExcel } from '../../utils/exportUtils';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import API from '../../services/api';
 
 const AdminInventory = () => {

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Wallet, Search, ArrowLeft, CreditCard, TrendingUp, TrendingDown, DollarSign, Calendar, Download, ChevronDown, X, FileText, FileSpreadsheet } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 import { getSupplierPaymentSummary, getSupplierLedger, recordSupplierPayment, recordSupplierPurchase, getSupplierPayments } from '../../services/api';
 import { toast } from 'react-toastify';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const ManagerSupplierPayments = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -152,7 +152,7 @@ const ManagerSupplierPayments = () => {
       const res = await getSupplierPayments();
       const doc = new jsPDF();
       doc.text('Supplier Payments Report', 14, 15);
-      doc.autoTable({
+      autoTable(doc, {
         head: [['Supplier', 'Amount (LKR)', 'Date', 'Payment Method']],
         body: res.data.map(p => [
           p.supplierId?.name || 'Unknown',
@@ -178,7 +178,7 @@ const ManagerSupplierPayments = () => {
   // Ledger View
   if (selectedSupplier) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div style={{ maxWidth: '1100px' }}>
           {/* Back Button */}
           <button onClick={() => { setSelectedSupplier(null); setLedger(null); }}
@@ -385,7 +385,7 @@ const ManagerSupplierPayments = () => {
 
   // Summary View
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title="Manager Dashboard">
       <div style={{ maxWidth: '1100px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>

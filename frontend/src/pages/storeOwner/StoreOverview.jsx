@@ -3,7 +3,7 @@ import { Package, ShoppingBag, DollarSign, Clock, TrendingUp, AlertCircle } from
 import DashboardLayout from '../../components/DashboardLayout';
 import { getMyStoreProducts, getStoreOrders } from '../../services/api';
 import { Link } from 'react-router-dom';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 
 
 const StoreOverview = () => {
@@ -47,7 +47,7 @@ const StoreOverview = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -73,7 +73,7 @@ const StoreOverview = () => {
   };
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Store Dashboard">
+    <DashboardLayout navItems={navItems} title="Store Dashboard">
       <div>
         <div className="mb-8">
           <div className="bg-gradient-to-br from-rose-500 via-fuchsia-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg">

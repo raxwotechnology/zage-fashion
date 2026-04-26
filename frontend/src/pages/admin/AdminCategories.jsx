@@ -3,7 +3,7 @@ import { Plus, Edit2, Trash2, X, Tag } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../services/api';
 import { toast } from 'react-toastify';
-import navItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);

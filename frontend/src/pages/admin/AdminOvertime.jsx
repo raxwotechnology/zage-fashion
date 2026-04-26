@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, Plus, DollarSign, User, CheckCircle, Trash2, X, Download, Search, ChevronRight, ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
-import adminNavItems from './adminNavItems';
+import { adminNavGroups as navItems } from './adminNavItems';
 import { getOvertimeSummary, getOvertimeRecords, createOvertimeRecord, markOvertimePaid, rejectOvertimeRecord, deleteOvertimeRecord, getEmployeeOTReport } from '../../services/api';
 import API from '../../services/api';
 import { toast } from 'react-toastify';
@@ -141,7 +141,7 @@ const AdminOvertime = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+      <DashboardLayout navItems={navItems} title="Admin Panel">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
         </div>
@@ -150,7 +150,7 @@ const AdminOvertime = () => {
   }
 
   return (
-    <DashboardLayout navItems={adminNavItems} title="Admin Panel">
+    <DashboardLayout navItems={navItems} title="Admin Panel">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">

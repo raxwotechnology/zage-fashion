@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Package, AlertTriangle, Search } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import { toast } from 'react-toastify';
-import getEmployeeNavItems from './employeeNav';
+import { getEmployeeNavGroups } from './employeeNav';
 import useAuthStore from '../../store/authStore';
 import API from '../../services/api';
 
@@ -45,7 +45,7 @@ const CashierStock = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+      <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -54,7 +54,7 @@ const CashierStock = () => {
   }
 
   return (
-    <DashboardLayout navItems={getEmployeeNavItems(user?.role)} title="Employee Portal">
+    <DashboardLayout navItems={getEmployeeNavGroups(user?.role)} title="Employee Portal">
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-dark-navy">📦 Stock View</h1>

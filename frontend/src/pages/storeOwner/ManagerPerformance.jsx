@@ -3,7 +3,7 @@ import { BarChart3, Clock, Target, Calendar, Award, Coffee, User } from 'lucide-
 import DashboardLayout from '../../components/DashboardLayout';
 import { getEmployees, getEmployeePerformance } from '../../services/api';
 import { toast } from 'react-toastify';
-import managerNavItems from './managerNavItems';
+import { managerNavGroups as navItems } from './managerNavItems';
 
 const ManagerPerformance = () => {
   const [employees, setEmployees] = useState([]);
@@ -42,7 +42,7 @@ const ManagerPerformance = () => {
 
   if (loading) {
     return (
-      <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+      <DashboardLayout navItems={navItems} title="Manager Dashboard">
         <div className="flex items-center justify-center h-64">
           <div className="w-10 h-10 border-4 border-primary-green border-t-transparent rounded-full animate-spin" />
         </div>
@@ -51,7 +51,7 @@ const ManagerPerformance = () => {
   }
 
   return (
-    <DashboardLayout navItems={managerNavItems} title="Manager Dashboard">
+    <DashboardLayout navItems={navItems} title="Manager Dashboard">
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-dark-navy">📊 Employee Performance</h1>
