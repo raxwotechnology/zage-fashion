@@ -5,7 +5,7 @@ import axios from 'axios';
 // In development: falls back to empty string (uses Vite proxy)
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL + '/api',
+  baseURL: (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') + '/api',
   timeout: 30000, // 30s timeout (Render free tier cold starts can be slow)
   headers: {
     'Content-Type': 'application/json',
